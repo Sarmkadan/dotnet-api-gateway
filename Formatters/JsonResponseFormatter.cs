@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -138,7 +139,7 @@ public class SuccessResponse<T> where T : class
 /// <summary>
 /// Standard error response envelope.
 /// </summary>
-public class ErrorResponse
+public sealed class ErrorResponse
 {
     [JsonPropertyName("success")]
     public bool Success { get; set; } = false;
@@ -180,7 +181,7 @@ public class PaginatedResponse<T> where T : class
 /// <summary>
 /// Pagination metadata.
 /// </summary>
-public class PaginationMetadata
+public sealed class PaginationMetadata
 {
     [JsonPropertyName("page")]
     public int Page { get; set; }

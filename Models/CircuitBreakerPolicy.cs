@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Defines circuit breaker rules for fault tolerance
 /// </summary>
-public class CircuitBreakerPolicy
+public sealed class CircuitBreakerPolicy
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public int FailureThreshold { get; set; } = 5;

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -11,7 +12,7 @@ using DotNetApiGateway.Utilities;
 /// Middleware for validating incoming requests before processing.
 /// Ensures request size limits, content types, and required headers are valid.
 /// </summary>
-public class RequestValidationMiddleware
+public sealed class RequestValidationMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<RequestValidationMiddleware> _logger;

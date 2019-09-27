@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -17,7 +18,7 @@ namespace DotNetApiGateway.Examples;
 /// Example: JWT Authentication Configuration
 /// Demonstrates JWT token generation and validation setup for the gateway.
 /// </summary>
-public class JwtAuthenticationExample
+public sealed class JwtAuthenticationExample
 {
     private const string SecretKey = "super-secret-key-minimum-32-characters-long";
     private const string Issuer = "https://auth.example.com";

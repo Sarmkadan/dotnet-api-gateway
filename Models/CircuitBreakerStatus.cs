@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Tracks the current state and statistics of a circuit breaker
 /// </summary>
-public class CircuitBreakerStatus
+public sealed class CircuitBreakerStatus
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string ServiceName { get; set; } = string.Empty;

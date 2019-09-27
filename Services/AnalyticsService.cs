@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ using DotNetApiGateway.Repositories;
 /// Service for advanced analytics and insights about gateway operations.
 /// Provides detailed reporting on performance, usage, and error patterns.
 /// </summary>
-public class AnalyticsService
+public sealed class AnalyticsService
 {
     private readonly MetricsService _metricsService;
     private readonly GatewayRouteRepository _routeRepository;
@@ -187,7 +188,7 @@ public class AnalyticsService
 /// <summary>
 /// Comprehensive health report for the gateway.
 /// </summary>
-public class GatewayHealthReport
+public sealed class GatewayHealthReport
 {
     public DateTime Timestamp { get; set; }
     public string HealthStatus { get; set; } = string.Empty;
@@ -202,7 +203,7 @@ public class GatewayHealthReport
 /// <summary>
 /// Performance trend metrics.
 /// </summary>
-public class PerformanceTrend
+public sealed class PerformanceTrend
 {
     public string Period { get; set; } = string.Empty;
     public DateTime CollectionTime { get; set; }
@@ -212,7 +213,7 @@ public class PerformanceTrend
 /// <summary>
 /// Single performance measurement sample.
 /// </summary>
-public class PerformanceSample
+public sealed class PerformanceSample
 {
     public DateTime Timestamp { get; set; }
     public double AverageResponseTimeMs { get; set; }
@@ -222,7 +223,7 @@ public class PerformanceSample
 /// <summary>
 /// Analytics for a specific route.
 /// </summary>
-public class RouteAnalytics
+public sealed class RouteAnalytics
 {
     public string RouteId { get; set; } = string.Empty;
     public string RouteName { get; set; } = string.Empty;

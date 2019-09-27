@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Configuration;
 /// <summary>
 /// Configuration settings for the API gateway
 /// </summary>
-public class GatewayConfiguration
+public sealed class GatewayConfiguration
 {
     public string ApplicationName { get; set; } = "DotNetApiGateway";
     public string Version { get; set; } = "1.0.0";

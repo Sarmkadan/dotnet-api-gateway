@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Webhook subscription configuration.
 /// </summary>
-public class WebhookSubscription
+public sealed class WebhookSubscription
 {
     [JsonPropertyName("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();
@@ -23,7 +24,7 @@ public class WebhookSubscription
     public string CallbackUrl { get; set; } = string.Empty;
 
     [JsonPropertyName("eventTypes")]
-    public string[] EventTypes { get; set; } = Array.Empty<string>();
+    public string[] EventTypes { get; set; } = []string>();
 
     [JsonPropertyName("secret")]
     public string Secret { get; set; } = string.Empty;
@@ -44,7 +45,7 @@ public class WebhookSubscription
 /// <summary>
 /// Retry policy for webhook delivery.
 /// </summary>
-public class WebhookRetryPolicy
+public sealed class WebhookRetryPolicy
 {
     [JsonPropertyName("maxRetries")]
     public int MaxRetries { get; set; } = 3;
@@ -59,7 +60,7 @@ public class WebhookRetryPolicy
 /// <summary>
 /// Webhook delivery statistics.
 /// </summary>
-public class WebhookDeliveryStats
+public sealed class WebhookDeliveryStats
 {
     [JsonPropertyName("totalDeliveries")]
     public int TotalDeliveries { get; set; }
@@ -80,7 +81,7 @@ public class WebhookDeliveryStats
 /// <summary>
 /// Webhook event payload.
 /// </summary>
-public class WebhookEvent
+public sealed class WebhookEvent
 {
     [JsonPropertyName("eventType")]
     public string EventType { get; set; } = string.Empty;
@@ -98,7 +99,7 @@ public class WebhookEvent
 /// <summary>
 /// Webhook event delivery attempt.
 /// </summary>
-public class WebhookDeliveryAttempt
+public sealed class WebhookDeliveryAttempt
 {
     [JsonPropertyName("attemptNumber")]
     public int AttemptNumber { get; set; }

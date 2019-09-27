@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace DotNetApiGateway.Examples;
 /// Example: Metrics and Monitoring
 /// Demonstrates how to collect, analyze, and act on gateway metrics.
 /// </summary>
-public class MetricsMonitoringExample
+public sealed class MetricsMonitoringExample
 {
     public static async Task Main()
     {

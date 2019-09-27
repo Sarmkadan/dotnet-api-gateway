@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Represents an authenticated client identity
 /// </summary>
-public class ClientIdentity
+public sealed class ClientIdentity
 {
     public string Id { get; set; } = string.Empty;
     public string? Subject { get; set; }
