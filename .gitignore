@@ -28,11 +28,13 @@ bld/
 # JetBrains Rider
 .idea/
 *.sln.iml
+*.DotSettings.user
 
 # NuGet
 *.nupkg
 *.snupkg
 .nuget/
+packages/
 
 # Local user settings
 appsettings.local.json
