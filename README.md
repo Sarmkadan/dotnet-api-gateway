@@ -1,11 +1,10 @@
+[![Build](https://github.com/sarmkadan/dotnet-api-gateway/actions/workflows/build.yml/badge.svg)](https://github.com/sarmkadan/dotnet-api-gateway/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+
 # DotNet API Gateway
 
 > A lightweight, production-ready API gateway for .NET applications with advanced routing, rate limiting, JWT validation, request aggregation, circuit breaker patterns, and comprehensive monitoring.
-
-![Build Status](https://img.shields.io/github/actions/workflow/status/Sarmkadan/dotnet-api-gateway/build.yml?branch=main)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![.NET Version](https://img.shields.io/badge/.NET-10.0-512BD4)
-![NuGet](https://img.shields.io/badge/nuget-ready-green)
 
 ## Table of Contents
 
