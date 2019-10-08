@@ -5,198 +5,164 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-05-04
+## [1.0.0] - 2025-09-06
 
 ### Added
 
-- **Distributed Caching**: Redis integration for multi-instance deployments
-- **Webhook Management**: Webhook registration and delivery system
-- **Request Transformation**: Header manipulation and request body transformation policies
-- **Metrics Export**: Prometheus endpoint for metrics collection
-- **Health Check Enhancements**: Per-service health monitoring with response times
-- **Performance Analytics**: Real-time performance analysis and bottleneck detection
-- **Request Aggregation**: Combine multiple backend requests into single response
-- **CLI Configuration**: Command-line interface for gateway management
-- **API Documentation**: Comprehensive OpenAPI/Swagger documentation
+- **Webhook Management**: Webhook registration, event delivery, and retry logic via `WebhookRegistry` and `WebhookManagementController`
+- **Request Transformation**: Header manipulation, payload transformation, and compression policies
+- **Performance Analytics**: Real-time bottleneck detection and latency percentile tracking via `PerformanceAnalyzer`
+- **Background Workers**: `CacheCleanupWorker`, `HealthCheckWorker`, and `MetricsExportWorker` for housekeeping tasks
+- **Event Bus**: Internal pub/sub event system for extensibility across services
+- **Response Formatters**: JSON, XML, and CSV response formatting with content negotiation
+- **API Documentation**: OpenAPI/Swagger integration for all management endpoints
+- **Request Coalescing**: Deduplication of identical in-flight requests to the same backend target
 
 ### Changed
 
-- **Configuration Format**: Extended configuration schema for new policies
-- **Rate Limiting Algorithm**: Improved token bucket with burst support
-- **Circuit Breaker**: Enhanced state machine with half-open improvements
-- **Logging**: Structured logging with Serilog integration
-- **Authentication**: Support for multiple authentication methods (JWT, API Key)
+- Promoted from pre-release; all public APIs are now stable
+- Configuration schema locked — breaking changes require a major version bump
+- `GatewayMiddleware` pipeline order finalized: validation → authentication → rate limit → circuit breaker → routing
 
 ### Fixed
 
-- Rate limiting edge case with concurrent requests
-- Circuit breaker state transition race condition
-- Cache invalidation timing issues
-- CORS header handling for preflight requests
-- Request timeout handling in gateway middleware
-
-### Deprecated
-
-- Legacy configuration format (will be removed in v2.0)
-- `StaticConfiguration` attribute (use dependency injection instead)
+- Race condition in circuit breaker state transition under high concurrency
+- Cache invalidation could leave stale entries for up to 10 seconds past TTL
+- CORS preflight responses were missing `Access-Control-Max-Age` header
 
 ### Security
 
-- Added HTTPS/TLS support with certificate management
-- Implemented request size limits to prevent attacks
-- Added IP whitelist/blacklist functionality
-- Enhanced JWT validation with configurable claims
+- Added HTTPS/TLS support with configurable certificate path
+- Implemented per-route request size limits to mitigate large-payload attacks
+- Enhanced JWT validation with configurable clock skew and audience enforcement
 
-## [1.1.0] - 2026-04-15
+---
+
+## [0.5.0] - 2025-07-19
 
 ### Added
 
-- **Rate Limiting**: Token bucket algorithm for per-client request limiting
-- **Circuit Breaker Pattern**: Fault tolerance with automatic recovery
-- **Response Caching**: In-memory caching with TTL expiration
-- **Load Balancing**: Weighted round-robin distribution across multiple targets
-- **JWT Validation**: Token verification with role-based access control
-- **Health Monitoring**: Background health checks for backend services
-- **Metrics Collection**: Request metrics, latency tracking, error rates
-- **Request Logging**: Complete request/response logging with timestamps
-- **Error Handling**: Comprehensive exception handling and error responses
-- **CORS Support**: Configurable cross-origin resource sharing
+- **Metrics & Analytics**: `MetricsService` collects request throughput, latency (p50/p95/p99), error rates, and cache hit ratios
+- **Structured Logging**: `RequestLoggingMiddleware` emits structured log entries with correlation IDs for every proxied request
+- **Request Aggregation**: `RequestAggregationService` fans out to multiple backend targets and merges responses into a single payload
+- **Health Check Service**: `HealthCheckService` pings backend targets on a configurable interval and updates routing weights
 
 ### Changed
 
-- Improved request routing performance with compiled regex
-- Enhanced middleware pipeline for better request processing
-- Optimized memory usage in cache service
-- Better error messages with detailed context
+- `RateLimitingService` switched from fixed-window to sliding-window algorithm, reducing burst traffic spikes at window boundaries
+- `CircuitBreakerService` now transitions through a half-open state before fully closing, reducing false recoveries
 
 ### Fixed
 
-- Route pattern matching edge cases
-- Request body size handling
-- Header propagation in request forwarding
-- Graceful shutdown handling
+- `RoutingService` regex compilation was not cached, causing measurable overhead on repeated pattern matches
+- Request body was fully buffered even when not needed for routing decisions
+- Graceful shutdown did not drain in-flight requests before stopping the host
 
-## [1.0.0] - 2026-03-01
+---
+
+## [0.4.0] - 2025-06-07
 
 ### Added
 
-- **Core Gateway Functionality**: HTTP request routing and forwarding
-- **Route Management**: Dynamic route configuration via configuration file
-- **Request Routing**: Pattern-based routing with wildcard support
-- **Multiple Targets**: Load distribution across multiple backend services
-- **Middleware Pipeline**: Request/response processing pipeline
-- **Dependency Injection**: Service configuration via built-in DI container
-- **Configuration Management**: JSON-based configuration with environment support
-- **Logging**: Console and file-based logging infrastructure
-- **Exception Handling**: Custom exception types for specific error scenarios
-- **Repository Pattern**: In-memory data access layer abstraction
+- **Request Caching**: `CacheService` and `RequestCachingDecorator` provide in-memory response caching with per-route TTL configuration
+- **Load Balancing**: Weighted round-robin target selection across multiple `RouteTarget` entries per route
+- **Retry Policies**: `RetryPolicy` with exponential backoff and per-attempt jitter for transient backend errors
+- **External HTTP Client**: `ExternalApiClient` wraps `HttpClientFactory` with timeout, retry, and cancellation propagation
+
+### Changed
+
+- `GatewayRoute` model extended with `CachingPolicy` and `RetryPolicy` fields
+- `ConfigurationValidator` now validates target URL format and rejects duplicate route names at startup
+
+### Fixed
+
+- Header forwarding dropped `X-Forwarded-For` when the gateway was behind a reverse proxy
+- Route with an `ANY` method did not match `PATCH` requests
+
+---
+
+## [0.3.0] - 2025-04-26
+
+### Added
+
+- **JWT Validation**: `JwtValidationService` verifies HS256/RS256 tokens, extracts claims, and enforces role-based route access via `requiredRoles`
+- **API Key Authentication**: Alternative authentication mode using `X-API-Key` header, configurable per-route
+- **CORS Support**: Configurable CORS policy with per-origin and per-method allowlists
+- **Circuit Breaker**: `CircuitBreakerService` and `CircuitBreakerRepository` implement the fail-fast pattern with configurable failure threshold and recovery timeout
+
+### Changed
+
+- `AuthenticationPolicy` model unified JWT and API-key configuration under a single policy object
+- Middleware pipeline split into distinct `RequestValidationMiddleware` and `GatewayMiddleware` stages
+
+### Fixed
+
+- JWT token expiry was validated against server time without clock-skew tolerance, rejecting tokens from slightly out-of-sync clients
+- `ErrorHandlingMiddleware` swallowed the original exception message in production mode, making debugging harder
+
+---
+
+## [0.2.0] - 2025-03-15
+
+### Added
+
+- **Rate Limiting**: `RateLimitingService` and `RateLimitRepository` with token-bucket algorithm; limits configurable per route and per client identity
+- **Client Identity Resolution**: `ClientIdentity` model extracts client ID from JWT `sub`, API key, or remote IP address
+- **Management API**: `GatewayManagementController` exposes REST endpoints to list routes, inspect rate-limit state, and query circuit-breaker status
+- **Health Endpoint**: `/health` returns gateway uptime and per-backend reachability
+- **Repositories**: `GatewayRouteRepository` and `RateLimitRepository` provide an in-memory persistence layer with `IRepository<T>` abstraction
+
+### Changed
+
+- Route configuration moved from hard-coded startup code to `appsettings.json` under `GatewayConfiguration.Routes`
+- `GatewayConstants` and `GatewayEnums` extracted to a dedicated `Constants/` namespace
+
+### Fixed
+
+- Concurrent requests to the same rate-limit bucket could exceed the configured limit due to a missing lock
+- Routes were matched case-sensitively; patterns now use `RegexOptions.IgnoreCase`
+
+---
+
+## [0.1.0] - 2025-02-01
+
+### Added
+
+- **Core Gateway**: HTTP request forwarding via `GatewayMiddleware` with pattern-based route matching
+- **Route Model**: `GatewayRoute` with pattern, method filter, and one or more `RouteTarget` backend URLs
+- **Configuration**: `GatewayConfiguration` loaded from `appsettings.json` with environment variable override support
+- **Middleware Pipeline**: `ErrorHandlingMiddleware` wraps the pipeline and returns structured JSON error responses
+- **Dependency Injection**: `ServiceCollectionExtensions.AddApiGateway()` registers all core services in a single call
+- **Exceptions**: `GatewayException`, `RouteNotFoundException`, `RateLimitExceededException`, `CircuitBreakerException`, `AuthenticationException`
+- **Utilities**: `UrlUtility`, `HeaderUtility`, `ValidationUtility`, `JsonUtility`, `DateTimeUtility`, `CryptoUtility`
+- **Docker support**: `Dockerfile` and `docker-compose.yml` for containerised deployments
+- **Initial test suite**: xUnit tests for route matching, URL normalisation, and utility helpers
 
 ### Security
 
-- Initial security review and hardening
-- Input validation for route patterns
-- Request size limits
-- Basic authentication framework
+- Input validation rejects route patterns containing null bytes or path traversal sequences
+- Request body size capped at 10 MB by default
 
 ---
 
 ## Upgrade Guide
 
-### Upgrading from 1.0.0 to 1.1.0
+### Upgrading from 0.4.x to 0.5.0
 
-1. Update configuration to include new policies:
-   ```json
-   {
-     "rateLimitPolicy": { "enabled": true, "requestsPerMinute": 100 },
-     "circuitBreakerPolicy": { "enabled": true, "failureThreshold": 5 }
-   }
-   ```
+Rate limiting now uses a sliding window. Clients that relied on bursting an entire fixed-window quota at the start of each interval will see requests rejected sooner. Review per-route `requestsPerMinute` values and increase `burstSize` if needed.
 
-2. Update route targets to include health check URLs:
-   ```json
-   {
-     "url": "http://backend:3000",
-     "healthCheckUrl": "http://backend:3000/health"
-   }
-   ```
+### Upgrading from 0.5.x to 1.0.0
 
-### Upgrading from 1.1.0 to 1.2.0
+1. Webhook registration is now persisted in `WebhookRegistry`. Re-register any webhooks previously wired up in code.
 
-1. Update to .NET 10 SDK (required)
+2. The circuit-breaker half-open state is enabled by default. Set `successThreshold: 1` in routes that should recover on the first successful probe.
 
-2. Enable metrics endpoint:
-   ```json
-   {
-     "GatewayConfiguration": {
-       "EnableMetrics": true,
-       "EnableRequestLogging": true
-     }
-   }
-   ```
-
-3. Configure Redis for distributed caching (optional):
-   ```csharp
-   services.AddStackExchangeRedisCache(options => {
-       options.Configuration = "redis-server:6379";
-   });
-   ```
-
-4. Register webhooks for event notifications:
-   ```bash
-   curl -X POST http://localhost:5000/api/webhooks/register \
-     -H "Content-Type: application/json" \
-     -d '{ "url": "https://myapp.com/webhook", "events": ["route-created"] }'
-   ```
+3. Background workers (`CacheCleanupWorker`, `HealthCheckWorker`, `MetricsExportWorker`) are registered automatically via `AddApiGateway()`. Remove any manual `IHostedService` registrations to avoid duplicates.
 
 ---
-
-## Known Issues
-
-### v1.2.0
-
-- Distributed caching with Redis may have slight synchronization delays
-- WebSocket connections not supported (planned for v1.3)
-- GraphQL federation not yet implemented
-
-### v1.1.0
-
-- Circuit breaker state machine may race under extreme concurrency
-- Cache TTL expiration is approximate (within 1-5 seconds)
-
----
-
-## Future Roadmap
-
-### v1.3.0 (Q2 2026)
-
-- WebSocket support
-- GraphQL federation
-- Distributed request tracking
-- Advanced authorization policies
-- Custom rate limiting algorithms
-
-### v1.4.0 (Q3 2026)
-
-- HTTP/3 QUIC support
-- Rate limiting by custom attributes
-- Request/response streaming
-- Service mesh integration
-
-### v2.0.0 (Q4 2026)
-
-- Complete rewrite with async first design
-- Native gRPC support
-- Breaking changes to configuration format
-- Enhanced performance (target: 50k req/sec per instance)
-
----
-
-## Contributing
-
-We welcome contributions! See CONTRIBUTING.md for guidelines.
 
 ## License
 
-MIT License - Copyright (c) 2026 Vladyslav Zaiets
+MIT License - Copyright (c) 2025 Vladyslav Zaiets
 
 See LICENSE file for full details.
