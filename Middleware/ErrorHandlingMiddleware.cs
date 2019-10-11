@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ using System.Net;
 /// Global error handling middleware that catches all exceptions and returns standardized error responses.
 /// Ensures consistent error format across the gateway and logs all unhandled exceptions.
 /// </summary>
-public class ErrorHandlingMiddleware
+public sealed class ErrorHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ErrorHandlingMiddleware> _logger;
@@ -120,7 +121,7 @@ public class ErrorHandlingMiddleware
 /// <summary>
 /// Standardized error response format used across the gateway.
 /// </summary>
-public class ErrorResponse
+public sealed class ErrorResponse
 {
     public string ErrorCode { get; set; } = "UNKNOWN_ERROR";
     public string Message { get; set; } = "An error occurred";

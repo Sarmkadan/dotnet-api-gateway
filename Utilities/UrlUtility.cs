@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -64,7 +65,7 @@ public static class UrlUtility
     /// </summary>
     public static string BuildQueryString(Dictionary<string, string> parameters)
     {
-        if (parameters == null || parameters.Count == 0)
+        if (parameters is null || parameters.Count == 0)
             return string.Empty;
 
         var pairs = parameters.Select(kvp => $"{HttpUtility.UrlEncode(kvp.Key)}={HttpUtility.UrlEncode(kvp.Value)}");

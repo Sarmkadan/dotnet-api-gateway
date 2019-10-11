@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
-public class CircuitBreakerStatusTests
+public sealed class CircuitBreakerStatusTests
 {
     [Fact]
     public void RecordSuccess_InitialState_IncrementsAllCounters()
@@ -170,7 +171,7 @@ public class CircuitBreakerStatusTests
     }
 }
 
-public class CircuitBreakerServiceTests
+public sealed class CircuitBreakerServiceTests
 {
     private static CircuitBreakerPolicy DefaultPolicy(int failureThreshold = 3, int successThreshold = 2) =>
         new() { FailureThreshold = failureThreshold, SuccessThreshold = successThreshold, TimeoutSeconds = 60 };

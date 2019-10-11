@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -11,7 +12,7 @@ using System.Net.Http.Json;
 /// Generic HTTP client wrapper for calling external APIs with error handling and retry logic.
 /// Provides convenient methods for common HTTP operations with built-in resilience.
 /// </summary>
-public class ExternalApiClient
+public sealed class ExternalApiClient
 {
     private readonly HttpClient _httpClient;
     private readonly RetryPolicy _retryPolicy;
@@ -159,7 +160,7 @@ public class ExternalApiClient
                 request.Content = new StringContent(content, System.Text.Encoding.UTF8, contentType ?? "application/json");
             }
 
-            if (headers != null)
+            if (headers is not null)
             {
                 foreach (var header in headers)
                 {

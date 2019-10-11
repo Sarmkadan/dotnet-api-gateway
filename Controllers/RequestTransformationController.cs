@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -33,7 +34,7 @@ public class RequestTransformationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult TestHeaderTransformation([FromBody] HeaderTransformationRequest request)
     {
-        if (request?.InputHeaders == null || request.InputHeaders.Count == 0)
+        if (request?.InputHeaders is null || request.InputHeaders.Count == 0)
             return BadRequest(new { error = "Input headers required" });
 
         try
@@ -41,7 +42,7 @@ public class RequestTransformationController : ControllerBase
             var result = new Dictionary<string, string>();
 
             // Apply header additions
-            if (request.HeadersToAdd != null)
+            if (request.HeadersToAdd is not null)
             {
                 foreach (var header in request.HeadersToAdd)
                 {
@@ -110,7 +111,7 @@ public class RequestTransformationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult TestQueryParamTransformation([FromBody] QueryParamTransformationRequest request)
     {
-        if (request?.InputParams == null || request.InputParams.Count == 0)
+        if (request?.InputParams is null || request.InputParams.Count == 0)
             return BadRequest(new { error = "Input query parameters required" });
 
         try
@@ -145,7 +146,7 @@ public class RequestTransformationController : ControllerBase
 /// <summary>
 /// Request model for header transformation testing.
 /// </summary>
-public class HeaderTransformationRequest
+public sealed class HeaderTransformationRequest
 {
     public Dictionary<string, string> InputHeaders { get; set; } = new();
     public Dictionary<string, string>? HeadersToAdd { get; set; }
@@ -155,7 +156,7 @@ public class HeaderTransformationRequest
 /// <summary>
 /// Request model for body transformation testing.
 /// </summary>
-public class BodyTransformationRequest
+public sealed class BodyTransformationRequest
 {
     public string? InputBody { get; set; }
     public Dictionary<string, object>? TransformationRules { get; set; }
@@ -164,7 +165,7 @@ public class BodyTransformationRequest
 /// <summary>
 /// Request model for query parameter transformation testing.
 /// </summary>
-public class QueryParamTransformationRequest
+public sealed class QueryParamTransformationRequest
 {
     public Dictionary<string, string> InputParams { get; set; } = new();
     public Dictionary<string, string>? ParamMapping { get; set; }

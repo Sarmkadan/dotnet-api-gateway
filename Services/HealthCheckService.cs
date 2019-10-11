@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Services;
 /// <summary>
 /// Service for monitoring health of backend targets
 /// </summary>
-public class HealthCheckService
+public sealed class HealthCheckService
 {
     private readonly HttpClient _httpClient;
     private readonly Timer _healthCheckTimer;
@@ -100,7 +101,7 @@ public class HealthCheckService
     }
 }
 
-public class GatewayHealth
+public sealed class GatewayHealth
 {
     public bool IsHealthy { get; set; }
     public DateTime Timestamp { get; set; }

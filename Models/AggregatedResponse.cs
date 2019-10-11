@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Contains the aggregated results from multiple requests
 /// </summary>
-public class AggregatedResponse
+public sealed class AggregatedResponse
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public Dictionary<string, AggregatedResponseData> Responses { get; set; } = [];
@@ -61,7 +62,7 @@ public class AggregatedResponse
 /// <summary>
 /// Individual response data from an aggregated request
 /// </summary>
-public class AggregatedResponseData
+public sealed class AggregatedResponseData
 {
     public string Alias { get; set; } = string.Empty;
     public int StatusCode { get; set; }

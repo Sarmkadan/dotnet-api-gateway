@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Services;
 /// <summary>
 /// Service for managing response caching with configurable strategies
 /// </summary>
-public class CacheService
+public sealed class CacheService
 {
     private readonly Dictionary<string, CacheEntry> _cache = [];
     private readonly ReaderWriterLockSlim _lock = new();
@@ -167,7 +168,7 @@ public class CacheService
     }
 }
 
-public class CacheEntry
+public sealed class CacheEntry
 {
     public string Key { get; set; } = string.Empty;
     public int StatusCode { get; set; }
@@ -196,7 +197,7 @@ public class CacheEntry
     }
 }
 
-public class CacheStatistics
+public sealed class CacheStatistics
 {
     public int EntriesCount { get; set; }
     public long TotalHits { get; set; }

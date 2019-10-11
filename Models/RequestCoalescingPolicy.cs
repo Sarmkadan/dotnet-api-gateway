@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -10,7 +11,7 @@ namespace DotNetApiGateway.Models;
 /// When multiple identical requests arrive simultaneously, coalescing ensures
 /// only one upstream call is made and the result is shared with all waiters.
 /// </summary>
-public class RequestCoalescingPolicy
+public sealed class RequestCoalescingPolicy
 {
     /// <summary>Gets or sets the unique policy identifier.</summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();

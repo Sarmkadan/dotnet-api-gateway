@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotNetApiGateway.Utilities;
 /// Utility for tracking and analyzing rate limit metrics.
 /// Provides insights into rate limit usage patterns and violations.
 /// </summary>
-public class RateLimitMetrics
+public sealed class RateLimitMetrics
 {
     private readonly Dictionary<string, ClientRateLimitStats> _clientStats = new();
     private readonly ReaderWriterLockSlim _lock = new();
@@ -197,7 +198,7 @@ public class RateLimitMetrics
 /// <summary>
 /// Rate limit statistics for a specific client.
 /// </summary>
-public class ClientRateLimitStats
+public sealed class ClientRateLimitStats
 {
     public string ClientId { get; set; } = string.Empty;
     public long TotalRequests { get; set; }
@@ -213,7 +214,7 @@ public class ClientRateLimitStats
 /// <summary>
 /// Overall rate limit metrics.
 /// </summary>
-public class RateLimitOverallMetrics
+public sealed class RateLimitOverallMetrics
 {
     public int TotalClients { get; set; }
     public long TotalRequests { get; set; }
