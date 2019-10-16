@@ -172,11 +172,10 @@ public class GatewayManagementController : ControllerBase
         if (status is null)
             return NotFound(new { error = "Circuit breaker not found", targetId });
 
-        status.State = CircuitBreakerState.Closed;
-        status.FailureCount = 0;
-        await _circuitBreakerService.UpdateStatusAsync(status);
+        await _circuitBreakerService.ResetCircuitAsync(targetId);
         _logger.LogInformation("Circuit breaker reset: {TargetId}", targetId);
-        return Ok(status);
+        var updatedStatus = await _circuitBreakerService.GetStatusAsync(targetId);
+        return Ok(updatedStatus);
     }
 
     /// <summary>
