@@ -79,6 +79,7 @@ app.MapFallback(async (
     DotNetApiGateway.Services.RoutingService routingService,
     DotNetApiGateway.Services.RequestAggregationService aggregationService,
     DotNetApiGateway.Integration.ExternalApiClient externalApiClient,
+    DotNetApiGateway.Services.IResponseTransformer responseTransformer,
     ILogger<Program> logger) =>
 {
     // Check if route resolution failed in RoutingMiddleware
@@ -162,6 +163,9 @@ app.MapFallback(async (
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(target.TimeoutSeconds ?? route.TimeoutSeconds));
 
         var responseMessage = await externalApiClient.SendRequestAsync(requestMessage, cts.Token);
+
+        // Apply response transformations (security headers, custom headers, etc.)
+        responseMessage = await responseTransformer.TransformAsync(responseMessage, route);
 
         // Copy status code and headers from upstream response to downstream response
         context.Response.StatusCode = (int)responseMessage.StatusCode;
