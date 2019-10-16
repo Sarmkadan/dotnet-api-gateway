@@ -24,7 +24,7 @@ public sealed class WebhookSubscription
     public string CallbackUrl { get; set; } = string.Empty;
 
     [JsonPropertyName("eventTypes")]
-    public string[] EventTypes { get; set; } = []string>();
+    public string[] EventTypes { get; set; } = [];
 
     [JsonPropertyName("secret")]
     public string Secret { get; set; } = string.Empty;

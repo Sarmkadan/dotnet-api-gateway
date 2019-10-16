@@ -153,7 +153,7 @@ public static class ValidationUtility
     /// <summary>
     /// Validate that dictionary contains required keys.
     /// </summary>
-    public static bool HasRequiredKeys<TKey, TValue>(Dictionary<TKey, TValue> dict, params TKey[] requiredKeys)
+    public static bool HasRequiredKeys<TKey, TValue>(Dictionary<TKey, TValue?> dict, params TKey[] requiredKeys) where TKey : notnull
     {
         if (dict is null)
             return false;
