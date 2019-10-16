@@ -19,6 +19,8 @@ public sealed class RateLimitPolicy
     public bool BypassForAuthenticatedUsers { get; set; } = false;
     public int BurstSize { get; set; } = 10;
     public bool Enabled { get; set; } = true;
+    public RateLimitStorageType StorageType { get; set; } = RateLimitStorageType.InMemory;
+    public string? RedisConnectionString { get; set; }
 
     public void Validate()
     {
