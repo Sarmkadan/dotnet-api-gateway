@@ -83,6 +83,7 @@ Routes are defined as a list under the `"Routes"` section in `appsettings.json`.
 | `CircuitBreakerPolicy`   | `CircuitBreakerPolicy`    | (Optional) Configuration for applying the circuit breaker pattern to the upstream calls made by this route.                                                                                                                                                        |
 | `RateLimitPolicy`        | `RateLimitPolicy`         | (Optional) Configuration for applying rate limiting to requests matching this route.                                                                                                                                                                               |
 | `RequestCoalescingPolicy`| `RequestCoalescingPolicy` | (Optional) Configuration for coalescing duplicate concurrent requests for this route. Ensures only one upstream call is made for identical requests arriving simultaneously.                                                                                           |
+| `AggregationPolicy`      | `AggregationPolicy`       | (Optional) Configuration for aggregating multiple backend requests, optionally with conditional fan-out based on incoming request body fields.                                                                                                                                      |
 
 ---
 
@@ -241,3 +242,78 @@ Configured within a `GatewayRoute` under the `"RequestCoalescingPolicy"` section
 | `MaxQueuedRequests`  | `int`      | `200`         | The maximum number of follower requests allowed to queue behind a single in-flight leader request. Requests beyond this limit execute independently. (Between 1 and 10,000)                                                                                                                                                                 |
 | `CoalescibleMethods` | `string[]` | `["GET", "HEAD"]` | An array of HTTP methods eligible for coalescing. Only idempotent methods should be coalesced (e.g., `GET`, `HEAD`).                                                                                                                                                                                                                           |
 | `IncludeQueryString` | `bool`     | `true`        | If `true`, query-string parameters are included when computing the coalescing key. Disable only if query parameters do not affect the response (e.g., for simple resource fetching where query params are solely for tracking).                                                                                                              |
+
+---
+
+### Aggregation Policy
+
+Configured within a `GatewayRoute` under the `"AggregationPolicy"` section.
+
+```json
+{
+  "AggregationPolicy": {
+    "Enabled": true,
+    "Strategy": "Parallel", // "Sequential", "Parallel", or "FirstSuccess"
+    "Targets": [
+      {
+        "Id": "user-profile-target",
+        "UpstreamUrl": "http://user-service/api/profile",
+        "Method": "GET",
+        "JsonPathCondition": "$.userId" // Only call if userId exists in incoming request body
+      },
+      {
+        "Id": "order-history-target",
+        "UpstreamUrl": "http://order-service/api/orders?userId={userId}",
+        "Method": "GET",
+        "JsonPathCondition": "$.userId" // Only call if userId exists
+      },
+      {
+        "Id": "recommended-products-target",
+        "UpstreamUrl": "http://recommendation-service/api/recommendations",
+        "Method": "POST",
+        "Body": "{ \"userContext\": $.userProfile, \"preferences\": $.preferences }", // Can use JSONPath to transform body
+        "Optional": true // If this fails, the overall aggregation can still succeed
+      }
+    ]
+  }
+}
+```
+
+| Key                  | Type                         | Default Value      | Description                                                                                                                                                                                                                                                                |
+| :------------------- | :--------------------------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Enabled`            | `bool`                       | `false`            | Enables or disables request aggregation for this route.                                                                                                                                                                                                                    |
+| `Strategy`           | `enum`                       | `Parallel`         | The aggregation strategy to use: `Sequential` (targets executed one by one), `Parallel` (targets executed concurrently), or `FirstSuccess` (executes sequentially, stops on first successful target).                                                                      |
+| `Targets`            | `ConditionalAggregationTarget[]` | `[]`               | A list of conditional aggregation targets. Each target defines an upstream call and an optional JSONPath condition.                                                                                                                                                        |
+
+---
+
+### Conditional Aggregation Target
+
+Defined within an `AggregationPolicy`'s `"Targets"` array.
+
+```json
+{
+  "Id": "product-details",
+  "UpstreamUrl": "http://product-service/api/products/{productId}",
+  "JsonPathCondition": "$.productIds", // Only include this target if the incoming request body has a 'productIds' field
+  "Method": "GET",
+  "Headers": {
+    "X-Request-Source": "Gateway"
+  },
+  "Body": null,
+  "TimeoutSeconds": 30,
+  "Optional": false
+}
+```
+
+| Key                 | Type       | Default Value | Description                                                                                                                                                                                                                                                                      |
+| :------------------ | :--------- | :------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Id`                | `string`   | `Guid`        | A unique identifier for the aggregation target.                                                                                                                                                                                                                                  |
+| `UpstreamUrl`       | `string`   | `empty`       | The full URL of the upstream service endpoint to call. Can use path parameters from the parent `GatewayRoute`.                                                                                                                                                                   |
+| `JsonPathCondition` | `string`   | `null`        | An optional JSONPath expression. If provided, this target will only be included in the aggregation if the JSONPath evaluates to a non-empty result against the incoming request body. (e.g., `$.user.id`, `$.products[?(@.category == 'electronics')]`).                                 |
+| `Method`            | `enum`     | `GET`         | The HTTP method to use for the upstream call.                                                                                                                                                                                                                                    |
+| `Headers`           | `dictionary` | `null`        | Optional key-value pairs of headers to add to the outgoing request for this target.                                                                                                                                                                                              |
+| `Body`              | `string`   | `null`        | Optional request body for the outgoing request. Can contain static JSON or use JSONPath expressions to extract/transform data from the incoming request body (e.g., `"{ \"userId\": $.user.id }" `).                                                                                   |
+| `TimeoutSeconds`    | `int`      | `30`          | Timeout in seconds for this specific upstream call. (Between 1 and 300)                                                                                                                                                                                                          |
+| `Optional`          | `bool`     | `false`       | If `true`, a failure in reaching or processing this target will not cause the entire aggregation to fail. Its response will be included with an error status. If `false`, a failure will result in the entire aggregation request failing.                                            |
+
