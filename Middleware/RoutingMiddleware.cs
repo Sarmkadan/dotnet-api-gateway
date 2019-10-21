@@ -27,7 +27,7 @@ public sealed class RoutingMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context, RoutingService routingService)
+    public async Task InvokeAsync(HttpContext context, RoutingService routingService, ApiVersioningService apiVersioningService)
     {
         var path = context.Request.Path.Value ?? "/";
         var method = context.Request.Method;
@@ -38,6 +38,28 @@ public sealed class RoutingMiddleware
 
             if (route is not null)
             {
+                // Validate API versioning policy when configured
+                if (route.VersioningPolicy?.Enabled == true)
+                {
+                    if (!apiVersioningService.TryResolveVersion(context, route.VersioningPolicy, out var version))
+                    {
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        await context.Response.WriteAsJsonAsync(
+                            ApiVersioningService.BuildVersionErrorResponse(route.VersioningPolicy, null));
+                        return;
+                    }
+
+                    context.Items["ApiVersion"] = version;
+
+                    // Strip version segment from path so backends don't see it
+                    if (route.VersioningPolicy.StripVersionFromPath && version is not null)
+                    {
+                        var strippedPath = apiVersioningService.StripVersionFromPath(path, route.VersioningPolicy);
+                        context.Items["StrippedPath"] = strippedPath;
+                        _logger.LogDebug("Version {Version} resolved; path stripped to {StrippedPath}", version, strippedPath);
+                    }
+                }
+
                 context.Items["GatewayRoute"] = route;
                 _logger.LogDebug("Route '{RouteId}' found for {Method} {Path}", route.Id, method, path);
             }
