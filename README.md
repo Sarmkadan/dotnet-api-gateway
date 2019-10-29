@@ -97,12 +97,14 @@ dotnet run --configuration Release
 
 ### Method 2: Docker (Recommended)
 
-```bash
-# Build Docker image
-docker build -t dotnet-api-gateway:latest .
+To run the gateway with Docker, ensure you have Docker and Docker Compose installed.
 
-# Run with Docker Compose
-docker-compose up -d
+```bash
+# Build and start all services (Gateway + Redis + Backend)
+docker-compose up -d --build
+
+# The gateway will be available on http://localhost:8080
+# Redis will be available on localhost:6379
 ```
 
 ### Method 3: NuGet Package
