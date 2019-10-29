@@ -6,11 +6,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>DotNetApiGateway</AssemblyName>
     <RootNamespace>DotNetApiGateway</RootNamespace>
-    <PackageId>Zaiets.dotnet.api.gateway</PackageId>
-    <Version>2.0.2</Version>
+    <PackageId>DotNetApiGateway</PackageId>
+    <Version>1.0.0</Version>
     <Authors>Vladyslav Zaiets</Authors>
-    <Description>Lightweight API gateway for .NET - routing, rate limiting, JWT validation, request aggregation, circuit breaker</Description>
-    <PackageTags>api-gateway dotnet csharp routing rate-limiting jwt circuit-breaker</PackageTags>
+    <Description>A lightweight, extensible .NET API Gateway that provides routing, caching, and request transformation capabilities.</Description>
+    <PackageTags>dotnet;api-gateway;routing;caching;proxy</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/sarmkadan/dotnet-api-gateway</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sarmkadan/dotnet-api-gateway</RepositoryUrl>
