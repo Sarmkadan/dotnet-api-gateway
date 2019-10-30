@@ -84,7 +84,7 @@ Edit `appsettings.json` and add a route to an existing API:
 
 ```json
 {
-  "GatewayConfiguration": {
+  "DotnetApiGateway": {
     "Port": 5000,
     "Routes": [
       {
@@ -125,7 +125,7 @@ The `appsettings.json` file controls gateway behavior:
 
 ```json
 {
-  "GatewayConfiguration": {
+  "DotnetApiGateway": {
     "Port": 5000,
     "EnableHttps": false,
     "RequestTimeoutSeconds": 30,
@@ -206,7 +206,7 @@ Example `appsettings.Production.json`:
 
 ```json
 {
-  "GatewayConfiguration": {
+  "DotnetApiGateway": {
     "Port": 80,
     "EnableHttps": true,
     "CertificatePath": "/etc/ssl/certs/gateway.pfx",
@@ -301,7 +301,7 @@ Require valid JWT tokens:
 
 ```json
 {
-  "GatewayConfiguration": {
+  "DotnetApiGateway": {
     "JwtValidation": {
       "enabled": true,
       "secretKey": "your-secret-key-here",

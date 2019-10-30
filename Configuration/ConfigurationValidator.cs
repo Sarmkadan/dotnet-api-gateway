@@ -25,7 +25,7 @@ public sealed class ConfigurationValidator
     /// <summary>
     /// Validate gateway configuration.
     /// </summary>
-    public ValidationResult ValidateGatewayConfig(GatewayConfiguration config)
+    public ValidationResult ValidateGatewayConfig(DotnetApiGatewayOptions config)
     {
         var result = new ValidationResult();
 
@@ -35,14 +35,8 @@ public sealed class ConfigurationValidator
             return result;
         }
 
-        if (config.MaxRequestBodySize <= 0)
-            result.AddError("MaxRequestBodySize must be greater than 0");
-
-        if (config.DefaultTimeoutSeconds <= 0)
-            result.AddError("DefaultTimeoutSeconds must be greater than 0");
-
-        if (config.MaxConcurrentRequests <= 0)
-            result.AddError("MaxConcurrentRequests must be greater than 0");
+        // Additional complex validation can be added here if needed,
+        // though most simple validations are handled by DataAnnotations.
 
         return result;
     }

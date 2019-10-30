@@ -9,7 +9,7 @@ public static class IntegrationExample
     public static void ConfigureGatewayServices(IServiceCollection services)
     {
         // 1. Define configuration
-        var gatewayConfig = new GatewayConfiguration
+        var gatewayConfig = new DotnetApiGatewayOptions
         {
             ApplicationName = "IntegrationGateway",
             Version = "1.0.0"

@@ -51,7 +51,7 @@ With Circuit Breaker:
 
         var config = @"
 {
-  ""GatewayConfiguration"": {
+  ""DotnetApiGateway"": {
     ""Routes"": [
       {
         ""name"": ""critical-service"",

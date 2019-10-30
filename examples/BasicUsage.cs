@@ -6,7 +6,7 @@ using DotNetApiGateway.Configuration;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Configure the gateway with basic settings
-var gatewayConfig = new GatewayConfiguration
+var gatewayConfig = new DotnetApiGatewayOptions
 {
     ApplicationName = "BasicGateway",
     Version = "1.0.0",
