@@ -14,11 +14,11 @@ This document provides a comprehensive reference for configuring the .NET API Ga
 
 ## Gateway Configuration
 
-These settings are defined under the `"Gateway"` section in `appsettings.json` and control the overall behavior of the API Gateway.
+These settings are defined under the `"DotnetApiGateway"` section in `appsettings.json` and control the overall behavior of the API Gateway.
 
 ```json
 {
-  "Gateway": {
+  "DotnetApiGateway": {
     "ApplicationName": "DotNetApiGateway",
     "Version": "1.0.0",
     "MaxRequestBodySize": 10485760, // 10 * 1024 * 1024 bytes (10 MB)
