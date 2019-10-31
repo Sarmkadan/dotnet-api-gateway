@@ -49,6 +49,40 @@ The DotNet API Gateway provides all these capabilities with minimal overhead and
 
 For a detailed overview of the API Gateway's architecture, including its components and request lifecycle, please refer to the dedicated [Architecture Overview](docs/architecture.md) documentation.
 
+## Configuration Reference
+
+The `DotnetApiGateway` section in `appsettings.json` supports the following settings:
+
+| Setting | Type | Description | Default |
+|---|---|---|---|
+| `ApplicationName` | string | Name of the application | `DotNetApiGateway` |
+| `Version` | string | Version string (x.y.z) | `1.0.0` |
+| `MaxRequestBodySize` | int | Maximum request body size in bytes | `10485760` (10MB) |
+| `DefaultTimeoutSeconds` | int | Default timeout for HTTP calls | `30` |
+| `MaxConcurrentRequests` | int | Maximum concurrent requests | `100` |
+| `EnableCors` | bool | Enable CORS support | `true` |
+| `EnableCompression` | bool | Enable response compression | `true` |
+| `EnableLogging` | bool | Enable request logging | `true` |
+| `LogLevel` | string | Logging level | `Information` |
+| `EnableMetrics` | bool | Enable metrics export | `true` |
+| `EnableHealthCheck` | bool | Enable health check endpoint | `true` |
+| `HealthCheckPath` | string | Health check endpoint path | `/health` |
+
+### JWT Validation
+
+| Setting | Type | Description |
+|---|---|---|
+| `Enabled` | bool | Enable JWT validation |
+| `Issuer` | string | JWT token issuer |
+| `Audience` | string | JWT token audience |
+| `SecretKey` | string | JWT signing key |
+
+### Routes
+
+List of `GatewayRoute` objects defining routing, rate limiting, and policies. Refer to the source code for the `GatewayRoute` model structure.
+
+---
+
 ## Features
 
 - **Smart Routing**: Dynamic route matching, regex patterns, method-based routing  
