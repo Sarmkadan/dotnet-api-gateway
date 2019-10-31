@@ -13,12 +13,15 @@ public sealed class RoutingService
 {
     private readonly GatewayRouteRepository _routeRepository;
     private readonly LoadBalancingStrategy _loadBalancingStrategy;
+    private readonly ILogger<RoutingService> _logger;
     private int _roundRobinIndex = 0;
 
     public RoutingService(GatewayRouteRepository routeRepository,
+        ILogger<RoutingService> logger,
         LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.RoundRobin)
     {
         _routeRepository = routeRepository;
+        _logger = logger;
         _loadBalancingStrategy = loadBalancingStrategy;
     }
 
@@ -34,8 +37,12 @@ public sealed class RoutingService
         var route = await _routeRepository.FindRouteByPathAsync(path, method);
 
         if (route is null)
+        {
+            _logger.LogWarning("Route not found for {Method} {Path}", method, path);
             throw new RouteNotFoundException(path, method);
+        }
 
+        _logger.LogDebug("Route found: {RouteId} for {Method} {Path}", route.Id, method, path);
         return route;
     }
 
@@ -51,18 +58,24 @@ public sealed class RoutingService
         var healthyTargets = route.Targets.Where(t => t.IsHealthy).ToList();
 
         if (healthyTargets.Count == 0)
+        {
+            _logger.LogError("No healthy targets available for route {RouteName} ({RouteId})", route.Name, route.Id);
             throw new GatewayException(
                 $"No healthy targets available for route {route.Name}",
                 "NO_HEALTHY_TARGETS",
                 503);
+        }
 
-        return _loadBalancingStrategy switch
+        var target = _loadBalancingStrategy switch
         {
             LoadBalancingStrategy.RoundRobin => SelectTargetRoundRobin(healthyTargets),
             LoadBalancingStrategy.IpHash => SelectTargetByIpHash(healthyTargets, clientIp),
             LoadBalancingStrategy.LeastConnections => SelectTargetLeastConnections(healthyTargets),
             _ => SelectTargetRoundRobin(healthyTargets)
         };
+
+        _logger.LogDebug("Selected target {TargetUrl} for route {RouteId} using {Strategy}", target.UpstreamUrl, route.Id, _loadBalancingStrategy);
+        return target;
     }
 
     /// <summary>
@@ -118,17 +131,30 @@ public sealed class RoutingService
     public async Task<GatewayRoute> CreateRouteAsync(GatewayRoute route)
     {
         route.Validate();
-        return await _routeRepository.AddAsync(route);
+        var created = await _routeRepository.AddAsync(route);
+        _logger.LogInformation("Route created: {RouteId} ({RouteName})", created.Id, created.Name);
+        return created;
     }
 
     public async Task<GatewayRoute> UpdateRouteAsync(GatewayRoute route)
     {
         route.Validate();
-        return await _routeRepository.UpdateAsync(route);
+        var updated = await _routeRepository.UpdateAsync(route);
+        _logger.LogInformation("Route updated: {RouteId} ({RouteName})", updated.Id, updated.Name);
+        return updated;
     }
 
     public async Task<bool> DeleteRouteAsync(string routeId)
     {
-        return await _routeRepository.DeleteAsync(routeId);
+        var deleted = await _routeRepository.DeleteAsync(routeId);
+        if (deleted)
+        {
+            _logger.LogInformation("Route deleted: {RouteId}", routeId);
+        }
+        else
+        {
+            _logger.LogWarning("Attempted to delete non-existent route: {RouteId}", routeId);
+        }
+        return deleted;
     }
 }
