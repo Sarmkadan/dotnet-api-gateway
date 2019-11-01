@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Services;
 /// <summary>
 /// Service for managing circuit breaker state and preventing cascading failures
 /// </summary>
-public class CircuitBreakerService
+public sealed class CircuitBreakerService
 {
     private readonly CircuitBreakerRepository _repository;
 
@@ -21,7 +22,7 @@ public class CircuitBreakerService
     {
         var status = await _repository.GetByServiceNameAsync(serviceName);
 
-        if (status == null)
+        if (status is null)
         {
             status = new CircuitBreakerStatus { ServiceName = serviceName };
             await _repository.AddAsync(status);

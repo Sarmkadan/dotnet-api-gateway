@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ namespace DotNetApiGateway.Services;
 /// per unique request key, with all concurrent callers receiving the same response.
 /// Thread-safe; designed for singleton registration.
 /// </summary>
-public sealed class RequestCoalescingService : IDisposable
+public class RequestCoalescingService : IDisposable
 {
     private readonly ConcurrentDictionary<string, CoalescedEntry> _inFlight = new();
     private readonly ILogger<RequestCoalescingService> _logger;

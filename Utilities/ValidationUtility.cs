@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -78,7 +79,7 @@ public static class ValidationUtility
     /// </summary>
     public static bool IsValidLength(string value, int minLength, int maxLength)
     {
-        if (value == null)
+        if (value is null)
             return minLength == 0;
 
         return value.Length >= minLength && value.Length <= maxLength;
@@ -130,7 +131,7 @@ public static class ValidationUtility
     /// </summary>
     public static bool IsNull(object obj)
     {
-        return obj == null;
+        return obj is null;
     }
 
     /// <summary>
@@ -138,7 +139,7 @@ public static class ValidationUtility
     /// </summary>
     public static bool IsValidType<T>(object obj)
     {
-        return obj != null && obj is T;
+        return obj is not null && obj is T;
     }
 
     /// <summary>
@@ -146,7 +147,7 @@ public static class ValidationUtility
     /// </summary>
     public static bool IsNullOrEmpty<T>(IEnumerable<T> collection)
     {
-        return collection == null || !collection.Any();
+        return collection is null || !collection.Any();
     }
 
     /// <summary>
@@ -154,7 +155,7 @@ public static class ValidationUtility
     /// </summary>
     public static bool HasRequiredKeys<TKey, TValue>(Dictionary<TKey, TValue> dict, params TKey[] requiredKeys)
     {
-        if (dict == null)
+        if (dict is null)
             return false;
 
         return requiredKeys.All(k => dict.ContainsKey(k));

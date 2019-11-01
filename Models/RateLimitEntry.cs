@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Tracks rate limit counters for a client within a time window
 /// </summary>
-public class RateLimitEntry
+public sealed class RateLimitEntry
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string ClientId { get; set; } = string.Empty;

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -21,7 +22,7 @@ public static class CsvFormatter
     /// </summary>
     public static string FormatCsv<T>(IEnumerable<T> items) where T : class
     {
-        if (items == null)
+        if (items is null)
             return string.Empty;
 
         var itemList = items.ToList();
@@ -51,7 +52,7 @@ public static class CsvFormatter
     /// </summary>
     public static string FormatCsv(IEnumerable<Dictionary<string, object?>> items)
     {
-        if (items == null)
+        if (items is null)
             return string.Empty;
 
         var itemList = items.ToList();

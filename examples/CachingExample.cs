@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -15,7 +16,7 @@ namespace DotNetApiGateway.Examples;
 /// Example: Request/Response Caching Strategy
 /// Demonstrates caching configuration and performance benefits.
 /// </summary>
-public class CachingExample
+public sealed class CachingExample
 {
     public static async Task Main()
     {

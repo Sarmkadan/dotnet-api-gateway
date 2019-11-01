@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ namespace DotNetApiGateway.Examples;
 /// Example: Circuit Breaker Pattern
 /// Demonstrates how circuit breaker protects against cascading failures.
 /// </summary>
-public class CircuitBreakerExample
+public sealed class CircuitBreakerExample
 {
     public static async Task Main()
     {

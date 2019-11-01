@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Contains context about the incoming request for gateway processing
 /// </summary>
-public class RequestContext
+public sealed class RequestContext
 {
     public string RequestId { get; set; } = Guid.NewGuid().ToString();
     public string Path { get; set; } = string.Empty;
@@ -26,7 +27,7 @@ public class RequestContext
 
     public string GetClientIdentifier()
     {
-        if (ClientIdentity?.Id != null)
+        if (ClientIdentity?.Id is not null)
             return ClientIdentity.Id;
 
         return ClientIp;

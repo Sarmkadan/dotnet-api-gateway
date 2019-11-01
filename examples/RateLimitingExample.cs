@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -15,7 +16,7 @@ namespace DotNetApiGateway.Examples;
 /// Example: Rate Limiting Configuration and Testing
 /// Demonstrates how to configure and test rate limiting policies.
 /// </summary>
-public class RateLimitingExample
+public sealed class RateLimitingExample
 {
     public static async Task Main()
     {

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -75,7 +76,7 @@ app.MapPost("/gateway/rate-limit-info", async (
     DotNetApiGateway.Repositories.GatewayRouteRepository routeRepository) =>
 {
     var route = await routeRepository.GetByIdAsync(routeId);
-    if (route?.RateLimitPolicy == null)
+    if (route?.RateLimitPolicy is null)
         return Results.NotFound("Route or rate limit policy not found");
 
     var info = await rateLimitService.GetRateLimitInfoAsync(clientId, routeId, route.RateLimitPolicy);
@@ -92,7 +93,7 @@ app.MapFallback(async (HttpContext context, DotNetApiGateway.Services.RoutingSer
     {
         var route = await routingService.FindRouteAsync(path, method);
 
-        if (route == null)
+        if (route is null)
             return Results.NotFound(new { error = "Route not found", path, method });
 
         var target = routingService.SelectTarget(route, context.Connection.RemoteIpAddress?.ToString());

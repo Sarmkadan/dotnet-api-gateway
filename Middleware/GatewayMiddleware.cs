@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Middleware;
 /// <summary>
 /// Middleware for processing requests through the API gateway
 /// </summary>
-public class GatewayMiddleware
+public sealed class GatewayMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<GatewayMiddleware> _logger;

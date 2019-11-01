@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotNetApiGateway.Integration;
 /// Factory for creating and managing pooled HTTP client instances.
 /// Reuses HTTP clients for better performance and proper connection pooling.
 /// </summary>
-public class HttpClientFactory
+public sealed class HttpClientFactory
 {
     private readonly Dictionary<string, HttpClient> _clients = new();
     private readonly ReaderWriterLockSlim _lock = new();

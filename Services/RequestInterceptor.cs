@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -11,7 +12,7 @@ using DotNetApiGateway.Models;
 /// Service for intercepting and processing requests before forwarding.
 /// Allows adding custom headers, transforming body, and modifying query strings.
 /// </summary>
-public class RequestInterceptor
+public sealed class RequestInterceptor
 {
     private readonly Dictionary<string, RequestTransformer> _transformers = new();
     private readonly ReaderWriterLockSlim _lock = new();
@@ -27,7 +28,7 @@ public class RequestInterceptor
     /// </summary>
     public void RegisterTransformer(string routeId, RequestTransformer transformer)
     {
-        if (string.IsNullOrWhiteSpace(routeId) || transformer == null)
+        if (string.IsNullOrWhiteSpace(routeId) || transformer is null)
             return;
 
         _lock.EnterWriteLock();
@@ -71,17 +72,17 @@ public class RequestInterceptor
         HttpRequestMessage request,
         RequestContext context)
     {
-        if (request == null || context == null)
+        if (request is null || context is null)
             return request;
 
         var transformer = GetTransformer(routeId);
-        if (transformer == null)
+        if (transformer is null)
             return request;
 
         _logger.LogDebug("Intercepting request for route: {RouteId}", routeId);
 
         // Add custom headers
-        if (transformer.HeadersToAdd != null)
+        if (transformer.HeadersToAdd is not null)
         {
             foreach (var header in transformer.HeadersToAdd)
             {
@@ -90,7 +91,7 @@ public class RequestInterceptor
         }
 
         // Remove headers
-        if (transformer.HeadersToRemove != null)
+        if (transformer.HeadersToRemove is not null)
         {
             foreach (var headerName in transformer.HeadersToRemove)
             {
@@ -99,7 +100,7 @@ public class RequestInterceptor
         }
 
         // Transform body if applicable
-        if (request.Content != null && !string.IsNullOrWhiteSpace(transformer.BodyTemplate))
+        if (request.Content is not null && !string.IsNullOrWhiteSpace(transformer.BodyTemplate))
         {
             try
             {
@@ -160,7 +161,7 @@ public class RequestInterceptor
 /// <summary>
 /// Configuration for request transformation.
 /// </summary>
-public class RequestTransformer
+public sealed class RequestTransformer
 {
     /// <summary>
     /// Headers to add to request.

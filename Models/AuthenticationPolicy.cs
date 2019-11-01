@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Defines authentication and authorization requirements
 /// </summary>
-public class AuthenticationPolicy
+public sealed class AuthenticationPolicy
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public bool Enabled { get; set; } = false;
