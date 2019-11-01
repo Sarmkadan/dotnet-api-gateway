@@ -1,6 +1,7 @@
 [![Build](https://github.com/sarmkadan/dotnet-api-gateway/actions/workflows/build.yml/badge.svg)](https://github.com/sarmkadan/dotnet-api-gateway/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://hub.docker.com/r/sarmkadan/dotnet-api-gateway)
 
 # DotNet API Gateway
 
@@ -105,7 +106,7 @@ The DotNet API Gateway provides all these capabilities with minimal overhead and
 - **Circuit Breaker**: Fail-fast pattern, automatic recovery, configurable thresholds  
 - **Request Aggregation**: Combine multiple backend calls into single response  
 - **Retry Policies**: Exponential backoff, jitter, transient error handling  
-- **Request Transformation**: Header manipulation, payload transformation, compression  
+- **Request Transformation**: Header manipulation, payload transformation, compression, and **Lua scripting support**  
 - **Webhook Management**: Webhook registration, delivery, retry logic  
 - **Health Monitoring**: Service health checks, dependency monitoring  
 - **Metrics & Analytics**: Request metrics, latency tracking, error rates  
@@ -175,6 +176,18 @@ dotnet publish -c Release -o ./publish
 ```
 
 ## Quick Start
+
+### Docker Quick Start
+
+Run the gateway with Docker Compose:
+
+```bash
+# Build and start
+docker-compose up -d --build
+
+# Access gateway
+echo "Gateway running on http://localhost:8080"
+```
 
 ### 1. Basic Configuration
 
@@ -612,7 +625,7 @@ dotnet test tests/dotnet-api-gateway.Tests/dotnet-api-gateway.Tests.csproj
 dotnet test --logger "console;verbosity=detailed"
 ```
 
-The test suite covers circuit breaker state transitions, route matching, URL utility helpers, and rate limit accounting. Integration tests spin up an in-process gateway host — no external dependencies required.
+The test suite covers circuit breaker state transitions, route matching, URL utility helpers, rate limit accounting, and request transformation pipeline — including Lua scripting validation. Integration tests spin up an in-process gateway host — no external dependencies required.
 
 ## Related Projects
 
