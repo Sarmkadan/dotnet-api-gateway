@@ -625,7 +625,7 @@ dotnet test tests/dotnet-api-gateway.Tests/dotnet-api-gateway.Tests.csproj
 dotnet test --logger "console;verbosity=detailed"
 ```
 
-The test suite covers circuit breaker state transitions, route matching, URL utility helpers, rate limit accounting, and request transformation pipeline — including Lua scripting validation. Integration tests spin up an in-process gateway host — no external dependencies required.
+The test suite covers circuit breaker state transitions, route matching, URL utility helpers, rate limit accounting, and request transformation pipeline including Lua scripting validation. Integration tests spin up an in-process gateway host — no external dependencies required.
 
 ## Related Projects
 
