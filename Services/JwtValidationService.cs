@@ -65,9 +65,31 @@ public sealed class JwtValidationService
             ValidateIssuer = !string.IsNullOrWhiteSpace(policy.JwtIssuer),
             ValidateAudience = !string.IsNullOrWhiteSpace(policy.JwtAudience),
             ValidateLifetime = policy.ValidateExpiration,
-            ClockSkew = TimeSpan.FromSeconds(policy.ClockSkewSeconds)
-        };
+            ClockSkew = TimeSpan.Zero, // Set to zero, and handle skew for 'exp' in custom validator
+            LifetimeValidator = (notBefore, expires, securityToken, validationParameters) =>
+            {
+                if (validationParameters.ValidateLifetime)
+                {
+                    // Strictly validate 'nbf': token must not be used before 'notBefore'
+                    // Allow a very small tolerance (e.g., 1 second) for clock synchronization
+                    if (notBefore.HasValue && notBefore.Value > DateTime.UtcNow + TimeSpan.FromSeconds(1))
+                    {
+                        return false; // Token is not yet valid
+                    }
 
+                    // Validate 'exp': token must not have expired, applying the configured clock skew
+                    if (expires.HasValue)
+                    {
+                        var adjustedExpires = expires.Value + TimeSpan.FromSeconds(policy.ClockSkewSeconds);
+                        if (adjustedExpires < DateTime.UtcNow)
+                        {
+                            return false; // Token has expired after accounting for clock skew
+                        }
+                    }
+                }
+                return true; // Valid
+            }
+        };
         if (!string.IsNullOrWhiteSpace(policy.JwtSecret))
         {
             var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(policy.JwtSecret));
