@@ -9,7 +9,7 @@ namespace DotNetApiGateway.Services;
 /// <summary>
 /// Service for enforcing rate limiting on requests
 /// </summary>
-public sealed class RateLimitingService
+public sealed class RateLimitingService : IDisposable
 {
     private readonly RateLimitRepository _rateLimitRepository;
     private readonly Timer _cleanupTimer;
@@ -105,12 +105,19 @@ public sealed class RateLimitingService
 
     private void CleanupExpiredEntries(object? state)
     {
-        _ = _rateLimitRepository.CleanupExpiredEntriesAsync();
+        try
+        {
+            _ = _rateLimitRepository.CleanupExpiredEntriesAsync();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Timer fired after disposal - ignore
+        }
     }
 
     public void Dispose()
     {
-        _cleanupTimer?.Dispose();
+        _cleanupTimer.Dispose();
     }
 }
 
