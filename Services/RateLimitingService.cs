@@ -12,11 +12,13 @@ namespace DotNetApiGateway.Services;
 public sealed class RateLimitingService : IDisposable
 {
     private readonly RateLimitRepository _rateLimitRepository;
+    private readonly ILogger<RateLimitingService> _logger;
     private readonly Timer _cleanupTimer;
 
-    public RateLimitingService(RateLimitRepository rateLimitRepository)
+    public RateLimitingService(RateLimitRepository rateLimitRepository, ILogger<RateLimitingService> logger)
     {
         _rateLimitRepository = rateLimitRepository;
+        _logger = logger;
         _cleanupTimer = new Timer(CleanupExpiredEntries, null, TimeSpan.FromHours(1), TimeSpan.FromHours(1));
     }
 
@@ -103,15 +105,19 @@ public sealed class RateLimitingService : IDisposable
         }
     }
 
-    private void CleanupExpiredEntries(object? state)
+    private async void CleanupExpiredEntries(object? state)
     {
         try
         {
-            _ = _rateLimitRepository.CleanupExpiredEntriesAsync();
+            await _rateLimitRepository.CleanupExpiredEntriesAsync();
         }
         catch (ObjectDisposedException)
         {
             // Timer fired after disposal - ignore
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to cleanup expired rate limit entries");
         }
     }
 
