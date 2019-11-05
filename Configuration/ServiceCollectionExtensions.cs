@@ -23,8 +23,11 @@ public static class ServiceCollectionExtensions
 
         // Register repositories
         services.AddSingleton<GatewayRouteRepository>();
-        services.AddSingleton<RateLimitRepository>();
         services.AddSingleton<CircuitBreakerRepository>();
+
+        // Register rate limit stores and factory
+        services.AddSingleton<InMemoryRateLimitStore>();
+        services.AddSingleton<IRateLimitStoreFactory, RateLimitStoreFactory>();
 
         // Register services
         services.AddSingleton<RoutingService>();
