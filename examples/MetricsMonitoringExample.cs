@@ -380,8 +380,8 @@ Panel 6: Cache Performance
 ///          - targets: ['localhost:5000']
 ///
 /// Key Metrics to Watch:
-/// - Error rate should stay < 1%
-/// - P95 latency should be < 500ms
-/// - Cache hit rate should be > 80%
+/// - Error rate should stay &lt; 1%
+/// - P95 latency should be &lt; 500ms
+/// - Cache hit rate should be &gt; 80%
 /// - Circuit breaker should rarely open
 /// </summary>

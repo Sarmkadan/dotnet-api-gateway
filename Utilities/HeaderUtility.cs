@@ -128,7 +128,7 @@ public static class HeaderUtility
     /// Copy specific headers from source to destination headers.
     /// Skips headers in the exclude list (case-insensitive).
     /// </summary>
-    public static void CopyHeaders(IHeaderDictionary source, HttpRequestMessage destination, string[] excludeHeaders = null)
+    public static void CopyHeaders(IHeaderDictionary source, HttpRequestMessage destination, string[]? excludeHeaders = null)
     {
         excludeHeaders ??= new[] { "Host", "Transfer-Encoding", "Content-Length" };
 
