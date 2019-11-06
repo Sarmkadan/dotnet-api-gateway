@@ -100,6 +100,41 @@ public sealed class MetricsService
         }
     }
 
+    public Task<RouteMetrics?> GetRouteMetricsAsync(string routeId)
+        => Task.FromResult(GetRouteMetrics(routeId));
+
+    public Task<long> GetTotalRequestCountAsync()
+    {
+        _lock.EnterReadLock();
+        try { return Task.FromResult(_totalRequests); }
+        finally { _lock.ExitReadLock(); }
+    }
+
+    public Task<long> GetSuccessfulRequestCountAsync()
+    {
+        _lock.EnterReadLock();
+        try { return Task.FromResult(_totalSuccessfulRequests); }
+        finally { _lock.ExitReadLock(); }
+    }
+
+    public Task<long> GetFailedRequestCountAsync()
+    {
+        _lock.EnterReadLock();
+        try { return Task.FromResult(_totalFailedRequests); }
+        finally { _lock.ExitReadLock(); }
+    }
+
+    public Task<double> GetAverageResponseTimeAsync()
+    {
+        _lock.EnterReadLock();
+        try
+        {
+            var avg = _totalRequests > 0 ? _totalResponseTimeMs / _totalRequests : 0;
+            return Task.FromResult(avg);
+        }
+        finally { _lock.ExitReadLock(); }
+    }
+
     public void Reset()
     {
         _lock.EnterWriteLock();

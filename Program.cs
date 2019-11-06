@@ -54,8 +54,9 @@ app.MapGet("/gateway/info", () => new
     {
         health = "/health",
         routes = "/gateway/routes",
+        stats = "/gateway/stats",
         circuitBreakers = "/gateway/circuit-breakers",
-        rateLimits = "/api/GatewayManagement/rate-limits/{key}" // Updated info for new endpoint
+        rateLimits = "/api/GatewayManagement/rate-limits/{key}"
     }
 }).WithName("GatewayInfo");
 
@@ -72,6 +73,33 @@ app.MapGet("/gateway/circuit-breakers", async (DotNetApiGateway.Services.Circuit
     var statuses = await cbService.GetAllStatusesAsync();
     return Results.Ok(statuses);
 }).WithName("GetCircuitBreakers");
+
+// Request metrics dashboard endpoint
+app.MapGet("/gateway/stats", (DotNetApiGateway.Services.MetricsService metricsService) =>
+{
+    var metrics = metricsService.GetMetrics();
+    return Results.Ok(new
+    {
+        timestamp = DateTime.UtcNow,
+        uptime = metrics.Uptime.ToString(@"d\.hh\:mm\:ss"),
+        totalRequests = metrics.TotalRequests,
+        successfulRequests = metrics.SuccessfulRequests,
+        failedRequests = metrics.FailedRequests,
+        successRate = Math.Round(metrics.SuccessRate, 2),
+        averageResponseTimeMs = Math.Round(metrics.AverageResponseTimeMs, 2),
+        requestsPerSecond = Math.Round(metrics.GetRequestsPerSecond(), 2),
+        statusCodeDistribution = metrics.StatusCodeDistribution,
+        routes = metrics.RouteMetrics.Select(r => new
+        {
+            routeId = r.RouteId,
+            requestCount = r.RequestCount,
+            averageResponseTimeMs = Math.Round(r.GetAverageResponseTime(), 2),
+            minResponseTimeMs = r.MinResponseTimeMs,
+            maxResponseTimeMs = r.MaxResponseTimeMs,
+            lastRequestAt = r.LastRequestAt
+        })
+    });
+}).WithName("GetStats");
 
 // Default routing and forwarding endpoint
 app.MapFallback(async (

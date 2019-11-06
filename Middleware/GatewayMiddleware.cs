@@ -20,7 +20,7 @@ public sealed class GatewayMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context, RoutingService routingService)
+    public async Task InvokeAsync(HttpContext context, RoutingService routingService, MetricsService metricsService)
     {
         var requestContext = new RequestContext
         {
@@ -62,6 +62,11 @@ public sealed class GatewayMiddleware
         try
         {
             await _next(context);
+
+            var routeId = context.Items.TryGetValue("GatewayRoute", out var routeObj) && routeObj is GatewayRoute r
+                ? r.Id
+                : "unknown";
+            metricsService.RecordRequest(routeId, context.Response.StatusCode, requestContext.ElapsedTime());
 
             _logger.LogInformation(
                 "Request completed: {RequestId} Status: {StatusCode} Duration: {ElapsedMs}ms",
