@@ -22,6 +22,13 @@ public sealed class GatewayRoute
     public AuthenticationPolicy? AuthenticationPolicy { get; set; }
     public RequestCoalescingPolicy? RequestCoalescingPolicy { get; set; } // Added for completeness based on docs/config-ref
     public AggregationPolicy? AggregationPolicy { get; set; } // New: for conditional aggregation
+    public ApiVersioningPolicy? VersioningPolicy { get; set; }
+    /// <summary>
+    /// Ordered list of transformation rules applied to requests and responses on this route.
+    /// Request-phase rules run before the request is forwarded; response-phase rules run
+    /// before the upstream response is returned to the caller.
+    /// </summary>
+    public List<TransformationRule> TransformationRules { get; set; } = [];
     public bool IsActive { get; set; } = true;
     public int TimeoutSeconds { get; set; } = 30;
     public Dictionary<string, string> CustomHeaders { get; set; } = [];
