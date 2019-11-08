@@ -17,6 +17,9 @@
 - [Configuration](#configuration)
 - [Usage Examples](#usage-examples)
 - [API Reference](#api-reference)
+- [Admin Dashboard](#admin-dashboard)
+- [Request Transformation Rules](#request-transformation-rules)
+- [API Versioning](#api-versioning)
 - [Performance & Monitoring](#performance--monitoring)
 - [Benchmarks](#benchmarks)
 - [Troubleshooting](#troubleshooting)
@@ -53,7 +56,9 @@ For a detailed overview of the API Gateway's architecture, including its compone
 - **Circuit Breaker**: Fail-fast pattern, automatic recovery, configurable thresholds  
 - **Request Aggregation**: Combine multiple backend calls into single response  
 - **Retry Policies**: Exponential backoff, jitter, transient error handling  
-- **Request Transformation**: Header manipulation, payload transformation, compression, and **Lua scripting support**  
+- **Request Transformation Rules**: Rule-based header/query/path manipulation on requests and responses  
+- **API Versioning**: URL path, header, query parameter, and media-type versioning strategies  
+- **Admin Dashboard**: Built-in HTML dashboard with real-time metrics, route status, and circuit breaker overview  
 - **Webhook Management**: Webhook registration, delivery, retry logic  
 - **Health Monitoring**: Service health checks, dependency monitoring  
 - **Metrics & Analytics**: Request metrics, latency tracking, error rates  
@@ -364,6 +369,191 @@ GET /api/gateway/circuitbreaker/{routeName}
 
 ```bash
 GET /api/metrics
+```
+
+## Admin Dashboard
+
+The admin dashboard provides a real-time HTML overview of the gateway at a glance. It is intended for internal operators and does not require a separate frontend.
+
+### Endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /admin/dashboard` | Full HTML dashboard with live stats, route table, circuit breaker states, and status code distribution |
+| `GET /admin/dashboard/summary` | JSON summary suitable for monitoring agents and health-check scripts |
+
+### Dashboard Sections
+
+- **Summary cards** — total requests, success rate (colour-coded), average response time, active route count, open circuit breakers
+- **Routes table** — lists every configured route with path pattern, allowed methods, healthy target ratio, active status, and per-route request count / average latency
+- **Circuit Breakers table** — service name, current state (Closed / Half-Open / Open), failure and success counts, last error message, last failure time
+- **Status Code Distribution** — count and percentage share for every HTTP status code seen since gateway start
+
+The HTML page refreshes automatically every 30 seconds via `<meta http-equiv="refresh">`.
+
+### Example
+
+```bash
+# Open in a browser
+curl http://localhost:5000/admin/dashboard
+
+# Fetch JSON summary for a monitoring agent
+curl http://localhost:5000/admin/dashboard/summary
+```
+
+Sample JSON summary response:
+
+```json
+{
+  "gateway": { "name": "DotNetApiGateway", "version": "2.0.2", "uptime": "0.00:12:43" },
+  "requests": { "total": 15420, "successful": 15301, "failed": 119, "successRatePercent": 99.23, "averageResponseTimeMs": 4.7, "requestsPerSecond": 20.1 },
+  "routes": { "total": 6, "active": 6, "inactive": 0 },
+  "circuitBreakers": { "total": 3, "open": 0, "halfOpen": 0, "closed": 3 }
+}
+```
+
+---
+
+## Request Transformation Rules
+
+Transformation rules let you modify outgoing requests and incoming responses on a per-route basis without touching backend code.
+
+### Rule model
+
+Each rule is a `TransformationRule` object with the following fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Auto-generated UUID |
+| `description` | `string` | Human-readable label |
+| `phase` | `Request` / `Response` | When to apply the rule |
+| `operation` | See table below | What to do |
+| `key` | `string` | Header name, query param name, or path prefix |
+| `value` | `string?` | Target value (not required for Remove operations) |
+| `order` | `int` | Evaluation order — lower numbers run first |
+| `isEnabled` | `bool` | Set to `false` to skip without removing |
+
+### Supported operations
+
+| Operation | Phase | Description |
+|---|---|---|
+| `AddHeader` | Request / Response | Add a header if it does not already exist |
+| `SetHeader` | Request / Response | Set a header, replacing any existing value |
+| `RemoveHeader` | Request / Response | Delete a header |
+| `AddQueryParam` | Request | Add a query parameter if missing |
+| `SetQueryParam` | Request | Set a query parameter, replacing existing |
+| `RemoveQueryParam` | Request | Remove a query parameter from the URL |
+| `RewritePathPrefix` | Request | Replace a path prefix before forwarding |
+
+Rules on the same route are executed in ascending `order` value. Request-phase rules run before the request is forwarded to the backend; response-phase rules run after the upstream response is received and before it reaches the client.
+
+### Configuration example
+
+```csharp
+var route = new GatewayRoute
+{
+    Name = "Orders API",
+    PathPattern = "/v2/orders/*",
+    AllowedMethods = ["GET", "POST"],
+    Targets = [new RouteTarget { Name = "orders-svc", BaseUrl = "http://orders:8080" }],
+    TransformationRules =
+    [
+        // Add a tenant header to every forwarded request
+        new TransformationRule
+        {
+            Phase = TransformationPhase.Request,
+            Operation = TransformationOperation.SetHeader,
+            Key = "X-Tenant-Id",
+            Value = "acme",
+            Order = 1
+        },
+        // Strip the internal debug parameter
+        new TransformationRule
+        {
+            Phase = TransformationPhase.Request,
+            Operation = TransformationOperation.RemoveQueryParam,
+            Key = "debug",
+            Order = 2
+        },
+        // Hide the backend server banner from clients
+        new TransformationRule
+        {
+            Phase = TransformationPhase.Response,
+            Operation = TransformationOperation.RemoveHeader,
+            Key = "Server",
+            Order = 1
+        }
+    ]
+};
+```
+
+---
+
+## API Versioning
+
+The gateway supports four version-detection strategies that can be combined in priority order. Versioned routes can enforce a set of supported versions and optionally strip the version segment before forwarding so backends remain unaware of it.
+
+### Strategies
+
+| Strategy | Example |
+|---|---|
+| `UrlPath` | `/v2/orders` |
+| `Header` | `X-API-Version: 2` |
+| `QueryParameter` | `?api-version=2` |
+| `MediaType` | `Accept: application/vnd.myapi.v2+json` |
+
+Multiple strategies can be active simultaneously. The first match wins.
+
+### Policy model
+
+```csharp
+new ApiVersioningPolicy
+{
+    Enabled = true,
+    DefaultVersion = "1",          // used when no version is detected
+    RequireVersion = false,        // when true, missing version → HTTP 400
+    SupportedVersions = ["1", "2"],// empty = all parseable versions accepted
+    StripVersionFromPath = true,   // remove /vN segment before forwarding
+    Strategies = [VersioningStrategy.UrlPath, VersioningStrategy.Header],
+    HeaderName = "X-API-Version",
+    QueryParameterName = "api-version"
+}
+```
+
+### Configuration example
+
+```csharp
+var route = new GatewayRoute
+{
+    Name = "Versioned Users API",
+    PathPattern = "/v*/users/*",
+    AllowedMethods = ["GET"],
+    Targets = [new RouteTarget { Name = "users-svc", BaseUrl = "http://users:8080" }],
+    VersioningPolicy = new ApiVersioningPolicy
+    {
+        Enabled = true,
+        SupportedVersions = ["1", "2"],
+        DefaultVersion = "1",
+        StripVersionFromPath = true,
+        Strategies = [VersioningStrategy.UrlPath, VersioningStrategy.Header]
+    }
+};
+```
+
+A request to `GET /v2/users/123` will be forwarded as `GET /users/123` to the backend with the resolved version stored in `HttpContext.Items["ApiVersion"]`.
+
+### Error response (HTTP 400)
+
+When versioning is required but the requested version is invalid or unsupported, the gateway responds with:
+
+```json
+{
+  "error": "Unsupported or missing API version",
+  "attemptedVersion": "99",
+  "supportedVersions": ["1", "2"],
+  "defaultVersion": "1",
+  "strategies": ["UrlPath", "Header"]
+}
 ```
 
 ## Performance & Monitoring
