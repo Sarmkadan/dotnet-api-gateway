@@ -24,6 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="benchmarks\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="JsonCons.JsonPath" Version="1.1.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.13.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.4.0" />
