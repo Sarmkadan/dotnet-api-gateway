@@ -51,7 +51,9 @@ For a detailed overview of the API Gateway's architecture, including its compone
 
 ## Configuration Reference
 
-The `DotnetApiGateway` section in `appsettings.json` supports the following settings:
+The `DotnetApiGateway` section in `appsettings.json` supports the following settings.
+
+> **Note on Sensitive Data:** Do not store sensitive information like `JwtValidation:SecretKey` directly in `appsettings.json`. Use environment variables or a secure secret management system (e.g., Azure Key Vault, AWS Secrets Manager) to override these values at runtime.
 
 | Setting | Type | Description | Default |
 |---|---|---|---|
@@ -75,7 +77,7 @@ The `DotnetApiGateway` section in `appsettings.json` supports the following sett
 | `Enabled` | bool | Enable JWT validation |
 | `Issuer` | string | JWT token issuer |
 | `Audience` | string | JWT token audience |
-| `SecretKey` | string | JWT signing key |
+| `SecretKey` | string | JWT signing key (Sensitive) |
 
 ### Routes
 
