@@ -28,7 +28,7 @@ public sealed class RateLimitingExample
 
         var config = @"
 {
-  ""GatewayConfiguration"": {
+  ""DotnetApiGateway"": {
     ""Routes"": [
       {
         ""name"": ""public-api"",

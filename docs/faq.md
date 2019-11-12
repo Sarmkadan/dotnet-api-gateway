@@ -84,7 +84,7 @@ Use sticky sessions if you need session affinity. For distributed caching, use R
 
 ```json
 {
-  "GatewayConfiguration": {
+  "DotnetApiGateway": {
     "EnableHttps": true,
     "CertificatePath": "/path/to/cert.pfx",
     "CertificatePassword": "password"
@@ -416,7 +416,7 @@ watch -n 1 'curl -s http://localhost:5000/api/metrics | jq'
 
 ```json
 {
-  "GatewayConfiguration": {
+  "DotnetApiGateway": {
     "EnableRequestLogging": true
   }
 }

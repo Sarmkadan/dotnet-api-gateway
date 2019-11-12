@@ -290,7 +290,7 @@ spec:
 
 ```json
 {
-  "GatewayConfiguration": {
+  "DotnetApiGateway": {
     "Port": 80,
     "EnableHttps": true,
     "CertificatePath": "/app/certs/gateway.pfx",

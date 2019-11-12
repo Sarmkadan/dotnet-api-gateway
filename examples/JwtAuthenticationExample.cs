@@ -55,7 +55,7 @@ public sealed class JwtAuthenticationExample
 
         var gatewayConfig = @"
 {
-  ""GatewayConfiguration"": {
+  ""DotnetApiGateway"": {
     ""JwtValidation"": {
       ""enabled"": true,
       ""issuer"": ""https://auth.example.com"",

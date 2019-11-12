@@ -151,7 +151,7 @@ Create `appsettings.json`:
 
 ```json
 {
-  "GatewayConfiguration": {
+  "DotnetApiGateway": {
     "Port": 5000,
     "EnableHttps": false,
     "Routes": [
@@ -219,9 +219,12 @@ curl -H "Authorization: Bearer {token}" http://localhost:5000/api/users
 curl -H "X-Custom-Header: value" http://localhost:5000/api/users
 ```
 
-## Configuration Reference
+## Configuration
 
-For a comprehensive guide to all configuration options, including gateway-level settings and detailed policy configurations for routes (Authentication, Caching, Circuit Breaker, Rate Limiting, Request Coalescing), please see the [Configuration Reference](docs/configuration-reference.md) documentation.
+The gateway uses the `DotnetApiGateway` section in `appsettings.json` for configuration. See [appsettings.example.json](appsettings.example.json) for all configurable values and their default settings.
+
+For advanced settings and policy definitions, refer to the [Configuration Reference](docs/configuration-reference.md).
+
 
 ## Usage Examples
 
