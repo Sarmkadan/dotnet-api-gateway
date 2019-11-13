@@ -50,13 +50,13 @@ public sealed class DotnetApiGatewayOptions : IValidatableObject
 
     public List<Models.GatewayRoute> Routes { get; set; } = new();
 
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    public IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult> Validate(ValidationContext validationContext)
     {
         if (JwtValidation.Enabled)
         {
             if (string.IsNullOrWhiteSpace(JwtValidation.SecretKey) && string.IsNullOrWhiteSpace(JwtValidation.Issuer))
             {
-                yield return new ValidationResult("JwtValidation.SecretKey or JwtValidation.Issuer is required when JwtValidation is enabled.", new[] { nameof(JwtValidation) });
+                yield return new System.ComponentModel.DataAnnotations.ValidationResult("JwtValidation.SecretKey or JwtValidation.Issuer is required when JwtValidation is enabled.", new[] { nameof(JwtValidation) });
             }
         }
     }

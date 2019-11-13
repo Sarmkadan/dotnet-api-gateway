@@ -63,7 +63,7 @@ public sealed class ConfigurationValidator
         if (string.IsNullOrWhiteSpace(route.PathPattern))
             result.AddError("Route path pattern is required");
 
-        if (route.Targets is null || route.Targets.Count == 0)
+        if (route.Targets is null || route.Targets.Length == 0)
             result.AddError("Route must have at least one target");
         else
         {
@@ -76,7 +76,7 @@ public sealed class ConfigurationValidator
         }
 
         // Validate HTTP methods
-        if (route.AllowedMethods is not null && route.AllowedMethods.Count > 0)
+        if (route.AllowedMethods is not null && route.AllowedMethods.Length > 0)
         {
             foreach (var method in route.AllowedMethods)
             {
@@ -191,7 +191,7 @@ public sealed class ConfigurationValidator
             return result;
         }
 
-        if (policy.TtlSeconds <= 0)
+        if (policy.DurationSeconds <= 0)
             result.AddError("Cache TTL must be greater than 0");
 
         return result;

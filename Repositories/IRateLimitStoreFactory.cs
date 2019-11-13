@@ -11,7 +11,7 @@ namespace DotNetApiGateway.Repositories;
 /// <summary>
 /// Factory for resolving the correct IRateLimitStore implementation based on policy.
 /// </summary>
-public interface IRateLimitStoreFactory
+public interface IRateLimitStoreFactory : IDisposable
 {
     /// <summary>
     /// Gets an IRateLimitStore instance for the given rate limit policy.

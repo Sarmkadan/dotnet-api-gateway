@@ -5,6 +5,7 @@
 // =============================================================================
 
 using DotNetApiGateway.Constants;
+using HttpMethod = DotNetApiGateway.Constants.HttpMethod;
 
 namespace DotNetApiGateway.Models;
 

@@ -15,7 +15,7 @@ namespace DotNetApiGateway.Repositories;
 /// Redis-backed implementation of IRateLimitStore for distributed rate limiting.
 /// Supports FixedWindow, SlidingWindow, and TokenBucket strategies using Redis data structures.
 /// </summary>
-public sealed class RedisRateLimitStore : IRateLimitStore
+public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
 {
     private readonly ConnectionMultiplexer _redis;
     private readonly IDatabase _db;
@@ -27,6 +27,11 @@ public sealed class RedisRateLimitStore : IRateLimitStore
         _db = _redis.GetDatabase();
         _logger = logger;
         _logger.LogInformation("RedisRateLimitStore initialized with connection string: {ConnectionString}", connectionString);
+    }
+
+    public void Dispose()
+    {
+        _redis.Dispose();
     }
 
     public async Task<bool> IsRequestAllowedAsync(string key, RateLimitPolicy policy)

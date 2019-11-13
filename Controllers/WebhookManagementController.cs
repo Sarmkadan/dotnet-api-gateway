@@ -9,6 +9,9 @@ namespace DotNetApiGateway.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using DotNetApiGateway.Models;
 using DotNetApiGateway.Integration;
+using WebhookSubscription = DotNetApiGateway.Integration.WebhookSubscription;
+using WebhookRetryPolicy = DotNetApiGateway.Integration.WebhookRetryPolicy;
+using WebhookEvent = DotNetApiGateway.Integration.WebhookEvent;
 
 /// <summary>
 /// Manages webhook subscriptions and delivery configuration.

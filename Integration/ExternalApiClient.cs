@@ -7,6 +7,7 @@
 namespace DotNetApiGateway.Integration;
 
 using System.Net.Http.Json;
+using HttpMethod = System.Net.Http.HttpMethod;
 
 /// <summary>
 /// Generic HTTP client wrapper for calling external APIs with error handling and retry logic.
@@ -41,7 +42,7 @@ public sealed class ExternalApiClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadAsAsync<T>();
+                return await response.Content.ReadFromJsonAsync<T>();
             }
 
             _logger.LogWarning("GET request failed with status {StatusCode}: {Endpoint}", response.StatusCode, endpoint);
@@ -57,7 +58,7 @@ public sealed class ExternalApiClient
     /// <summary>
     /// Make POST request to external API endpoint.
     /// </summary>
-    public async Task<T?> PostAsync<TRequest, TResponse>(string endpoint, TRequest data)
+    public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest data)
         where TRequest : class
         where TResponse : class
     {
@@ -70,7 +71,7 @@ public sealed class ExternalApiClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadAsAsync<TResponse>();
+                return await response.Content.ReadFromJsonAsync<TResponse>();
             }
 
             _logger.LogWarning("POST request failed with status {StatusCode}: {Endpoint}", response.StatusCode, endpoint);
@@ -86,7 +87,7 @@ public sealed class ExternalApiClient
     /// <summary>
     /// Make PUT request to external API endpoint.
     /// </summary>
-    public async Task<T?> PutAsync<TRequest, TResponse>(string endpoint, TRequest data)
+    public async Task<TResponse?> PutAsync<TRequest, TResponse>(string endpoint, TRequest data)
         where TRequest : class
         where TResponse : class
     {
@@ -99,7 +100,7 @@ public sealed class ExternalApiClient
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadAsAsync<TResponse>();
+                return await response.Content.ReadFromJsonAsync<TResponse>();
             }
 
             _logger.LogWarning("PUT request failed with status {StatusCode}: {Endpoint}", response.StatusCode, endpoint);
@@ -140,11 +141,28 @@ public sealed class ExternalApiClient
     }
 
     /// <summary>
+    /// Send a pre-built HTTP request message, honoring the provided cancellation token.
+    /// </summary>
+    public async Task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("{Method} request to {Uri}", request.Method, request.RequestUri);
+            return await _httpClient.SendAsync(request, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Method} request failed: {Uri}", request.Method, request.RequestUri);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Make raw HTTP request with custom headers and content.
     /// </summary>
     public async Task<HttpResponseMessage> SendAsync(
         string endpoint,
-        HttpMethod method,
+        System.Net.Http.HttpMethod method,
         string? contentType = null,
         string? content = null,
         Dictionary<string, string>? headers = null)

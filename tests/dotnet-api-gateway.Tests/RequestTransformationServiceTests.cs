@@ -9,6 +9,7 @@ using DotNetApiGateway.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
+using HttpMethod = System.Net.Http.HttpMethod;
 
 namespace DotNetApiGateway.Tests;
 

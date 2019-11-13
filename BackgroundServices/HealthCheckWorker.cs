@@ -67,7 +67,7 @@ public class HealthCheckWorker : BackgroundService
             {
                 try
                 {
-                    var isHealthy = await _healthCheckService.CheckHealthAsync(target);
+                    var isHealthy = await _healthCheckService.CheckTargetHealthAsync(target);
 
                     if (!isHealthy)
                     {

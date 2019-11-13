@@ -6,6 +6,8 @@
 
 namespace DotNetApiGateway.Integration;
 
+using System.Net;
+
 /// <summary>
 /// Implements retry logic for HTTP requests with exponential backoff.
 /// Configurable for different failure scenarios and retry strategies.

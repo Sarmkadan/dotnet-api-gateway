@@ -53,7 +53,7 @@ public sealed class AdminDashboardController : ControllerBase
     {
         var metrics = _metricsService.GetMetrics();
         var routes = (await _routeRepository.GetAllAsync()).ToList();
-        var circuitBreakers = await _circuitBreakerService.GetAllStatusesAsync();
+        var circuitBreakers = (await _circuitBreakerService.GetAllStatusesAsync()).ToList();
 
         var html = BuildDashboardHtml(metrics, routes, circuitBreakers);
         return Content(html, "text/html");
@@ -68,7 +68,7 @@ public sealed class AdminDashboardController : ControllerBase
     {
         var metrics = _metricsService.GetMetrics();
         var routes = await _routeRepository.GetAllAsync();
-        var circuitBreakers = await _circuitBreakerService.GetAllStatusesAsync();
+        var circuitBreakers = (await _circuitBreakerService.GetAllStatusesAsync()).ToList();
 
         var openBreakers = circuitBreakers.Count(cb => cb.State == Constants.CircuitBreakerState.Open);
         var halfOpenBreakers = circuitBreakers.Count(cb => cb.State == Constants.CircuitBreakerState.HalfOpen);
@@ -284,7 +284,7 @@ public sealed class AdminDashboardController : ControllerBase
             sb.Append($"<td>{cb.FailureCount}</td>");
             sb.Append($"<td>{cb.SuccessCount}</td>");
             sb.Append($"<td style=\"color:#f87171;font-size:0.8rem\">{System.Net.WebUtility.HtmlEncode(cb.LastError ?? "—")}</td>");
-            sb.Append($"<td style=\"color:#64748b;font-size:0.8rem\">{(cb.LastFailureAt == default ? "—" : cb.LastFailureAt.ToString("u"))}</td>");
+            sb.Append($"<td style=\"color:#64748b;font-size:0.8rem\">{(cb.LastFailureAt is null ? "—" : cb.LastFailureAt.Value.ToString("u"))}</td>");
             sb.Append("</tr>");
         }
         return sb.ToString();

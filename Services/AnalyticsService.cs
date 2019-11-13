@@ -17,18 +17,15 @@ public sealed class AnalyticsService
 {
     private readonly MetricsService _metricsService;
     private readonly GatewayRouteRepository _routeRepository;
-    private readonly RateLimitRepository _rateLimitRepository;
     private readonly ILogger<AnalyticsService> _logger;
 
     public AnalyticsService(
         MetricsService metricsService,
         GatewayRouteRepository routeRepository,
-        RateLimitRepository rateLimitRepository,
         ILogger<AnalyticsService> logger)
     {
         _metricsService = metricsService;
         _routeRepository = routeRepository;
-        _rateLimitRepository = rateLimitRepository;
         _logger = logger;
     }
 

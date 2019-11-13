@@ -14,6 +14,8 @@ public sealed class RouteTarget
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Name { get; set; } = string.Empty;
     public string BaseUrl { get; set; } = string.Empty;
+    public int? Port { get; set; }
+    public int? TimeoutSeconds { get; set; }
     public int Weight { get; set; } = 1;
     public bool IsHealthy { get; set; } = true;
     public string? HealthCheckPath { get; set; }

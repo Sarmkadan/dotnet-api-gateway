@@ -4,6 +4,9 @@
 // CTO & Software Architect
 // =============================================================================
 
+using DotNetApiGateway.Middleware;
+using HttpMethod = System.Net.Http.HttpMethod;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure services
@@ -16,7 +19,7 @@ var gatewayConfig = new DotNetApiGateway.Configuration.DotnetApiGatewayOptions
     EnableMetrics = true
 };
 
-builder.Services.AddGatewayServices(gatewayConfig);
+builder.Services.AddGatewayServices(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
