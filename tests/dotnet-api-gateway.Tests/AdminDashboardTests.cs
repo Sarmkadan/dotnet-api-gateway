@@ -11,10 +11,18 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace DotNetApiGateway.Tests;
-
+/// <summary>
+/// Contains unit tests for the AdminDashboardSummary class.
+/// </summary>
 public sealed class AdminDashboardSummaryTests
 {
+    /// <summary>
+    /// Creates a new instance of the MetricsService class with the specified number of requests, successes, and failures.
+    /// </summary>
+    /// <param name="requests">The total number of requests.</param>
+    /// <param name="successes">The number of successful requests.</param>
+    /// <param name="failures">The number of failed requests.</param>
+    /// <returns>A new instance of the MetricsService class.</returns>
     private static MetricsService CreateMetricsService(int requests = 0, int successes = 0, int failures = 0)
     {
         var svc = new MetricsService();
@@ -25,6 +33,9 @@ public sealed class AdminDashboardSummaryTests
         return svc;
     }
 
+    /// <summary>
+    /// Verifies that the GetMetrics method returns the correct counts after recording requests.
+    /// </summary>
     [Fact]
     public void GetMetrics_AfterRequests_ReportsCorrectCounts()
     {
@@ -37,6 +48,9 @@ public sealed class AdminDashboardSummaryTests
         metrics.SuccessRate.Should().BeApproximately(80.0, 0.01);
     }
 
+    /// <summary>
+    /// Verifies that the GetMetrics method returns zero success rate when no requests have been recorded.
+    /// </summary>
     [Fact]
     public void GetMetrics_NoRequests_ReturnsZeroSuccessRate()
     {
@@ -48,6 +62,9 @@ public sealed class AdminDashboardSummaryTests
         metrics.AverageResponseTimeMs.Should().Be(0);
     }
 
+    /// <summary>
+    /// Verifies that the GetMetrics method tracks the status code distribution correctly.
+    /// </summary>
     [Fact]
     public void GetMetrics_StatusCodeDistribution_TracksEachCode()
     {
@@ -62,6 +79,9 @@ public sealed class AdminDashboardSummaryTests
         metrics.StatusCodeDistribution.Should().ContainKey(404).WhoseValue.Should().Be(1);
     }
 
+    /// <summary>
+    /// Verifies that the GetMetrics method calculates the per-route average response time correctly.
+    /// </summary>
     [Fact]
     public void GetMetrics_RouteMetrics_CalculatesPerRouteAverage()
     {
