@@ -21,6 +21,9 @@ public static class RequestCoalescingExtensions
     /// When <see langword="null"/> a default policy is used.
     /// </param>
     /// <returns>The same <see cref="IServiceCollection"/> for fluent chaining.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="policy"/> contains invalid configuration values.
     /// </exception>
@@ -28,10 +31,10 @@ public static class RequestCoalescingExtensions
     /// <code>
     /// builder.Services.AddRequestCoalescing(new RequestCoalescingPolicy
     /// {
-    ///     TimeoutMs           = 3000,
-    ///     MaxQueuedRequests   = 500,
-    ///     CoalescibleMethods  = ["GET"],
-    ///     IncludeQueryString  = true,
+    /// TimeoutMs = 3000,
+    /// MaxQueuedRequests = 500,
+    /// CoalescibleMethods = ["GET"],
+    /// IncludeQueryString = true,
     /// });
     /// </code>
     /// </example>
@@ -39,6 +42,8 @@ public static class RequestCoalescingExtensions
         this IServiceCollection services,
         RequestCoalescingPolicy? policy = null)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
         var resolved = policy ?? new RequestCoalescingPolicy();
         resolved.Validate();
 
