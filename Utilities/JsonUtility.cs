@@ -7,6 +7,7 @@
 namespace DotNetApiGateway.Utilities;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 /// <summary>
@@ -21,7 +22,7 @@ public static class JsonUtility
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter() }
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
 
     private static readonly JsonSerializerOptions PrettyOptions = new()
@@ -30,7 +31,7 @@ public static class JsonUtility
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter() }
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
 
     /// <summary>
@@ -80,9 +81,13 @@ public static class JsonUtility
     /// <summary>
     /// Parse JSON string to untyped JsonElement for dynamic access.
     /// Allows navigating unknown JSON structures.
+    /// Returns null for null, empty, whitespace, or invalid input.
     /// </summary>
     public static JsonElement? ParseDynamic(string json)
     {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
         try
         {
             return JsonSerializer.Deserialize<JsonElement>(json, DefaultOptions);
@@ -113,22 +118,52 @@ public static class JsonUtility
     }
 
     /// <summary>
-    /// Merge two JSON objects, with second object overwriting first.
+    /// Merge two JSON documents, with values from the second overwriting the first.
+    /// Objects are merged recursively; scalars and arrays are replaced.
+    /// Returns the first document unchanged if either input is not valid JSON.
     /// Useful for configuration or patch operations.
     /// </summary>
     public static string MergeJson(string json1, string json2)
     {
-        var obj1 = ParseDynamic(json1);
-        var obj2 = ParseDynamic(json2);
+        JsonNode? node1;
+        JsonNode? node2;
 
-        if (obj1 is null || obj2 is null)
+        try
+        {
+            node1 = JsonNode.Parse(json1);
+            node2 = JsonNode.Parse(json2);
+        }
+        catch (JsonException)
+        {
             return json1;
+        }
+        catch (ArgumentNullException)
+        {
+            return json1;
+        }
 
-        var doc1 = JsonDocument.Parse(json1);
-        var doc2 = JsonDocument.Parse(json2);
+        if (node1 is not JsonObject target || node2 is not JsonObject source)
+        {
+            // Non-object documents cannot be merged property-wise; second wins.
+            return json2;
+        }
 
-        // For simplicity, return second if both are valid
-        // In production, implement deep merge logic
-        return json2;
+        MergeInto(target, source);
+        return target.ToJsonString();
+    }
+
+    private static void MergeInto(JsonObject target, JsonObject source)
+    {
+        foreach (var property in source)
+        {
+            if (property.Value is JsonObject sourceChild && target[property.Key] is JsonObject targetChild)
+            {
+                MergeInto(targetChild, sourceChild);
+            }
+            else
+            {
+                target[property.Key] = property.Value?.DeepClone();
+            }
+        }
     }
 }

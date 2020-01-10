@@ -36,7 +36,8 @@ public sealed class JsonUtilityTests
 
         // Assert
         json.Should().NotBeNullOrEmpty();
-        json.Should().Contain("john"); // camelCase
+        json.Should().Contain("\"name\""); // camelCase property name
+        json.Should().Contain("John");
         json.Should().Contain("30");
     }
 
@@ -64,7 +65,8 @@ public sealed class JsonUtilityTests
 
         // Assert
         json.Should().Contain("\n"); // Contains newlines (formatted)
-        json.Should().Contain("bob");
+        json.Should().Contain("\"name\""); // camelCase property name
+        json.Should().Contain("Bob");
     }
 
     [Fact]
@@ -210,8 +212,9 @@ public sealed class JsonUtilityTests
 
         // Assert
         merged.Should().NotBeNullOrEmpty();
-        // Current implementation returns second JSON, so just verify it contains expected content
-        merged.Should().Contain("51");
+        merged.Should().Contain("Frank"); // kept from first document
+        merged.Should().Contain("51"); // overwritten by second document
+        merged.Should().Contain("NYC"); // added by second document
     }
 
     [Fact]
