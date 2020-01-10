@@ -16,6 +16,7 @@ namespace DotNetApiGateway.Repositories;
 public sealed class InMemoryRateLimitStore : IRateLimitStore
 {
     private readonly ConcurrentDictionary<string, RateLimitEntry> _storage = new();
+    private readonly ConcurrentDictionary<string, Queue<DateTime>> _slidingWindows = new();
     private readonly ILogger<InMemoryRateLimitStore> _logger;
 
     public InMemoryRateLimitStore(ILogger<InMemoryRateLimitStore> logger)
@@ -26,7 +27,8 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
     public Task<bool> IsRequestAllowedAsync(string key, RateLimitPolicy policy)
     {
         var now = DateTime.UtcNow;
-        var entry = _storage.GetOrAdd(key, _ => new RateLimitEntry { Key = key, LastRequest = now });
+        // A token bucket must start full, otherwise the very first request is denied.
+        var entry = _storage.GetOrAdd(key, _ => new RateLimitEntry { Key = key, LastRequest = now, Tokens = policy.BurstSize });
 
         lock (entry)
         {
@@ -40,38 +42,37 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
                 }
 
                 entry.Count++;
-                var allowed = entry.Count <= GetLimitForFixedWindow(policy, windowStart);
+                var allowed = entry.Count <= GetLimitForFixedWindow(policy);
                 if (!allowed)
                 {
                     _logger.LogWarning("FixedWindow rate limit exceeded for key {Key}. Count: {Count}, Limit: {Limit}",
-                        key, entry.Count, GetLimitForFixedWindow(policy, windowStart));
+                        key, entry.Count, GetLimitForFixedWindow(policy));
                 }
                 return Task.FromResult(allowed);
             }
             else if (policy.Strategy == RateLimitStrategy.SlidingWindow)
             {
-                // This is a simplified sliding window. For true sliding window,
-                // each request timestamp needs to be stored and aggregated.
-                // For a more robust solution, a distributed store like Redis is recommended.
-                // Here, we approximate by checking against the RequestsPerMinute.
-                // A true in-memory sliding window would require a different data structure
-                // e.g., a Queue of timestamps, and counting those within the window.
-                // For simplicity and given the issue context, we'll keep this basic.
-
+                // True sliding window: track individual request timestamps and count
+                // only those inside the trailing one-minute window.
+                var window = _slidingWindows.GetOrAdd(key, _ => new Queue<DateTime>());
                 var windowStart = now.AddMinutes(-1);
-                if (entry.LastRequest < windowStart)
+
+                while (window.Count > 0 && window.Peek() < windowStart)
+                    window.Dequeue();
+
+                var allowed = window.Count < policy.RequestsPerMinute;
+                if (allowed)
                 {
-                    entry.Count = 0; // Reset count if outside 1-minute window
-                    entry.LastRequest = now;
+                    window.Enqueue(now);
                 }
-                
-                entry.Count++;
-                var allowed = entry.Count <= policy.RequestsPerMinute;
-                if (!allowed)
+                else
                 {
-                    _logger.LogWarning("SlidingWindow rate limit approximated exceeded for key {Key}. Count: {Count}, Limit: {Limit}",
-                        key, entry.Count, policy.RequestsPerMinute);
+                    _logger.LogWarning("SlidingWindow rate limit exceeded for key {Key}. Count: {Count}, Limit: {Limit}",
+                        key, window.Count, policy.RequestsPerMinute);
                 }
+
+                entry.Count = window.Count;
+                entry.LastRequest = now;
                 return Task.FromResult(allowed);
             }
             else // TokenBucket
@@ -79,11 +80,13 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
                 var timeElapsed = (now - entry.LastRequest).TotalSeconds;
                 entry.Tokens += timeElapsed * (policy.RequestsPerMinute / 60.0); // Refill tokens based on rpm
                 entry.Tokens = Math.Min(entry.Tokens, policy.BurstSize); // Cap at burst size
+                // Advance the refill anchor even when the request is denied; otherwise
+                // repeated denied requests re-credit the same elapsed interval.
+                entry.LastRequest = now;
 
                 if (entry.Tokens >= 1)
                 {
                     entry.Tokens--;
-                    entry.LastRequest = now;
                     return Task.FromResult(true);
                 }
                 _logger.LogWarning("TokenBucket rate limit exceeded for key {Key}. Tokens: {Tokens}, BurstSize: {BurstSize}",
@@ -106,7 +109,6 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
         lock (entry)
         {
             int remainingTimeSeconds = 0;
-            int currentLimit = policy.RequestsPerMinute; // Default for display
 
             if (policy.Strategy == RateLimitStrategy.FixedWindow)
             {
@@ -114,7 +116,6 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
                 var windowStart = GetFixedWindowStart(now, windowLengthSeconds);
                 var windowEnd = windowStart.AddSeconds(windowLengthSeconds);
                 remainingTimeSeconds = (int)Math.Max(0, (windowEnd - now).TotalSeconds);
-                currentLimit = GetLimitForFixedWindow(policy, windowStart);
 
                 // Update entry's count if window expired
                 if (entry.LastRequest < windowStart)
@@ -124,24 +125,37 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
             }
             else if (policy.Strategy == RateLimitStrategy.SlidingWindow)
             {
-                var windowDuration = TimeSpan.FromMinutes(1); // Assumed 1-minute window for simplified sliding window
-                remainingTimeSeconds = (int)Math.Max(0, (windowDuration - (now - entry.LastRequest)).TotalSeconds);
-            }
-            else // TokenBucket
-            {
-                // Refill tokens for display purposes (not affecting actual IsRequestAllowedAsync logic)
-                var timeElapsed = (now - entry.LastRequest).TotalSeconds;
-                entry.Tokens = Math.Min(entry.Tokens + (timeElapsed * (policy.RequestsPerMinute / 60.0)), policy.BurstSize);
+                // Time until the oldest tracked request leaves the trailing one-minute window.
+                if (_slidingWindows.TryGetValue(key, out var window))
+                {
+                    var windowStart = now.AddMinutes(-1);
+                    while (window.Count > 0 && window.Peek() < windowStart)
+                        window.Dequeue();
 
-                if (entry.Tokens >= 1)
+                    entry.Count = window.Count;
+                    remainingTimeSeconds = window.Count > 0
+                        ? (int)Math.Max(0, (window.Peek().AddMinutes(1) - now).TotalSeconds)
+                        : 0;
+                }
+            }
+            var projectedTokens = entry.Tokens;
+            if (policy.Strategy == RateLimitStrategy.TokenBucket)
+            {
+                // Project the refilled token count for display without mutating the entry,
+                // so the read path does not interfere with IsRequestAllowedAsync refill accounting.
+                var timeElapsed = (now - entry.LastRequest).TotalSeconds;
+                projectedTokens = Math.Min(entry.Tokens + (timeElapsed * (policy.RequestsPerMinute / 60.0)), policy.BurstSize);
+
+                if (projectedTokens >= 1)
                 {
                     remainingTimeSeconds = 1; // Indicate tokens are available
                 }
                 else
                 {
-                    remainingTimeSeconds = (int)Math.Ceiling(1 / (policy.RequestsPerMinute / 60.0)); // Time until next token
+                    remainingTimeSeconds = policy.RequestsPerMinute > 0
+                        ? (int)Math.Ceiling(1 / (policy.RequestsPerMinute / 60.0)) // Time until next token
+                        : GetPolicyWindowSeconds(policy);
                 }
-                currentLimit = policy.BurstSize;
             }
 
             return Task.FromResult(new RateLimitEntry
@@ -149,7 +163,7 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
                 Key = key,
                 Count = entry.Count,
                 LastRequest = entry.LastRequest,
-                Tokens = entry.Tokens,
+                Tokens = projectedTokens,
                 RemainingTimeSeconds = remainingTimeSeconds
             });
         }
@@ -165,6 +179,7 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
     public Task ResetKeyAsync(string key)
     {
         _storage.TryRemove(key, out _);
+        _slidingWindows.TryRemove(key, out _);
         _logger.LogInformation("Rate limit for key {Key} reset in-memory.", key);
         return Task.CompletedTask;
     }
@@ -172,6 +187,7 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
     public Task ResetAllAsync()
     {
         _storage.Clear();
+        _slidingWindows.Clear();
         _logger.LogInformation("All in-memory rate limits reset.");
         return Task.CompletedTask;
     }
@@ -181,15 +197,10 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
         return new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute / (windowSeconds / 60) * (windowSeconds / 60), 0, DateTimeKind.Utc);
     }
 
-    private int GetLimitForFixedWindow(RateLimitPolicy policy, DateTime windowStart)
+    private static int GetLimitForFixedWindow(RateLimitPolicy policy)
     {
-        // Decide whether to use RequestsPerMinute or RequestsPerHour based on current window.
-        // This is a simplification; a more robust fixed window would align to full minutes/hours for its window.
-        // For per-minute, align to minute. For per-hour, align to hour.
-        if ((DateTime.UtcNow - windowStart).TotalMinutes < 60) // If within the current hour, apply minute limit first
-        {
-            return policy.RequestsPerMinute;
-        }
-        return policy.RequestsPerHour;
+        // The window length is chosen from the configured limits: a per-minute limit
+        // uses a one-minute window, otherwise the per-hour limit applies.
+        return policy.RequestsPerMinute > 0 ? policy.RequestsPerMinute : policy.RequestsPerHour;
     }
 }
