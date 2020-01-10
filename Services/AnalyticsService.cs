@@ -83,8 +83,6 @@ public sealed class AnalyticsService
             Samples = new List<PerformanceSample>()
         };
 
-        // In production, you would track metrics in time-series database
-        // For now, provide current snapshot
         var avgResponseTime = await _metricsService.GetAverageResponseTimeAsync();
         var totalRequests = await _metricsService.GetTotalRequestCountAsync();
 
