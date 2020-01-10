@@ -2,184 +2,132 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetApiGateway.Utilities;
 
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 
 /// <summary>
 /// Validation helpers for JsonUtility to ensure data integrity before serialization/deserialization operations.
-/// Provides validation methods for all JsonUtility method parameters.
+/// Provides validation methods for JSON input parameters.
 /// </summary>
 public static class JsonUtilityValidation
 {
-    /// <summary>
-    /// Validates serialization input parameters.
-    /// Returns a list of human-readable problem descriptions.
-    /// </summary>
-    public static IReadOnlyList<string> Validate<T>(T obj) where T : class
-    {
-        var problems = new List<string>();
-
-        if (obj is null)
-        {
-            problems.Add("Serialization input object is null");
-        }
-
-        return problems.AsReadOnly();
-    }
+    private const int MaxJsonSizeBytes = 10_000_000; // 10MB limit
 
     /// <summary>
-    /// Validates serialization input parameters with pretty formatting.
-    /// Returns a list of human-readable problem descriptions.
+    /// Validates serialization input object.
     /// </summary>
-    public static IReadOnlyList<string> ValidatePretty<T>(T obj) where T : class
+    /// <typeparam name="T">The type of object to validate.</typeparam>
+    /// <param name="obj">The object to validate.</param>
+    /// <returns>A list of human-readable problem descriptions; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="obj"/> is null.</exception>
+    public static IReadOnlyList<string> Validate<T>(T obj)
     {
-        return Validate(obj);
+        ArgumentNullException.ThrowIfNull(obj);
+        return Array.Empty<string>();
     }
 
     /// <summary>
     /// Validates deserialization input JSON string.
-    /// Returns a list of human-readable problem descriptions.
     /// </summary>
+    /// <param name="json">The JSON string to validate.</param>
+    /// <returns>A list of human-readable problem descriptions; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="json"/> is empty or whitespace.</exception>
     public static IReadOnlyList<string> ValidateDeserialize(string json)
     {
-        var problems = new List<string>();
+        ArgumentNullException.ThrowIfNull(json);
 
         if (string.IsNullOrWhiteSpace(json))
         {
-            problems.Add("JSON input string is null, empty, or whitespace");
+            return new[] { "JSON input string is null, empty, or whitespace" };
         }
-        else if (json.Length > 10_000_000) // 10MB limit
+
+        if (json.Length > MaxJsonSizeBytes)
         {
-            problems.Add("JSON input string exceeds maximum size limit of 10MB");
+            return new[] { $"JSON input string exceeds maximum size limit of {MaxJsonSizeBytes:N0} bytes" };
         }
 
-        return problems.AsReadOnly();
-    }
-
-    /// <summary>
-    /// Validates safe deserialization input JSON string.
-    /// Returns a list of human-readable problem descriptions.
-    /// </summary>
-    public static IReadOnlyList<string> ValidateDeserializeSafe(string json)
-    {
-        return ValidateDeserialize(json);
-    }
-
-    /// <summary>
-    /// Validates dynamic JSON parsing input.
-    /// Returns a list of human-readable problem descriptions.
-    /// </summary>
-    public static IReadOnlyList<string> ValidateParseDynamic(string json)
-    {
-        return ValidateDeserialize(json);
-    }
-
-    /// <summary>
-    /// Validates JSON string for validity check.
-    /// Returns a list of human-readable problem descriptions.
-    /// </summary>
-    public static IReadOnlyList<string> ValidateIsValidJson(string json)
-    {
-        return ValidateDeserialize(json);
+        return Array.Empty<string>();
     }
 
     /// <summary>
     /// Validates JSON merge operation inputs.
-    /// Returns a list of human-readable problem descriptions.
     /// </summary>
+    /// <param name="json1">The first JSON string to validate.</param>
+    /// <param name="json2">The second JSON string to validate.</param>
+    /// <returns>A list of human-readable problem descriptions; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if either <paramref name="json1"/> or <paramref name="json2"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if either <paramref name="json1"/> or <paramref name="json2"/> is empty or whitespace.</exception>
     public static IReadOnlyList<string> ValidateMergeJson(string json1, string json2)
     {
+        ArgumentNullException.ThrowIfNull(json1);
+        ArgumentNullException.ThrowIfNull(json2);
+
         var problems = new List<string>();
 
         if (string.IsNullOrWhiteSpace(json1))
         {
             problems.Add("First JSON string for merge is null, empty, or whitespace");
         }
-        else if (json1.Length > 10_000_000) // 10MB limit
+        else if (json1.Length > MaxJsonSizeBytes)
         {
-            problems.Add("First JSON string for merge exceeds maximum size limit of 10MB");
+            problems.Add($"First JSON string for merge exceeds maximum size limit of {MaxJsonSizeBytes:N0} bytes");
         }
 
         if (string.IsNullOrWhiteSpace(json2))
         {
             problems.Add("Second JSON string for merge is null, empty, or whitespace");
         }
-        else if (json2.Length > 10_000_000) // 10MB limit
+        else if (json2.Length > MaxJsonSizeBytes)
         {
-            problems.Add("Second JSON string for merge exceeds maximum size limit of 10MB");
+            problems.Add($"Second JSON string for merge exceeds maximum size limit of {MaxJsonSizeBytes:N0} bytes");
         }
 
-        return problems.AsReadOnly();
+        return problems;
     }
 
     /// <summary>
-    /// Checks if serialization input is valid.
+    /// Checks if serialization input object is valid.
     /// </summary>
-    public static bool IsValid<T>(T obj) where T : class
-    {
-        return Validate(obj).Count == 0;
-    }
-
-    /// <summary>
-    /// Checks if serialization input with pretty formatting is valid.
-    /// </summary>
-    public static bool IsValidPretty<T>(T obj) where T : class
-    {
-        return IsValid(obj);
-    }
+    /// <typeparam name="T">The type of object to validate.</typeparam>
+    /// <param name="obj">The object to validate.</param>
+    /// <returns>True if valid; otherwise false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="obj"/> is null.</exception>
+    public static bool IsValid<T>(T obj) => Validate(obj).Count == 0;
 
     /// <summary>
     /// Checks if deserialization input JSON is valid.
     /// </summary>
-    public static bool IsValidDeserialize(string json)
-    {
-        return ValidateDeserialize(json).Count == 0;
-    }
-
-    /// <summary>
-    /// Checks if safe deserialization input JSON is valid.
-    /// </summary>
-    public static bool IsValidDeserializeSafe(string json)
-    {
-        return IsValidDeserialize(json);
-    }
-
-    /// <summary>
-    /// Checks if dynamic JSON parsing input is valid.
-    /// </summary>
-    public static bool IsValidParseDynamic(string json)
-    {
-        return IsValidDeserialize(json);
-    }
-
-    /// <summary>
-    /// Checks if JSON validity check input is valid.
-    /// </summary>
-    public static bool IsValidIsValidJson(string json)
-    {
-        return IsValidDeserialize(json);
-    }
+    /// <param name="json">The JSON string to validate.</param>
+    /// <returns>True if valid; otherwise false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="json"/> is empty or whitespace.</exception>
+    public static bool IsValidDeserialize(string json) => ValidateDeserialize(json).Count == 0;
 
     /// <summary>
     /// Checks if JSON merge operation inputs are valid.
     /// </summary>
-    public static bool IsValidMergeJson(string json1, string json2)
-    {
-        return ValidateMergeJson(json1, json2).Count == 0;
-    }
+    /// <param name="json1">The first JSON string to validate.</param>
+    /// <param name="json2">The second JSON string to validate.</param>
+    /// <returns>True if valid; otherwise false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if either <paramref name="json1"/> or <paramref name="json2"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if either <paramref name="json1"/> or <paramref name="json2"/> is empty or whitespace.</exception>
+    public static bool IsValidMergeJson(string json1, string json2) => ValidateMergeJson(json1, json2).Count == 0;
 
     /// <summary>
-    /// Ensures that serialization input is valid, throwing ArgumentException with detailed problems if not.
+    /// Ensures that serialization input object is valid, throwing <see cref="ArgumentException"/> with detailed problems if not.
     /// </summary>
-    public static void EnsureValid<T>(T obj) where T : class
+    /// <typeparam name="T">The type of object to validate.</typeparam>
+    /// <param name="obj">The object to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="obj"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if validation fails.</exception>
+    public static void EnsureValid<T>(T obj)
     {
         var problems = Validate(obj);
-
         if (problems.Count > 0)
         {
             throw new ArgumentException(
@@ -188,20 +136,14 @@ public static class JsonUtilityValidation
     }
 
     /// <summary>
-    /// Ensures that serialization input with pretty formatting is valid.
-    /// </summary>
-    public static void EnsureValidPretty<T>(T obj) where T : class
-    {
-        EnsureValid(obj);
-    }
-
-    /// <summary>
     /// Ensures that deserialization input JSON is valid.
     /// </summary>
+    /// <param name="json">The JSON string to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="json"/> is empty, whitespace, or exceeds size limit.</exception>
     public static void EnsureValidDeserialize(string json)
     {
         var problems = ValidateDeserialize(json);
-
         if (problems.Count > 0)
         {
             throw new ArgumentException(
@@ -210,36 +152,15 @@ public static class JsonUtilityValidation
     }
 
     /// <summary>
-    /// Ensures that safe deserialization input JSON is valid.
-    /// </summary>
-    public static void EnsureValidDeserializeSafe(string json)
-    {
-        EnsureValidDeserialize(json);
-    }
-
-    /// <summary>
-    /// Ensures that dynamic JSON parsing input is valid.
-    /// </summary>
-    public static void EnsureValidParseDynamic(string json)
-    {
-        EnsureValidDeserialize(json);
-    }
-
-    /// <summary>
-    /// Ensures that JSON validity check input is valid.
-    /// </summary>
-    public static void EnsureValidIsValidJson(string json)
-    {
-        EnsureValidDeserialize(json);
-    }
-
-    /// <summary>
     /// Ensures that JSON merge operation inputs are valid.
     /// </summary>
+    /// <param name="json1">The first JSON string to validate.</param>
+    /// <param name="json2">The second JSON string to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if either <paramref name="json1"/> or <paramref name="json2"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if validation fails.</exception>
     public static void EnsureValidMergeJson(string json1, string json2)
     {
         var problems = ValidateMergeJson(json1, json2);
-
         if (problems.Count > 0)
         {
             throw new ArgumentException(
