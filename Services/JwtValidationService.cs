@@ -32,12 +32,16 @@ public sealed class JwtValidationService
         try
         {
             var validationParameters = BuildValidationParameters(policy);
-            var principal = _tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+            _tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
 
             if (validatedToken is not JwtSecurityToken jwtToken)
                 throw new AuthenticationException("Invalid token format", "Bearer", "Not a JWT");
 
-            return ExtractClientIdentity(jwtToken, principal);
+            return ExtractClientIdentity(jwtToken);
+        }
+        catch (AuthenticationException)
+        {
+            throw;
         }
         catch (SecurityTokenException ex)
         {
@@ -90,6 +94,15 @@ public sealed class JwtValidationService
                 return true; // Valid
             }
         };
+
+        if (!policy.ValidateSignature)
+        {
+            // Skip cryptographic signature verification entirely: read the token
+            // without checking its signature instead of resolving a signing key.
+            parameters.RequireSignedTokens = false;
+            parameters.SignatureValidator = (token, _) => new JwtSecurityToken(token);
+        }
+
         if (!string.IsNullOrWhiteSpace(policy.JwtSecret))
         {
             var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(policy.JwtSecret));
@@ -105,33 +118,43 @@ public sealed class JwtValidationService
         return parameters;
     }
 
-    private ClientIdentity ExtractClientIdentity(JwtSecurityToken jwtToken, System.Security.Claims.ClaimsPrincipal principal)
+    private static ClientIdentity ExtractClientIdentity(JwtSecurityToken jwtToken)
     {
+        // Read the raw (unmapped) JWT payload claims. The default JwtSecurityTokenHandler
+        // remaps short claim names on the principal ("sub" becomes ClaimTypes.NameIdentifier,
+        // "role" becomes ClaimTypes.Role, and so on), so lookups against the principal by
+        // short name silently miss.
+        var subject = FindRawClaim(jwtToken, "sub");
+        var nameId = FindRawClaim(jwtToken, "nameid", System.Security.Claims.ClaimTypes.NameIdentifier);
+
         var identity = new ClientIdentity
         {
-            Id = principal.FindFirst("sub")?.Value ?? principal.FindFirst("nameid")?.Value ?? Guid.NewGuid().ToString(),
-            Subject = principal.FindFirst("sub")?.Value,
-            Name = principal.FindFirst("name")?.Value,
-            Email = principal.FindFirst("email")?.Value,
+            Id = subject ?? nameId ?? Guid.NewGuid().ToString(),
+            Subject = subject,
+            Name = FindRawClaim(jwtToken, "name", "unique_name", System.Security.Claims.ClaimTypes.Name),
+            Email = FindRawClaim(jwtToken, "email", System.Security.Claims.ClaimTypes.Email),
             IssuedAt = jwtToken.IssuedAt
         };
 
         // Extract scopes
-        var scopeClaim = principal.FindFirst("scope")?.Value ?? principal.FindFirst("scp")?.Value;
+        var scopeClaim = FindRawClaim(jwtToken, "scope", "scp");
         if (!string.IsNullOrWhiteSpace(scopeClaim))
         {
             identity.Scopes = scopeClaim.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         }
 
-        // Extract roles
-        var roleClaims = principal.FindAll("role") ?? principal.FindAll("roles");
-        if (roleClaims.Any())
+        // Extract roles from the common claim names
+        var roles = jwtToken.Claims
+            .Where(c => c.Type is "role" or "roles" || c.Type == System.Security.Claims.ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToArray();
+        if (roles.Length > 0)
         {
-            identity.Roles = roleClaims.Select(c => c.Value).ToArray();
+            identity.Roles = roles;
         }
 
         // Extract other claims
-        foreach (var claim in principal.Claims.Where(c => !IsStandardClaim(c.Type)))
+        foreach (var claim in jwtToken.Claims.Where(c => !IsStandardClaim(c.Type)))
         {
             identity.Claims[claim.Type] = claim.Value;
         }
@@ -143,8 +166,25 @@ public sealed class JwtValidationService
         return identity;
     }
 
+    private static string? FindRawClaim(JwtSecurityToken jwtToken, params string[] claimTypes)
+    {
+        foreach (var claimType in claimTypes)
+        {
+            var value = jwtToken.Claims.FirstOrDefault(c => string.Equals(c.Type, claimType, StringComparison.Ordinal))?.Value;
+            if (value is not null)
+                return value;
+        }
+
+        return null;
+    }
+
     private static bool IsStandardClaim(string claimType)
     {
-        return claimType is "sub" or "iss" or "aud" or "iat" or "exp" or "nbf" or "scope" or "scp" or "name" or "email" or "role" or "roles";
+        return claimType is "sub" or "iss" or "aud" or "iat" or "exp" or "nbf" or "jti" or "scope" or "scp"
+            or "name" or "unique_name" or "nameid" or "email" or "role" or "roles"
+            || claimType == System.Security.Claims.ClaimTypes.NameIdentifier
+            || claimType == System.Security.Claims.ClaimTypes.Name
+            || claimType == System.Security.Claims.ClaimTypes.Email
+            || claimType == System.Security.Claims.ClaimTypes.Role;
     }
 }
