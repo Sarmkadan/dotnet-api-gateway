@@ -5,18 +5,16 @@ using System.Collections.Generic;
 namespace dotnet_api_gateway.Tests
 {
     /// <summary>
-    /// Extension methods for verifying admin dashboard summary test results.
+    /// Provides extension methods for asserting properties of <see cref="AdminDashboardSummaryTests"/> instances in unit tests.
     /// </summary>
     public static class AdminDashboardSummaryTestsExtensions
     {
         /// <summary>
-        /// Verifies that the average request duration falls within the specified range.
+        /// Verifies that the average request duration falls within the specified inclusive range.
         /// </summary>
-        /// <param name="tests">The test instance.</param>
-        /// <param name="min">The minimum acceptable duration in milliseconds.</param>
-        /// <param name="max">The maximum acceptable duration in milliseconds.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="min"/> is negative or <paramref name="max"/> is less than <paramref name="min"/>.</exception>
+        /// <param name="tests">The <see cref="AdminDashboardSummaryTests"/> instance containing request data.</param>
+        /// <param name="min">The minimum acceptable average duration in milliseconds.</param>
+        /// <param name="max">The maximum acceptable average duration in milliseconds.</param>
         public static void VerifyAverageRequestDurationIsWithinRange(this AdminDashboardSummaryTests tests, double min, double max)
         {
             ArgumentNullException.ThrowIfNull(tests);
@@ -30,13 +28,11 @@ namespace dotnet_api_gateway.Tests
         }
 
         /// <summary>
-        /// Verifies that the status code distribution contains the expected count for the specified status code.
+        /// Verifies that the status‑code distribution contains the expected count for a given HTTP status code.
         /// </summary>
-        /// <param name="tests">The test instance.</param>
-        /// <param name="statusCode">The HTTP status code to check.</param>
-        /// <param name="expectedCount">The expected count of occurrences.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="expectedCount"/> is negative.</exception>
+        /// <param name="tests">The <see cref="AdminDashboardSummaryTests"/> instance containing the distribution.</param>
+        /// <param name="statusCode">The HTTP status code to look up.</param>
+        /// <param name="expectedCount">The expected number of occurrences for <paramref name="statusCode"/>.</param>
         public static void VerifyStatusCodeDistributionContains(this AdminDashboardSummaryTests tests, int statusCode, long expectedCount)
         {
             ArgumentNullException.ThrowIfNull(tests);
@@ -55,10 +51,9 @@ namespace dotnet_api_gateway.Tests
         }
 
         /// <summary>
-        /// Verifies that route metrics are not empty.
+        /// Verifies that the collection of route metrics is not empty, i.e., at least one route has been recorded.
         /// </summary>
-        /// <param name="tests">The test instance.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is null.</exception>
+        /// <param name="tests">The <see cref="AdminDashboardSummaryTests"/> instance containing route metrics.</param>
         public static void VerifyRouteMetricsAreNotEmpty(this AdminDashboardSummaryTests tests)
         {
             ArgumentNullException.ThrowIfNull(tests);
