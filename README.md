@@ -1,66 +1,29 @@
 // ... (rest of the file remains the same)
 
-## ConditionalAggregationTargetExtensions
+## CircuitBreakerRepositoryExtensions
 
-The `ConditionalAggregationTargetExtensions` class provides a set of extension methods for creating and customizing conditional aggregation targets. These targets are used to dynamically route requests to different backend services based on specific conditions, such as headers, JSON body, HTTP method, and timeout.
+The `CircuitBreakerRepositoryExtensions` class provides a set of extension methods for working with circuit breaker repositories. These extensions enable you to retrieve circuit breaker statuses by service name, state, or other criteria, as well as update and reset circuit breakers.
 
-The following example demonstrates how to use these extensions to create a conditional aggregation target:
-
-```csharp
-var target = ConditionalAggregationTarget.WithHeader("*", "accept", "application/json")
-    .WithJsonBody("product", "electronics")
-    .WithMethod(HttpMethod.Get)
-    .WithTimeout(TimeSpan.FromSeconds(10));
-
-bool shouldUse = ConditionalAggregationTarget.ShouldUse(target, new HttpContext());
-
-ConditionalAggregationTarget validatedTarget = ConditionalAggregationTarget.ValidateWithDetails(target);
-
-// Clone the target for reuse
-var clonedTarget = validatedTarget.Clone();
-```
-
-## CachingExampleExtensions
-
-`CachingExampleExtensions` offers a set of helper methods for working with the in‑memory `SimpleResponseCache` used in the examples. It simplifies creating cache keys, retrieving or creating cached values (both synchronously and asynchronously), clearing the cache, and inspecting cache statistics.
+The following example demonstrates how to use these extensions:
 
 ```csharp
-using System;
-using System.Threading.Tasks;
+var circuitBreakerRepository = new CircuitBreakerRepository();
 
-// Create a cache instance that can be shared across calls
-var cache = CachingExampleExtensions.CreateCache();
+// Get circuit breaker status by service name or default
+var status = await CircuitBreakerRepositoryExtensions.GetByServiceNameOrDefaultAsync(circuitBreakerRepository, "my-service");
 
-// Build a deterministic cache key for a request
-string userKey = CachingExampleExtensions.CreateCacheKey("user", "123");
+// Get all open circuit breakers
+var openCircuits = await CircuitBreakerRepositoryExtensions.GetOpenCircuitsAsync(circuitBreakerRepository);
 
-// Synchronously get a cached value or create it if it does not exist
-var user = CachingExampleExtensions.GetOrCreate(
-    cache,
-    userKey,
-    () => new User { Id = 123, Name = "Alice" });
+// Update a batch of circuit breakers
+await CircuitBreakerRepositoryExtensions.UpdateBatchAsync(circuitBreakerRepository, new[]
+{
+    new CircuitBreakerStatus { ServiceName = "service1", State = CircuitBreakerState.Open },
+    new CircuitBreakerStatus { ServiceName = "service2", State = CircuitBreakerState.Closed },
+});
 
-// Asynchronously get a cached value or create it if it does not exist
-var product = await CachingExampleExtensions.GetOrCreateAsync<Product>(
-    cache,
-    CachingExampleExtensions.CreateCacheKey("product", "456"),
-    async () =>
-    {
-        // Simulate an async operation, e.g., a database call
-        await Task.Delay(50);
-        return new Product { Id = 456, Name = "Gadget" };
-    });
-
-// Retrieve cache statistics (hits, misses, entry count, etc.)
-CacheStatistics stats = CachingExampleExtensions.GetStatistics(cache);
-Console.WriteLine($"Cache entries: {stats.EntryCount}, Hits: {stats.HitCount}");
-
-// Clear all cached entries; the method returns the number of removed items
-int removed = CachingExampleExtensions.ClearAll(cache);
-Console.WriteLine($"{removed} cache entries were cleared");
-
-// The underlying cache also exposes the current entry count directly
-Console.WriteLine($"Current entry count via property: {cache.EntryCount}");
+// Reset all circuit breakers to closed
+await CircuitBreakerRepositoryExtensions.ResetAllToClosedAsync(circuitBreakerRepository);
 ```
 
 ## ... (rest of the file remains the same)
