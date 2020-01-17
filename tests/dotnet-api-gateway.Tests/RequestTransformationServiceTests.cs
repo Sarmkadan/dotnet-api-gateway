@@ -13,8 +13,15 @@ using HttpMethod = System.Net.Http.HttpMethod;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Tests for the RequestTransformationService class.
+/// </summary>
 public sealed class RequestTransformationServiceTests
 {
+    /// <summary>
+    /// Creates a new instance of the RequestTransformationService class for testing purposes.
+    /// </summary>
+    /// <returns>A new instance of the RequestTransformationService class.</returns>
     private static RequestTransformationService CreateService() =>
         new(NullLogger<RequestTransformationService>.Instance);
 
@@ -22,6 +29,9 @@ public sealed class RequestTransformationServiceTests
     // Request-phase tests
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method appends a header when it is missing.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_AddHeader_AppendsHeaderWhenMissing()
     {
@@ -45,6 +55,9 @@ public sealed class RequestTransformationServiceTests
         values!.First().Should().Be("acme");
     }
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method does not overwrite an existing header.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_AddHeader_DoesNotOverwriteExistingHeader()
     {
@@ -69,6 +82,9 @@ public sealed class RequestTransformationServiceTests
         values!.First().Should().Be("original");
     }
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method replaces an existing header.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_SetHeader_ReplacesExistingHeader()
     {
@@ -93,6 +109,9 @@ public sealed class RequestTransformationServiceTests
         values!.Should().ContainSingle().Which.Should().Be("new-id");
     }
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method deletes a header.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_RemoveHeader_DeletesHeader()
     {
@@ -115,6 +134,9 @@ public sealed class RequestTransformationServiceTests
         request.Headers.Contains("X-Internal-Secret").Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method appends a query parameter to the URI.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_SetQueryParam_AppendsParamToUri()
     {
@@ -137,6 +159,9 @@ public sealed class RequestTransformationServiceTests
         request.RequestUri!.Query.Should().Contain("env=production");
     }
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method drops a query parameter from the URI.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_RemoveQueryParam_DropsParamFromUri()
     {
@@ -159,6 +184,9 @@ public sealed class RequestTransformationServiceTests
         request.RequestUri.Query.Should().Contain("q=foo");
     }
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method replaces a matching prefix in the path.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_RewritePathPrefix_ReplacesMatchingPrefix()
     {
@@ -181,6 +209,9 @@ public sealed class RequestTransformationServiceTests
         request.RequestUri!.AbsolutePath.Should().Be("/api/v2/orders/123");
     }
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method skips a disabled rule.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_DisabledRule_IsSkipped()
     {
@@ -204,6 +235,9 @@ public sealed class RequestTransformationServiceTests
         request.Headers.Contains("X-Should-Not-Appear").Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method does not apply a response-phase rule to a request.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_ResponsePhaseRule_IsNotAppliedToRequest()
     {
@@ -230,6 +264,9 @@ public sealed class RequestTransformationServiceTests
     // Response-phase tests
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that the ApplyResponseRules method injects a header into a response.
+    /// </summary>
     [Fact]
     public void ApplyResponseRules_SetHeader_InjectsHeaderIntoResponse()
     {
@@ -253,6 +290,9 @@ public sealed class RequestTransformationServiceTests
         values!.First().Should().Be("2.0");
     }
 
+    /// <summary>
+    /// Tests that the ApplyResponseRules method deletes a header from a response.
+    /// </summary>
     [Fact]
     public void ApplyResponseRules_RemoveHeader_DeletesHeaderFromResponse()
     {
@@ -279,6 +319,9 @@ public sealed class RequestTransformationServiceTests
     // Rule ordering
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that the ApplyRequestRules method applies ordered rules in order.
+    /// </summary>
     [Fact]
     public void ApplyRequestRules_OrderedRules_AreAppliedInOrder()
     {
@@ -303,6 +346,9 @@ public sealed class RequestTransformationServiceTests
     // Validation
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that the TransformationRule Validate method throws an exception when the key is empty.
+    /// </summary>
     [Fact]
     public void TransformationRule_Validate_ThrowsWhenKeyEmpty()
     {
@@ -317,6 +363,9 @@ public sealed class RequestTransformationServiceTests
         act.Should().Throw<ArgumentException>().WithMessage("*Key cannot be empty*");
     }
 
+    /// <summary>
+    /// Tests that the TransformationRule Validate method throws an exception when the value is missing for an add operation.
+    /// </summary>
     [Fact]
     public void TransformationRule_Validate_ThrowsWhenValueMissingForAdd()
     {
@@ -331,6 +380,9 @@ public sealed class RequestTransformationServiceTests
         act.Should().Throw<ArgumentException>().WithMessage("*Value is required*");
     }
 
+    /// <summary>
+    /// Tests that the TransformationRule Validate method does not throw an exception for a remove operation.
+    /// </summary>
     [Fact]
     public void TransformationRule_Validate_DoesNotThrowForRemove()
     {
