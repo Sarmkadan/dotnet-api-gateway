@@ -8,10 +8,14 @@ using DotNetApiGateway.Utilities;
 using FluentAssertions;
 using Xunit;
 
-namespace DotNetApiGateway.Tests;
-
+/// <summary>
+/// Tests for the DateTimeUtility class.
+/// </summary>
 public sealed class DateTimeUtilityTests
 {
+    /// <summary>
+    /// Tests that ToUnixTimestamp returns the correct timestamp for a valid date.
+    /// </summary>
     [Fact]
     public void ToUnixTimestamp_ValidDate_ReturnsCorrectTimestamp()
     {
@@ -26,6 +30,9 @@ public sealed class DateTimeUtilityTests
         result.Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests that FromUnixTimestamp returns the correct date for a valid timestamp.
+    /// </summary>
     [Fact]
     public void FromUnixTimestamp_ValidTimestamp_ReturnsCorrectDate()
     {
@@ -40,6 +47,9 @@ public sealed class DateTimeUtilityTests
         result.Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests that FormatDateTime returns the correct formatted string for a valid date.
+    /// </summary>
     [Fact]
     public void FormatDateTime_ValidDate_ReturnsFormattedString()
     {
@@ -54,6 +64,9 @@ public sealed class DateTimeUtilityTests
         result.Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests that GetRelativeTime returns "just now" for a recent date.
+    /// </summary>
     [Fact]
     public void GetRelativeTime_RecentDate_ReturnsJustNow()
     {
@@ -64,6 +77,9 @@ public sealed class DateTimeUtilityTests
         result.Should().Be("just now");
     }
 
+    /// <summary>
+    /// Tests that IsPast returns true for a past date.
+    /// </summary>
     [Fact]
     public void IsPast_PastDate_ReturnsTrue()
     {
@@ -74,6 +90,9 @@ public sealed class DateTimeUtilityTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that IsFuture returns true for a future date.
+    /// </summary>
     [Fact]
     public void IsFuture_FutureDate_ReturnsTrue()
     {
@@ -84,6 +103,9 @@ public sealed class DateTimeUtilityTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that IsSameDay returns true for two dates that are the same day but different times.
+    /// </summary>
     [Fact]
     public void IsSameDay_SameDayDifferentTime_ReturnsTrue()
     {
@@ -98,6 +120,9 @@ public sealed class DateTimeUtilityTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that GetBusinessDaysBetween returns the correct number of business days between two dates.
+    /// </summary>
     [Fact]
     public void GetBusinessDaysBetween_OneWeekRange_ReturnsFive()
     {
