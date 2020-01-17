@@ -10,8 +10,15 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Tests for the GatewayRoute class.
+/// </summary>
 public sealed class GatewayRouteTests
 {
+    /// <summary>
+    /// Creates a valid RouteTarget instance.
+    /// </summary>
+    /// <returns>A valid RouteTarget instance.</returns>
     private static RouteTarget ValidTarget() => new()
     {
         Name = "backend",
@@ -20,6 +27,10 @@ public sealed class GatewayRouteTests
         HealthCheckIntervalSeconds = 60
     };
 
+    /// <summary>
+    /// Creates a valid GatewayRoute instance.
+    /// </summary>
+    /// <returns>A valid GatewayRoute instance.</returns>
     private static GatewayRoute ValidRoute() => new()
     {
         Name = "UserRoute",
@@ -31,6 +42,9 @@ public sealed class GatewayRouteTests
 
     // --- MatchesPath ---
 
+    /// <summary>
+    /// Verifies that the MatchesPath method returns true for an exact static path.
+    /// </summary>
     [Fact]
     public void MatchesPath_ExactStaticPath_ReturnsTrue()
     {
@@ -41,6 +55,9 @@ public sealed class GatewayRouteTests
         route.MatchesPath("/api/health").Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that the MatchesPath method returns true for a wildcard segment.
+    /// </summary>
     [Fact]
     public void MatchesPath_WildcardSegment_MatchesAnyValue()
     {
@@ -52,6 +69,9 @@ public sealed class GatewayRouteTests
         route.MatchesPath("/api/orders/details").Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that the MatchesPath method returns true for a parameter segment.
+    /// </summary>
     [Fact]
     public void MatchesPath_ParameterSegment_MatchesVariableId()
     {
@@ -63,6 +83,9 @@ public sealed class GatewayRouteTests
         route.MatchesPath("/api/users/some-uuid").Should().BeTrue();
     }
 
+    /// <summary>
+    /// Verifies that the MatchesPath method returns false for a path with too many segments.
+    /// </summary>
     [Fact]
     public void MatchesPath_TooManySegments_ReturnsFalse()
     {
@@ -70,6 +93,9 @@ public sealed class GatewayRouteTests
         route.MatchesPath("/api/users/42/orders").Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that the MatchesPath method returns false for a path with too few segments.
+    /// </summary>
     [Fact]
     public void MatchesPath_TooFewSegments_ReturnsFalse()
     {
@@ -77,6 +103,9 @@ public sealed class GatewayRouteTests
         route.MatchesPath("/api/users").Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that the MatchesPath method returns false for a static segment mismatch.
+    /// </summary>
     [Fact]
     public void MatchesPath_StaticSegmentMismatch_ReturnsFalse()
     {
@@ -84,6 +113,9 @@ public sealed class GatewayRouteTests
         route.MatchesPath("/api/orders").Should().BeFalse();
     }
 
+    /// <summary>
+    /// Verifies that the MatchesPath method returns true for a static segment case insensitive match.
+    /// </summary>
     [Fact]
     public void MatchesPath_StaticSegmentsCaseInsensitive_ReturnsTrue()
     {
@@ -93,6 +125,11 @@ public sealed class GatewayRouteTests
 
     // --- SupportsMethod ---
 
+    /// <summary>
+    /// Verifies that the SupportsMethod method returns true for a supported method.
+    /// </summary>
+    /// <param name="method">The method to check.</param>
+    /// <param name="expected">The expected result.</param>
     [Theory]
     [InlineData("GET", true)]
     [InlineData("get", true)]
@@ -110,6 +147,9 @@ public sealed class GatewayRouteTests
 
     // --- Validate ---
 
+    /// <summary>
+    /// Verifies that the Validate method does not throw for a valid route.
+    /// </summary>
     [Fact]
     public void Validate_AllValid_DoesNotThrow()
     {
@@ -118,6 +158,9 @@ public sealed class GatewayRouteTests
         act.Should().NotThrow();
     }
 
+    /// <summary>
+    /// Verifies that the Validate method throws an ArgumentException for a missing name.
+    /// </summary>
     [Fact]
     public void Validate_MissingName_ThrowsArgumentException()
     {
@@ -132,6 +175,9 @@ public sealed class GatewayRouteTests
         act.Should().Throw<ArgumentException>().WithMessage("*name*");
     }
 
+    /// <summary>
+    /// Verifies that the Validate method throws an ArgumentException for a whitespace name.
+    /// </summary>
     [Fact]
     public void Validate_WhitespaceName_ThrowsArgumentException()
     {
@@ -141,6 +187,9 @@ public sealed class GatewayRouteTests
         act.Should().Throw<ArgumentException>();
     }
 
+    /// <summary>
+    /// Verifies that the Validate method throws an ArgumentException for a missing path pattern.
+    /// </summary>
     [Fact]
     public void Validate_MissingPathPattern_ThrowsArgumentException()
     {
@@ -150,6 +199,9 @@ public sealed class GatewayRouteTests
         act.Should().Throw<ArgumentException>();
     }
 
+    /// <summary>
+    /// Verifies that the Validate method throws an ArgumentException for no allowed methods.
+    /// </summary>
     [Fact]
     public void Validate_NoAllowedMethods_ThrowsArgumentException()
     {
@@ -159,6 +211,9 @@ public sealed class GatewayRouteTests
         act.Should().Throw<ArgumentException>();
     }
 
+    /// <summary>
+    /// Verifies that the Validate method throws an ArgumentException for no targets.
+    /// </summary>
     [Fact]
     public void Validate_NoTargets_ThrowsArgumentException()
     {
@@ -173,6 +228,9 @@ public sealed class GatewayRouteTests
         act.Should().Throw<ArgumentException>().WithMessage("*target*");
     }
 
+    /// <summary>
+    /// Verifies that the Validate method throws an ArgumentException for a timeout below the minimum.
+    /// </summary>
     [Fact]
     public void Validate_TimeoutBelowMinimum_ThrowsArgumentException()
     {
@@ -185,6 +243,9 @@ public sealed class GatewayRouteTests
         act.Should().Throw<ArgumentException>().WithMessage("*Timeout*");
     }
 
+    /// <summary>
+    /// Verifies that the Validate method throws an ArgumentException for a timeout above the maximum.
+    /// </summary>
     [Fact]
     public void Validate_TimeoutAboveMaximum_ThrowsArgumentException()
     {
@@ -194,6 +255,9 @@ public sealed class GatewayRouteTests
         act.Should().Throw<ArgumentException>().WithMessage("*Timeout*");
     }
 
+    /// <summary>
+    /// Verifies that the Validate method does not throw for a timeout at the boundary of 300 seconds.
+    /// </summary>
     [Fact]
     public void Validate_TimeoutAtBoundary300_DoesNotThrow()
     {
