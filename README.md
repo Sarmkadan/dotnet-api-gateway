@@ -1,5 +1,3 @@
-// ... (rest of the file remains the same)
-
 ## CircuitBreakerRepositoryExtensions
 
 The `CircuitBreakerRepositoryExtensions` class provides a set of extension methods for working with circuit breaker repositories. These extensions enable you to retrieve circuit breaker statuses by service name, state, or other criteria, as well as update and reset circuit breakers.
@@ -26,4 +24,15 @@ await CircuitBreakerRepositoryExtensions.UpdateBatchAsync(circuitBreakerReposito
 await CircuitBreakerRepositoryExtensions.ResetAllToClosedAsync(circuitBreakerRepository);
 ```
 
-## ... (rest of the file remains the same)
+## JsonUtilityValidation
+
+The `JsonUtilityValidation` class provides static methods for validating JSON data against expected formats and structures. It includes methods for checking validity, parsing, deserialization, and merging JSON, with both validation result and boolean outcome variants. Methods like `Validate<T>`, `ValidateDeserialize`, and `IsValid<T>` help ensure JSON conforms to expected schemas or types.
+
+Example usage:
+```csharp
+// Validate a JSON string for basic deserialization safety
+var json = "{\"Name\": 123}"; // Invalid JSON (number instead of string)
+var errors = JsonUtilityValidation.ValidateDeserialize(json);
+Console.WriteLine($"Validation errors: {errors.Count}"); // Outputs "Validation errors: 1"
+```
+
