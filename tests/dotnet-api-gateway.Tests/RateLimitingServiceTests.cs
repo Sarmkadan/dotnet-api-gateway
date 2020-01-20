@@ -13,6 +13,9 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Tests for the RateLimitingService class.
+/// </summary>
 public sealed class RateLimitingServiceTests
 {
     private static RateLimitPolicy ValidPolicy(int requestsPerMinute = 10) => new()
@@ -22,6 +25,10 @@ public sealed class RateLimitingServiceTests
         Strategy = RateLimitStrategy.SlidingWindow
     };
 
+    /// <summary>
+    /// Tests that IsAllowedAsync returns true when the rate limit policy is disabled.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task IsAllowedAsync_DisabledPolicy_ReturnsTrue()
     {
@@ -39,6 +46,10 @@ public sealed class RateLimitingServiceTests
         mockFactory.Verify(f => f.GetStore(It.IsAny<RateLimitPolicy>()), Times.Never);
     }
 
+    /// <summary>
+    /// Tests that IsAllowedAsync returns true when the request is within the rate limit.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task IsAllowedAsync_ValidRequest_ReturnsTrue()
     {
@@ -61,6 +72,10 @@ public sealed class RateLimitingServiceTests
         mockStore.Verify(s => s.IsRequestAllowedAsync("client-1", policy), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that IsAllowedAsync returns false when the rate limit is exceeded.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task IsAllowedAsync_RateLimitExceeded_ReturnsFalse()
     {
@@ -82,6 +97,12 @@ public sealed class RateLimitingServiceTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that GetRateLimitInfoAsync calculates the remaining requests for the sliding window strategy.
+    /// </summary>
+    /// <param name="clientKey">The client key.</param>
+    /// <param name="policy">The rate limit policy.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task GetRateLimitInfoAsync_SlidingWindowStrategy_CalculatesRemaining()
     {
@@ -107,6 +128,12 @@ public sealed class RateLimitingServiceTests
         info.Reset.Should().Be(30);
     }
 
+    /// <summary>
+    /// Tests that GetRateLimitInfoAsync uses the tokens remaining for the token bucket strategy.
+    /// </summary>
+    /// <param name="clientKey">The client key.</param>
+    /// <param name="policy">The rate limit policy.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task GetRateLimitInfoAsync_TokenBucketStrategy_UsesTokensRemaining()
     {
@@ -137,6 +164,11 @@ public sealed class RateLimitingServiceTests
         info.Reset.Should().Be(45);
     }
 
+    /// <summary>
+    /// Tests that ResetKeyLimitsAsync calls reset on all stores.
+    /// </summary>
+    /// <param name="clientKey">The client key.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task ResetKeyLimitsAsync_CallsResetOnAllStores()
     {
@@ -157,6 +189,10 @@ public sealed class RateLimitingServiceTests
         mockStore2.Verify(s => s.ResetKeyAsync("client-1"), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that ResetAllLimitsAsync calls reset on all stores.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task ResetAllLimitsAsync_CallsResetOnAllStores()
     {
@@ -177,6 +213,10 @@ public sealed class RateLimitingServiceTests
         mockStore2.Verify(s => s.ResetAllAsync(), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that IsAllowedAsync tracks requests individually for multiple clients.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task IsAllowedAsync_MultipleClients_TracksIndividually()
     {
@@ -203,6 +243,9 @@ public sealed class RateLimitingServiceTests
         result2.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that Dispose disposes the factory.
+    /// </summary>
     [Fact]
     public void Dispose_DisposesFactory()
     {
@@ -219,6 +262,12 @@ public sealed class RateLimitingServiceTests
         mockFactory.Verify(f => f.Dispose(), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that GetRateLimitInfoAsync returns the full remaining requests when the request count is zero.
+    /// </summary>
+    /// <param name="clientKey">The client key.</param>
+    /// <param name="policy">The rate limit policy.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task GetRateLimitInfoAsync_ZeroRequestCount_HasFullRemaining()
     {
@@ -243,6 +292,12 @@ public sealed class RateLimitingServiceTests
         info.Remaining.Should().Be(5);
     }
 
+    /// <summary>
+    /// Tests that GetRateLimitInfoAsync returns zero remaining requests when the requests are maxed out.
+    /// </summary>
+    /// <param name="clientKey">The client key.</param>
+    /// <param name="policy">The rate limit policy.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [Fact]
     public async Task GetRateLimitInfoAsync_MaxedOutRequests_ZeroRemaining()
     {
