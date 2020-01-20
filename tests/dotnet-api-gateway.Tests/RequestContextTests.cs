@@ -10,8 +10,17 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Contains unit tests for the <see cref="RequestContext"/> class.
+/// Tests various aspects of request context initialization, properties, and methods
+/// to ensure proper behavior of request handling functionality.
+/// </summary>
 public sealed class RequestContextTests
 {
+    /// <summary>
+    /// Tests that the default constructor initializes a new <see cref="RequestContext"/> instance
+    /// with default values for all properties.
+    /// </summary>
     [Fact]
     public void Constructor_InitializesWithDefaults()
     {
@@ -34,6 +43,9 @@ public sealed class RequestContextTests
         context.ClientIdentity.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that each new <see cref="RequestContext"/> instance generates a unique GUID for the RequestId property.
+    /// </summary>
     [Fact]
     public void RequestId_GeneratesUniqueId()
     {
@@ -46,6 +58,9 @@ public sealed class RequestContextTests
         Guid.TryParse(context1.RequestId, out _).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.GetClientIdentifier()"/> returns the Identity.Id when ClientIdentity is set.
+    /// </summary>
     [Fact]
     public void GetClientIdentifier_WithClientIdentity_ReturnsIdentityId()
     {
@@ -63,6 +78,9 @@ public sealed class RequestContextTests
         identifier.Should().Be("user-123");
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.GetClientIdentifier()"/> returns the ClientIp when ClientIdentity is null.
+    /// </summary>
     [Fact]
     public void GetClientIdentifier_NoClientIdentity_ReturnsClientIp()
     {
@@ -76,6 +94,9 @@ public sealed class RequestContextTests
         identifier.Should().Be("192.168.1.1");
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.GetClientIdentifier()"/> returns the ClientIp when ClientIdentity.Id is null.
+    /// </summary>
     [Fact]
     public void GetClientIdentifier_ClientIdentityIdNull_ReturnsClientIp()
     {
@@ -93,6 +114,9 @@ public sealed class RequestContextTests
         identifier.Should().Be("10.0.0.1");
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.HasAuthToken()"/> returns true when AuthToken is set.
+    /// </summary>
     [Fact]
     public void HasAuthToken_WithToken_ReturnsTrue()
     {
@@ -106,6 +130,9 @@ public sealed class RequestContextTests
         hasToken.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.HasAuthToken()"/> returns false when AuthToken is not set.
+    /// </summary>
     [Fact]
     public void HasAuthToken_WithoutToken_ReturnsFalse()
     {
@@ -119,6 +146,9 @@ public sealed class RequestContextTests
         hasToken.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.HasAuthToken()"/> returns false when AuthToken is empty.
+    /// </summary>
     [Fact]
     public void HasAuthToken_WithEmptyToken_ReturnsFalse()
     {
@@ -132,6 +162,9 @@ public sealed class RequestContextTests
         hasToken.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.HasAuthToken()"/> returns false when AuthToken contains only whitespace.
+    /// </summary>
     [Fact]
     public void HasAuthToken_WithWhitespaceToken_ReturnsFalse()
     {
@@ -145,6 +178,9 @@ public sealed class RequestContextTests
         hasToken.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.ExtractBearerToken()"/> removes the "Bearer" prefix from AuthToken when present.
+    /// </summary>
     [Fact]
     public void ExtractBearerToken_WithBearerPrefix_RemovesPrefix()
     {
@@ -158,6 +194,9 @@ public sealed class RequestContextTests
         token.Should().Be("xyz123token");
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.ExtractBearerToken()"/> removes the "bearer" prefix (case-insensitive) from AuthToken when present.
+    /// </summary>
     [Fact]
     public void ExtractBearerToken_WithLowercaseBearerPrefix_RemovesPrefix()
     {
@@ -171,6 +210,9 @@ public sealed class RequestContextTests
         token.Should().Be("xyz123token");
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.ExtractBearerToken()"/> returns the full AuthToken when no "Bearer" prefix is present.
+    /// </summary>
     [Fact]
     public void ExtractBearerToken_WithoutBearerPrefix_ReturnsFull()
     {
@@ -184,6 +226,9 @@ public sealed class RequestContextTests
         token.Should().Be("xyz123token");
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.ExtractBearerToken()"/> returns an empty string when AuthToken is not set.
+    /// </summary>
     [Fact]
     public void ExtractBearerToken_NoAuthToken_ReturnsEmpty()
     {
@@ -197,6 +242,9 @@ public sealed class RequestContextTests
         token.Should().Be(string.Empty);
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.ExtractBearerToken()"/> returns an empty string when AuthToken is empty.
+    /// </summary>
     [Fact]
     public void ExtractBearerToken_EmptyAuthToken_ReturnsEmpty()
     {
@@ -210,6 +258,9 @@ public sealed class RequestContextTests
         token.Should().Be(string.Empty);
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.ElapsedTime()"/> calculates the correct time difference between ReceivedAt and current time.
+    /// </summary>
     [Fact]
     public void ElapsedTime_CalculatesTimeDifference()
     {
@@ -225,6 +276,9 @@ public sealed class RequestContextTests
         elapsed.Should().BeLessThan(TimeSpan.FromSeconds(6));
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.ElapsedTime()"/> returns a small duration when ReceivedAt is set to current time.
+    /// </summary>
     [Fact]
     public void ElapsedTime_JustCreated_ReturnsSmallDuration()
     {
@@ -238,6 +292,9 @@ public sealed class RequestContextTests
         elapsed.Should().BeLessThan(TimeSpan.FromSeconds(1));
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.ElapsedTime()"/> returns a negative duration when ReceivedAt is set to a future time.
+    /// </summary>
     [Fact]
     public void ElapsedTime_FutureReceivedAt_ReturnsNegativeDuration()
     {
@@ -252,6 +309,9 @@ public sealed class RequestContextTests
         elapsed.Should().BeLessThan(TimeSpan.Zero);
     }
 
+    /// <summary>
+    /// Tests that the Headers dictionary property can be modified after initialization.
+    /// </summary>
     [Fact]
     public void Headers_CanBeModified()
     {
@@ -267,6 +327,9 @@ public sealed class RequestContextTests
         context.Headers["Content-Type"].Should().Be("application/json");
     }
 
+    /// <summary>
+    /// Tests that the QueryParameters dictionary property can be modified after initialization.
+    /// </summary>
     [Fact]
     public void QueryParameters_CanBeModified()
     {
@@ -282,6 +345,9 @@ public sealed class RequestContextTests
         context.QueryParameters["page"].Should().Be("1");
     }
 
+    /// <summary>
+    /// Tests that the CustomData dictionary property can store arbitrary key-value pairs.
+    /// </summary>
     [Fact]
     public void CustomData_CanStoreArbitraryData()
     {
@@ -298,6 +364,9 @@ public sealed class RequestContextTests
         context.CustomData["user_id"].Should().Be("user-123");
     }
 
+    /// <summary>
+    /// Tests that the MatchedRoute property can be set to a <see cref="GatewayRoute"/> instance.
+    /// </summary>
     [Fact]
     public void MatchedRoute_CanBeSet()
     {
@@ -318,6 +387,9 @@ public sealed class RequestContextTests
         context.MatchedRoute.Name.Should().Be("TestRoute");
     }
 
+    /// <summary>
+    /// Tests that the SelectedTarget property can be set to a <see cref="RouteTarget"/> instance.
+    /// </summary>
     [Fact]
     public void SelectedTarget_CanBeSet()
     {
@@ -333,6 +405,9 @@ public sealed class RequestContextTests
         context.SelectedTarget.Name.Should().Be("backend");
     }
 
+    /// <summary>
+    /// Tests that the ClientIdentity property can be set to a <see cref="ClientIdentity"/> instance.
+    /// </summary>
     [Fact]
     public void ClientIdentity_CanBeSet()
     {
@@ -353,6 +428,9 @@ public sealed class RequestContextTests
         context.ClientIdentity.Email.Should().Be("john@example.com");
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.ExtractBearerToken()"/> only removes the first occurrence of "Bearer" when multiple are present.
+    /// </summary>
     [Fact]
     public void ExtractBearerToken_CaseSensitive_MultipleBearerWords_OnlyRemovesFirstOccurrence()
     {
@@ -366,6 +444,9 @@ public sealed class RequestContextTests
         token.Should().Be("Bearer xyz");
     }
 
+    /// <summary>
+    /// Tests that <see cref="RequestContext.GetClientIdentifier()"/> prefers ClientIdentity.Id over ClientIp when both are available.
+    /// </summary>
     [Fact]
     public void GetClientIdentifier_PrefersClientIdentityOverIp()
     {
@@ -383,6 +464,9 @@ public sealed class RequestContextTests
         identifier.Should().Be("user-456");
     }
 
+    /// <summary>
+    /// Tests that all properties of <see cref="RequestContext"/> can be modified after initialization.
+    /// </summary>
     [Fact]
     public void RequestContext_AllPropertiesMutable()
     {
