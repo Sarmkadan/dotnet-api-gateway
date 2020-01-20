@@ -12,19 +12,51 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Provides unit tests for the <see cref="DotNetApiGateway.Utilities.JsonUtility"/> class.
+/// Tests various JSON serialization, deserialization, and utility methods.
+/// </summary>
 public sealed class JsonUtilityTests
 {
+    /// <summary>
+    /// Gets or sets the name property used for testing serialization.
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the age property used for testing serialization.
+    /// </summary>
     public int Age { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional field used for testing nullable field handling.
+    /// </summary>
     public string? OptionalField { get; set; }
 
+    /// <summary>
+    /// Represents a test object used for JSON serialization/deserialization testing.
+    /// </summary>
     private class TestObject
     {
+        /// <summary>
+        /// Gets or sets the name property used for testing serialization.
+        /// </summary>
         public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the age property used for testing serialization.
+        /// </summary>
         public int Age { get; set; }
+
+        /// <summary>
+        /// Gets or sets an optional field used for testing nullable field handling.
+        /// </summary>
         public string? OptionalField { get; set; }
     }
 
+    /// <summary>
+    /// Tests that serializing a valid object returns a non-empty JSON string.
+    /// </summary>
     [Fact]
     public void Serialize_ValidObject_ReturnsJsonString()
     {
@@ -41,6 +73,9 @@ public sealed class JsonUtilityTests
         json.Should().Contain("30");
     }
 
+    /// <summary>
+    /// Tests that serializing an object with a null nullable field omits that field from the JSON output.
+    /// </summary>
     [Fact]
     public void Serialize_WithNullableFieldNull_OmitsField()
     {
@@ -54,6 +89,9 @@ public sealed class JsonUtilityTests
         json.Should().NotContain("optionalField");
     }
 
+    /// <summary>
+    /// Tests that serializing a valid object with the pretty printer returns formatted JSON with newlines.
+    /// </summary>
     [Fact]
     public void SerializePretty_ValidObject_ReturnsFormattedJson()
     {
@@ -69,6 +107,9 @@ public sealed class JsonUtilityTests
         json.Should().Contain("Bob");
     }
 
+    /// <summary>
+    /// Tests that deserializing valid JSON returns a properly populated object.
+    /// </summary>
     [Fact]
     public void Deserialize_ValidJson_ReturnsObject()
     {
@@ -84,6 +125,9 @@ public sealed class JsonUtilityTests
         obj.Age.Should().Be(28);
     }
 
+    /// <summary>
+    /// Tests that deserializing invalid JSON throws a JsonException.
+    /// </summary>
     [Fact]
     public void Deserialize_InvalidJson_ThrowsException()
     {
@@ -97,6 +141,9 @@ public sealed class JsonUtilityTests
         act.Should().Throw<JsonException>();
     }
 
+    /// <summary>
+    /// Tests that deserializing an empty string returns null.
+    /// </summary>
     [Fact]
     public void Deserialize_EmptyString_ReturnsNull()
     {
@@ -107,16 +154,22 @@ public sealed class JsonUtilityTests
         obj.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that deserializing a whitespace-only string returns null.
+    /// </summary>
     [Fact]
     public void Deserialize_WhitespaceString_ReturnsNull()
     {
         // Act
-        var obj = JsonUtility.Deserialize<TestObject>("   ");
+        var obj = JsonUtility.Deserialize<TestObject>(" ");
 
         // Assert
         obj.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that deserializing valid JSON with the safe method returns a properly populated object.
+    /// </summary>
     [Fact]
     public void DeserializeSafe_ValidJson_ReturnsObject()
     {
@@ -131,6 +184,9 @@ public sealed class JsonUtilityTests
         obj!.Name.Should().Be("Charlie");
     }
 
+    /// <summary>
+    /// Tests that deserializing invalid JSON with the safe method returns null instead of throwing.
+    /// </summary>
     [Fact]
     public void DeserializeSafe_InvalidJson_ReturnsNull()
     {
@@ -144,6 +200,9 @@ public sealed class JsonUtilityTests
         obj.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that parsing valid JSON returns a JsonElement representing the JSON object.
+    /// </summary>
     [Fact]
     public void ParseDynamic_ValidJson_ReturnsJsonElement()
     {
@@ -158,6 +217,9 @@ public sealed class JsonUtilityTests
         element!.Value.ValueKind.Should().Be(JsonValueKind.Object);
     }
 
+    /// <summary>
+    /// Tests that parsing invalid JSON returns null.
+    /// </summary>
     [Fact]
     public void ParseDynamic_InvalidJson_ReturnsNull()
     {
@@ -171,6 +233,9 @@ public sealed class JsonUtilityTests
         element.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that parsing valid JSON array returns a JsonElement representing the JSON array.
+    /// </summary>
     [Fact]
     public void ParseDynamic_ValidArray_ReturnsArray()
     {
@@ -185,6 +250,11 @@ public sealed class JsonUtilityTests
         element!.Value.ValueKind.Should().Be(JsonValueKind.Array);
     }
 
+    /// <summary>
+    /// Tests that the IsValidJson method correctly validates various JSON inputs.
+    /// </summary>
+    /// <param name="json">The JSON string to validate.</param>
+    /// <param name="expected">The expected validation result (true for valid JSON, false for invalid).</param>
     [Theory]
     [InlineData("{\"name\": \"Eve\"}", true)]
     [InlineData("[1, 2, 3]", true)]
@@ -194,12 +264,15 @@ public sealed class JsonUtilityTests
     [InlineData("null", true)]
     [InlineData("{invalid}", false)]
     [InlineData("", false)]
-    [InlineData("   ", false)]
+    [InlineData(" ", false)]
     public void IsValidJson_VariousInputs_ReturnsExpected(string json, bool expected)
     {
         JsonUtility.IsValidJson(json).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests that merging two valid JSON strings returns a merged JSON string with properties from both.
+    /// </summary>
     [Fact]
     public void MergeJson_BothValidJson_ReturnsMergedJson()
     {
@@ -217,6 +290,9 @@ public sealed class JsonUtilityTests
         merged.Should().Contain("NYC"); // added by second document
     }
 
+    /// <summary>
+    /// Tests that merging when the first JSON is invalid returns the first JSON unchanged.
+    /// </summary>
     [Fact]
     public void MergeJson_FirstJsonInvalid_ReturnsFirstJson()
     {
@@ -231,6 +307,9 @@ public sealed class JsonUtilityTests
         merged.Should().Be(json1);
     }
 
+    /// <summary>
+    /// Tests that merging when the second JSON is invalid returns the first JSON unchanged.
+    /// </summary>
     [Fact]
     public void MergeJson_SecondJsonInvalid_ReturnsFirstJson()
     {
@@ -245,6 +324,9 @@ public sealed class JsonUtilityTests
         merged.Should().Be(json1);
     }
 
+    /// <summary>
+    /// Tests that serializing an enumeration value serializes it as a camelCase string.
+    /// </summary>
     [Fact]
     public void Serialize_CaseSensitiveEnumeration_SerializesAsString()
     {
@@ -262,6 +344,9 @@ public sealed class JsonUtilityTests
         json.Should().Contain("slidingWindow"); // camelCase enum
     }
 
+    /// <summary>
+    /// Tests that deserializing JSON with different case property names handles case-insensitive deserialization.
+    /// </summary>
     [Fact]
     public void Deserialize_CaseInsensitiveDeserialization_HandlesVariousCases()
     {
@@ -276,6 +361,9 @@ public sealed class JsonUtilityTests
         obj!.Name.Should().Be("Upper");
     }
 
+    /// <summary>
+    /// Tests that serializing and deserializing an object is idempotent - the output should be identical.
+    /// </summary>
     [Fact]
     public void Serialize_ComplexNestedObject_SerializesCorrectly()
     {
@@ -291,6 +379,9 @@ public sealed class JsonUtilityTests
         json1.Should().Be(json2); // Serialize->Deserialize->Serialize should be idempotent
     }
 
+    /// <summary>
+    /// Tests that deserializing null JSON returns null.
+    /// </summary>
     [Fact]
     public void Deserialize_NullJson_ReturnsNull()
     {
@@ -301,6 +392,9 @@ public sealed class JsonUtilityTests
         obj.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that parsing null JSON returns null.
+    /// </summary>
     [Fact]
     public void ParseDynamic_NullJson_ReturnsNull()
     {
@@ -311,6 +405,9 @@ public sealed class JsonUtilityTests
         element.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that deserializing null JSON with the safe method returns null.
+    /// </summary>
     [Fact]
     public void DeserializeSafe_NullJson_ReturnsNull()
     {
