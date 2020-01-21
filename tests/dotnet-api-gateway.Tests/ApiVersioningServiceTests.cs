@@ -13,12 +13,28 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Provides unit tests for the <see cref="ApiVersioningService"/> class.
+/// Tests various versioning strategies including URL path, headers, query parameters, and media types.
+/// </summary>
 public sealed class ApiVersioningServiceTests
 {
-    private static ApiVersioningService CreateService() =>
+    /// <summary>
+/// Creates a new instance of <see cref="ApiVersioningService"/> with a null logger.
+/// </summary>
+/// <returns>An initialized <see cref="ApiVersioningService"/> instance.</returns>
+private static ApiVersioningService CreateService() =>
         new(NullLogger<ApiVersioningService>.Instance);
 
-    private static DefaultHttpContext CreateContext(
+    /// <summary>
+/// Creates a new <see cref="DefaultHttpContext"/> with configurable request properties for testing.
+/// </summary>
+/// <param name="path">The request path to set on the context.</param>
+/// <param name="versionHeader">Optional X-API-Version header value.</param>
+/// <param name="versionQuery">Optional api-version query parameter value.</param>
+/// <param name="acceptHeader">Optional Accept header value for media type versioning.</param>
+/// <returns>A configured <see cref="DefaultHttpContext"/> instance.</returns>
+private static DefaultHttpContext CreateContext(
         string path,
         string? versionHeader = null,
         string? versionQuery = null,
@@ -43,6 +59,11 @@ public sealed class ApiVersioningServiceTests
     // URL-path strategy
     // -------------------------------------------------------------------------
 
+/// <summary>
+/// Tests that the URL path versioning strategy correctly extracts version from path segments.
+/// Verifies that when a version is specified in the URL path (e.g., /v2/orders/123),
+/// the service correctly identifies and returns the version number.
+/// </summary>
     [Fact]
     public void TryResolveVersion_UrlPath_ExtractsVersionFromPath()
     {
@@ -56,6 +77,10 @@ public sealed class ApiVersioningServiceTests
         version.Should().Be("2");
     }
 
+/// <summary>
+/// Tests that the URL path versioning strategy is case-insensitive.
+/// Verifies that version extraction works regardless of the case used in the path (e.g., /V3/products).
+/// </summary>
     [Fact]
     public void TryResolveVersion_UrlPath_CaseInsensitive()
     {
@@ -73,6 +98,11 @@ public sealed class ApiVersioningServiceTests
     // Header strategy
     // -------------------------------------------------------------------------
 
+/// <summary>
+/// Tests that the header versioning strategy correctly extracts version from X-API-Version header.
+/// Verifies that when a version is specified in the X-API-Version header,
+/// the service correctly identifies and returns the version number.
+/// </summary>
     [Fact]
     public void TryResolveVersion_Header_ExtractsVersionFromHeader()
     {
@@ -90,6 +120,11 @@ public sealed class ApiVersioningServiceTests
         version.Should().Be("3");
     }
 
+/// <summary>
+/// Tests that the header versioning strategy supports custom header names.
+/// Verifies that when a custom header name is configured in the policy,
+/// the service correctly extracts the version from that header.
+/// </summary>
     [Fact]
     public void TryResolveVersion_Header_CustomHeaderName()
     {
@@ -115,6 +150,11 @@ public sealed class ApiVersioningServiceTests
     // Query-parameter strategy
     // -------------------------------------------------------------------------
 
+/// <summary>
+/// Tests that the query parameter versioning strategy correctly extracts version from api-version query parameter.
+/// Verifies that when a version is specified in the api-version query parameter,
+/// the service correctly identifies and returns the version number.
+/// </summary>
     [Fact]
     public void TryResolveVersion_QueryParam_ExtractsVersionFromQuery()
     {
@@ -136,6 +176,11 @@ public sealed class ApiVersioningServiceTests
     // MediaType strategy
     // -------------------------------------------------------------------------
 
+/// <summary>
+/// Tests that the media type versioning strategy correctly extracts version from Accept header.
+/// Verifies that when a version is specified in the Accept header using media type format
+/// (e.g., application/vnd.myapi.v4+json), the service correctly identifies and returns the version number.
+/// </summary>
     [Fact]
     public void TryResolveVersion_MediaType_ExtractsVersionFromAcceptHeader()
     {
@@ -157,6 +202,11 @@ public sealed class ApiVersioningServiceTests
     // Default version & required version
     // -------------------------------------------------------------------------
 
+/// <summary>
+/// Tests that the default version is used when no version is specified in the request.
+/// Verifies that when version resolution fails and a default version is configured in the policy,
+/// the service returns the default version instead of failing.
+/// </summary>
     [Fact]
     public void TryResolveVersion_NoVersionInRequest_UsesDefaultVersion()
     {
@@ -175,6 +225,11 @@ public sealed class ApiVersioningServiceTests
         version.Should().Be("1");
     }
 
+/// <summary>
+/// Tests that version requirement validation works correctly.
+/// Verifies that when a version is required but not provided in the request,
+/// the service returns false and null version to indicate failure.
+/// </summary>
     [Fact]
     public void TryResolveVersion_RequireVersion_ReturnsFalseWhenMissing()
     {
@@ -198,6 +253,11 @@ public sealed class ApiVersioningServiceTests
     // Supported versions list
     // -------------------------------------------------------------------------
 
+/// <summary>
+/// Tests that unsupported versions are properly rejected.
+/// Verifies that when a version is specified that is not in the supported versions list,
+/// the service returns false to indicate the version is not supported.
+/// </summary>
     [Fact]
     public void TryResolveVersion_UnsupportedVersion_ReturnsFalse()
     {
@@ -214,6 +274,11 @@ public sealed class ApiVersioningServiceTests
         result.Should().BeFalse();
     }
 
+/// <summary>
+/// Tests that supported versions are properly accepted.
+/// Verifies that when a version is specified that is in the supported versions list,
+/// the service returns true and the correct version number.
+/// </summary>
     [Fact]
     public void TryResolveVersion_SupportedVersion_ReturnsTrue()
     {
@@ -235,6 +300,11 @@ public sealed class ApiVersioningServiceTests
     // Disabled policy
     // -------------------------------------------------------------------------
 
+/// <summary>
+/// Tests that disabled versioning policies always return success.
+/// Verifies that when versioning is disabled in the policy,
+/// the service always returns true regardless of the request, allowing requests to proceed.
+/// </summary>
     [Fact]
     public void TryResolveVersion_PolicyDisabled_AlwaysReturnsTrue()
     {
