@@ -10,8 +10,16 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Tests for the ValidationUtility class.
+/// </summary>
 public sealed class ValidationUtilityTests
 {
+    /// <summary>
+    /// Tests the IsValidEmail method with various email addresses.
+    /// </summary>
+    /// <param name="email">The email address to test.</param>
+    /// <param name="expected">The expected result of the IsValidEmail method.</param>
     [Theory]
     [InlineData("user@example.com", true)]
     [InlineData("john.doe@company.co.uk", true)]
@@ -27,6 +35,11 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidEmail(email).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsValidUrl method with various URLs.
+    /// </summary>
+    /// <param name="url">The URL to test.</param>
+    /// <param name="expected">The expected result of the IsValidUrl method.</param>
     [Theory]
     [InlineData("https://example.com", true)]
     [InlineData("http://localhost:8080", true)]
@@ -40,6 +53,11 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidUrl(url).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsValidIpAddress method with various IP addresses.
+    /// </summary>
+    /// <param name="ip">The IP address to test.</param>
+    /// <param name="expected">The expected result of the IsValidIpAddress method.</param>
     [Theory]
     [InlineData("192.168.1.1", true)]
     [InlineData("10.0.0.1", true)]
@@ -54,6 +72,11 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidIpAddress(ip).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsValidUuid method with various UUIDs.
+    /// </summary>
+    /// <param name="uuid">The UUID to test.</param>
+    /// <param name="expected">The expected result of the IsValidUuid method.</param>
     [Theory]
     [InlineData("550e8400-e29b-41d4-a716-446655440000", true)]
     [InlineData("6ba7b810-9dad-11d1-80b4-00c04fd430c8", true)]
@@ -66,6 +89,11 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidUuid(uuid).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsNullOrEmpty method with various strings.
+    /// </summary>
+    /// <param name="value">The string to test.</param>
+    /// <param name="expected">The expected result of the IsNullOrEmpty method.</param>
     [Theory]
     [InlineData("", true)]
     [InlineData("   ", true)]
@@ -77,6 +105,13 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsNullOrEmpty(value).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsValidLength method with various string lengths.
+    /// </summary>
+    /// <param name="value">The string to test.</param>
+    /// <param name="minLength">The minimum length of the string.</param>
+    /// <param name="maxLength">The maximum length of the string.</param>
+    /// <param name="expected">The expected result of the IsValidLength method.</param>
     [Theory]
     [InlineData("hello", 0, 10, true)]
     [InlineData("hello", 5, 5, true)]
@@ -89,6 +124,11 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidLength(value, minLength, maxLength).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsAlphanumeric method with various strings.
+    /// </summary>
+    /// <param name="value">The string to test.</param>
+    /// <param name="expected">The expected result of the IsAlphanumeric method.</param>
     [Theory]
     [InlineData("abc123", true)]
     [InlineData("ABC", true)]
@@ -103,6 +143,11 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsAlphanumeric(value).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsAsciiOnly method with various strings.
+    /// </summary>
+    /// <param name="value">The string to test.</param>
+    /// <param name="expected">The expected result of the IsAsciiOnly method.</param>
     [Theory]
     [InlineData("hello", true)]
     [InlineData("Hello World", true)]
@@ -115,6 +160,11 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsAsciiOnly(value).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsValidPort method with various port numbers.
+    /// </summary>
+    /// <param name="port">The port number to test.</param>
+    /// <param name="expected">The expected result of the IsValidPort method.</param>
     [Theory]
     [InlineData(80, true)]
     [InlineData(443, true)]
@@ -129,6 +179,11 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidPort(port).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsValidHttpMethod method with various HTTP methods.
+    /// </summary>
+    /// <param name="method">The HTTP method to test.</param>
+    /// <param name="expected">The expected result of the IsValidHttpMethod method.</param>
     [Theory]
     [InlineData("GET", true)]
     [InlineData("POST", true)]
@@ -146,6 +201,11 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidHttpMethod(method).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsValidHttpStatusCode method with various HTTP status codes.
+    /// </summary>
+    /// <param name="statusCode">The HTTP status code to test.</param>
+    /// <param name="expected">The expected result of the IsValidHttpStatusCode method.</param>
     [Theory]
     [InlineData(200, true)]
     [InlineData(404, true)]
@@ -160,6 +220,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidHttpStatusCode(statusCode).Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the IsNull method with a null object.
+    /// </summary>
+    /// <returns>The result of the IsNull method.</returns>
     [Fact]
     public void IsNull_WithNull_ReturnsTrue()
     {
@@ -167,6 +231,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsNull(obj!).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests the IsNull method with a non-null object.
+    /// </summary>
+    /// <returns>The result of the IsNull method.</returns>
     [Fact]
     public void IsNull_WithObject_ReturnsFalse()
     {
@@ -174,6 +242,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsNull(obj).Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests the IsValidType method with a correct type.
+    /// </summary>
+    /// <returns>The result of the IsValidType method.</returns>
     [Fact]
     public void IsValidType_WithCorrectType_ReturnsTrue()
     {
@@ -181,6 +253,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidType<string>(obj).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests the IsValidType method with an incorrect type.
+    /// </summary>
+    /// <returns>The result of the IsValidType method.</returns>
     [Fact]
     public void IsValidType_WithWrongType_ReturnsFalse()
     {
@@ -188,6 +264,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsValidType<string>(obj).Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests the IsNullOrEmpty method with a null collection.
+    /// </summary>
+    /// <returns>The result of the IsNullOrEmpty method.</returns>
     [Fact]
     public void IsNullOrEmpty_WithNullCollection_ReturnsTrue()
     {
@@ -195,6 +275,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsNullOrEmpty(list!).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests the IsNullOrEmpty method with an empty collection.
+    /// </summary>
+    /// <returns>The result of the IsNullOrEmpty method.</returns>
     [Fact]
     public void IsNullOrEmpty_WithEmptyCollection_ReturnsTrue()
     {
@@ -202,6 +286,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsNullOrEmpty(list).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests the IsNullOrEmpty method with a populated collection.
+    /// </summary>
+    /// <returns>The result of the IsNullOrEmpty method.</returns>
     [Fact]
     public void IsNullOrEmpty_WithPopulatedCollection_ReturnsFalse()
     {
@@ -209,6 +297,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.IsNullOrEmpty(list).Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests the HasRequiredKeys method with a dictionary containing all required keys.
+    /// </summary>
+    /// <returns>The result of the HasRequiredKeys method.</returns>
     [Fact]
     public void HasRequiredKeys_WithAllKeys_ReturnsTrue()
     {
@@ -222,6 +314,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.HasRequiredKeys(dict, "name", "email").Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests the HasRequiredKeys method with a dictionary missing a required key.
+    /// </summary>
+    /// <returns>The result of the HasRequiredKeys method.</returns>
     [Fact]
     public void HasRequiredKeys_WithMissingKey_ReturnsFalse()
     {
@@ -233,6 +329,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.HasRequiredKeys(dict, "name", "email").Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests the HasRequiredKeys method with a null dictionary.
+    /// </summary>
+    /// <returns>The result of the HasRequiredKeys method.</returns>
     [Fact]
     public void HasRequiredKeys_WithNullDict_ReturnsFalse()
     {
@@ -240,6 +340,10 @@ public sealed class ValidationUtilityTests
         ValidationUtility.HasRequiredKeys(dict!, "name").Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests the HasRequiredKeys method with an empty dictionary.
+    /// </summary>
+    /// <returns>The result of the HasRequiredKeys method.</returns>
     [Fact]
     public void HasRequiredKeys_WithEmptyDict_ReturnsFalse()
     {
