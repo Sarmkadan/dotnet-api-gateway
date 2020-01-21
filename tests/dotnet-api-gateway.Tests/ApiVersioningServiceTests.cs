@@ -14,27 +14,28 @@ using Xunit;
 namespace DotNetApiGateway.Tests;
 
 /// <summary>
-/// Provides unit tests for the <see cref="ApiVersioningService"/> class.
-/// Tests various versioning strategies including URL path, headers, query parameters, and media types.
+/// Contains unit tests for the <see cref="ApiVersioningService"/> class, covering
+/// various versioning strategies, default handling, supported version validation,
+/// policy disabling, path stripping, and strategy priority behavior.
 /// </summary>
 public sealed class ApiVersioningServiceTests
 {
     /// <summary>
-/// Creates a new instance of <see cref="ApiVersioningService"/> with a null logger.
-/// </summary>
-/// <returns>An initialized <see cref="ApiVersioningService"/> instance.</returns>
-private static ApiVersioningService CreateService() =>
+    /// Creates a new instance of <see cref="ApiVersioningService"/> with a null logger.
+    /// </summary>
+    /// <returns>An initialized <see cref="ApiVersioningService"/> instance.</returns>
+    private static ApiVersioningService CreateService() =>
         new(NullLogger<ApiVersioningService>.Instance);
 
     /// <summary>
-/// Creates a new <see cref="DefaultHttpContext"/> with configurable request properties for testing.
-/// </summary>
-/// <param name="path">The request path to set on the context.</param>
-/// <param name="versionHeader">Optional X-API-Version header value.</param>
-/// <param name="versionQuery">Optional api-version query parameter value.</param>
-/// <param name="acceptHeader">Optional Accept header value for media type versioning.</param>
-/// <returns>A configured <see cref="DefaultHttpContext"/> instance.</returns>
-private static DefaultHttpContext CreateContext(
+    /// Creates a new <see cref="DefaultHttpContext"/> with configurable request properties for testing.
+    /// </summary>
+    /// <param name="path">The request path to set on the context.</param>
+    /// <param name="versionHeader">Optional X-API-Version header value.</param>
+    /// <param name="versionQuery">Optional api-version query parameter value.</param>
+    /// <param name="acceptHeader">Optional Accept header value for media type versioning.</param>
+    /// <returns>A configured <see cref="DefaultHttpContext"/> instance.</returns>
+    private static DefaultHttpContext CreateContext(
         string path,
         string? versionHeader = null,
         string? versionQuery = null,
@@ -59,11 +60,9 @@ private static DefaultHttpContext CreateContext(
     // URL-path strategy
     // -------------------------------------------------------------------------
 
-/// <summary>
-/// Tests that the URL path versioning strategy correctly extracts version from path segments.
-/// Verifies that when a version is specified in the URL path (e.g., /v2/orders/123),
-/// the service correctly identifies and returns the version number.
-/// </summary>
+    /// <summary>
+    /// Verifies that the URL path versioning strategy extracts the version number from the request path.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_UrlPath_ExtractsVersionFromPath()
     {
@@ -77,10 +76,9 @@ private static DefaultHttpContext CreateContext(
         version.Should().Be("2");
     }
 
-/// <summary>
-/// Tests that the URL path versioning strategy is case-insensitive.
-/// Verifies that version extraction works regardless of the case used in the path (e.g., /V3/products).
-/// </summary>
+    /// <summary>
+    /// Verifies that the URL path versioning strategy extracts the version number in a case‑insensitive manner.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_UrlPath_CaseInsensitive()
     {
@@ -98,11 +96,9 @@ private static DefaultHttpContext CreateContext(
     // Header strategy
     // -------------------------------------------------------------------------
 
-/// <summary>
-/// Tests that the header versioning strategy correctly extracts version from X-API-Version header.
-/// Verifies that when a version is specified in the X-API-Version header,
-/// the service correctly identifies and returns the version number.
-/// </summary>
+    /// <summary>
+    /// Verifies that the header versioning strategy extracts the version number from the <c>X-API-Version</c> header.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_Header_ExtractsVersionFromHeader()
     {
@@ -120,11 +116,9 @@ private static DefaultHttpContext CreateContext(
         version.Should().Be("3");
     }
 
-/// <summary>
-/// Tests that the header versioning strategy supports custom header names.
-/// Verifies that when a custom header name is configured in the policy,
-/// the service correctly extracts the version from that header.
-/// </summary>
+    /// <summary>
+    /// Verifies that the header versioning strategy can use a custom header name defined in the policy.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_Header_CustomHeaderName()
     {
@@ -150,11 +144,9 @@ private static DefaultHttpContext CreateContext(
     // Query-parameter strategy
     // -------------------------------------------------------------------------
 
-/// <summary>
-/// Tests that the query parameter versioning strategy correctly extracts version from api-version query parameter.
-/// Verifies that when a version is specified in the api-version query parameter,
-/// the service correctly identifies and returns the version number.
-/// </summary>
+    /// <summary>
+    /// Verifies that the query‑parameter versioning strategy extracts the version number from the <c>api-version</c> query string.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_QueryParam_ExtractsVersionFromQuery()
     {
@@ -176,11 +168,9 @@ private static DefaultHttpContext CreateContext(
     // MediaType strategy
     // -------------------------------------------------------------------------
 
-/// <summary>
-/// Tests that the media type versioning strategy correctly extracts version from Accept header.
-/// Verifies that when a version is specified in the Accept header using media type format
-/// (e.g., application/vnd.myapi.v4+json), the service correctly identifies and returns the version number.
-/// </summary>
+    /// <summary>
+    /// Verifies that the media‑type versioning strategy extracts the version number from the <c>Accept</c> header using the vendor‑specific media type format.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_MediaType_ExtractsVersionFromAcceptHeader()
     {
@@ -202,11 +192,9 @@ private static DefaultHttpContext CreateContext(
     // Default version & required version
     // -------------------------------------------------------------------------
 
-/// <summary>
-/// Tests that the default version is used when no version is specified in the request.
-/// Verifies that when version resolution fails and a default version is configured in the policy,
-/// the service returns the default version instead of failing.
-/// </summary>
+    /// <summary>
+    /// Verifies that when no version is supplied, the service falls back to the default version defined in the policy.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_NoVersionInRequest_UsesDefaultVersion()
     {
@@ -225,11 +213,9 @@ private static DefaultHttpContext CreateContext(
         version.Should().Be("1");
     }
 
-/// <summary>
-/// Tests that version requirement validation works correctly.
-/// Verifies that when a version is required but not provided in the request,
-/// the service returns false and null version to indicate failure.
-/// </summary>
+    /// <summary>
+    /// Verifies that when a version is required but not provided, the service returns <c>false</c> and a null version.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_RequireVersion_ReturnsFalseWhenMissing()
     {
@@ -253,11 +239,9 @@ private static DefaultHttpContext CreateContext(
     // Supported versions list
     // -------------------------------------------------------------------------
 
-/// <summary>
-/// Tests that unsupported versions are properly rejected.
-/// Verifies that when a version is specified that is not in the supported versions list,
-/// the service returns false to indicate the version is not supported.
-/// </summary>
+    /// <summary>
+    /// Verifies that a version not listed in <c>SupportedVersions</c> is rejected.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_UnsupportedVersion_ReturnsFalse()
     {
@@ -274,11 +258,9 @@ private static DefaultHttpContext CreateContext(
         result.Should().BeFalse();
     }
 
-/// <summary>
-/// Tests that supported versions are properly accepted.
-/// Verifies that when a version is specified that is in the supported versions list,
-/// the service returns true and the correct version number.
-/// </summary>
+    /// <summary>
+    /// Verifies that a version listed in <c>SupportedVersions</c> is accepted.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_SupportedVersion_ReturnsTrue()
     {
@@ -300,11 +282,9 @@ private static DefaultHttpContext CreateContext(
     // Disabled policy
     // -------------------------------------------------------------------------
 
-/// <summary>
-/// Tests that disabled versioning policies always return success.
-/// Verifies that when versioning is disabled in the policy,
-/// the service always returns true regardless of the request, allowing requests to proceed.
-/// </summary>
+    /// <summary>
+    /// Verifies that when versioning is disabled, the service always returns success regardless of the request.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_PolicyDisabled_AlwaysReturnsTrue()
     {
@@ -322,6 +302,9 @@ private static DefaultHttpContext CreateContext(
     // StripVersionFromPath
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Verifies that <see cref="ApiVersioningService.StripVersionFromPath"/> removes the version segment from a simple path.
+    /// </summary>
     [Fact]
     public void StripVersionFromPath_RemovesVersionSegment()
     {
@@ -333,6 +316,9 @@ private static DefaultHttpContext CreateContext(
         result.Should().Be("/orders/123");
     }
 
+    /// <summary>
+    /// Verifies that only the version segment is removed when it appears in a nested path.
+    /// </summary>
     [Fact]
     public void StripVersionFromPath_NestedPath_RemovesVersionSegmentOnly()
     {
@@ -344,6 +330,9 @@ private static DefaultHttpContext CreateContext(
         result.Should().Be("/api/users");
     }
 
+    /// <summary>
+    /// Verifies that when no version segment is present, the original path is returned unchanged.
+    /// </summary>
     [Fact]
     public void StripVersionFromPath_NoVersionSegment_ReturnsOriginalPath()
     {
@@ -355,6 +344,9 @@ private static DefaultHttpContext CreateContext(
         result.Should().Be("/api/users");
     }
 
+    /// <summary>
+    /// Verifies that when stripping is disabled, the original path is returned unchanged.
+    /// </summary>
     [Fact]
     public void StripVersionFromPath_StripDisabled_ReturnsOriginalPath()
     {
@@ -370,6 +362,9 @@ private static DefaultHttpContext CreateContext(
     // Strategy priority (first match wins)
     // -------------------------------------------------------------------------
 
+    /// <summary>
+    /// Verifies that when multiple strategies are configured, the first matching strategy (URL‑path) determines the version.
+    /// </summary>
     [Fact]
     public void TryResolveVersion_MultipleStrategies_UrlPathWinsFirst()
     {
