@@ -10,18 +10,31 @@ using Microsoft.Extensions.Logging;
 
 namespace DotNetApiGateway.Repositories;
 
+/// <summary>
+/// Factory for creating rate limit stores.
+/// </summary>
 public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
 {
     private readonly InMemoryRateLimitStore _inMemoryStore;
     private readonly ILogger<RedisRateLimitStore> _redisLogger;
     private readonly ConcurrentDictionary<string, RedisRateLimitStore> _redisStores = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RateLimitStoreFactory"/> class.
+    /// </summary>
+    /// <param name="inMemoryStore">The in-memory rate limit store.</param>
+    /// <param name="redisLogger">The Redis logger.</param>
     public RateLimitStoreFactory(InMemoryRateLimitStore inMemoryStore, ILogger<RedisRateLimitStore> redisLogger)
     {
         _inMemoryStore = inMemoryStore;
         _redisLogger = redisLogger;
     }
 
+    /// <summary>
+    /// Gets the rate limit store for the specified policy.
+    /// </summary>
+    /// <param name="policy">The rate limit policy.</param>
+    /// <returns>The rate limit store.</returns>
     public IRateLimitStore GetStore(RateLimitPolicy policy)
     {
         if (!policy.Enabled)
@@ -45,6 +58,10 @@ public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
         return _inMemoryStore;
     }
 
+    /// <summary>
+    /// Gets all rate limit stores.
+    /// </summary>
+    /// <returns>An enumerable of rate limit stores.</returns>
     public IEnumerable<IRateLimitStore> GetAllStores()
     {
         yield return _inMemoryStore;
@@ -54,6 +71,9 @@ public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
         }
     }
 
+    /// <summary>
+    /// Disposes of the rate limit stores.
+    /// </summary>
     public void Dispose()
     {
         foreach (var redisStore in _redisStores.Values)
