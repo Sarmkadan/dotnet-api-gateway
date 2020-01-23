@@ -36,3 +36,49 @@ var errors = JsonUtilityValidation.ValidateDeserialize(json);
 Console.WriteLine($"Validation errors: {errors.Count}"); // Outputs "Validation errors: 1"
 ```
 
+## EventBus
+
+The `EventBus` is an in‑memory pub‑sub system used by the gateway to broadcast domain events such as route creation, circuit‑breaker state changes, rate‑limit violations and request failures. It exposes a simple API for subscribing, publishing and inspecting the number of listeners for a given event type.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Events;
+using System;
+using System.Threading.Tasks;
+
+// Create a logger (replace with a real logger in production)
+var logger = new Microsoft.Extensions.Logging.LoggerFactory().CreateLogger<EventBus>();
+
+// Instantiate the event bus
+var bus = new EventBus(logger);
+
+// Define a handler for RouteCreatedEvent
+Func<RouteCreatedEvent, Task> routeCreatedHandler = async ev =>
+{
+    Console.WriteLine($"Route created: {ev.RouteId} – {ev.RouteName}");
+    await Task.CompletedTask;
+};
+
+// Subscribe to the event
+bus.Subscribe(routeCreatedHandler);
+
+// Publish a RouteCreatedEvent
+await bus.PublishAsync(new RouteCreatedEvent
+{
+    RouteId = "route-123",
+    RouteName = "My API Route"
+});
+
+// Check how many handlers are listening
+int count = bus.GetSubscriberCount<RouteCreatedEvent>();
+Console.WriteLine($"Handlers registered: {count}");
+
+// Unsubscribe if needed
+bus.Unsubscribe(routeCreatedHandler);
+
+// Clear all subscriptions
+bus.Clear();
+```
+
+Make sure to replace the logger with a real implementation when integrating into the gateway.
