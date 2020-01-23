@@ -101,3 +101,53 @@ TestClass? obj = benchmarks.Deserialize();
 Console.WriteLine($"Serialized: {json}");
 Console.WriteLine($"Deserialized: {obj?.Name}, {obj?.Value}");
 ```
+
+## RoutingAndRateLimitingIntegrationTests
+
+The `RoutingAndRateLimitingIntegrationTests` class provides comprehensive integration tests for the API gateway's routing and rate limiting functionality. It tests the complete workflow from route creation and matching through target selection, rate limiting enforcement, and circuit breaker integration. These tests verify that the gateway correctly handles concurrent requests, maintains proper state across operations, and enforces configuration settings.
+
+Example usage:
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Repositories;
+using DotNetApiGateway.Services;
+using Xunit;
+
+// Create repositories and services
+var routeRepository = new GatewayRouteRepository();
+var routingService = new RoutingService(routeRepository);
+var rateLimitStoreFactory = new RateLimitStoreFactory();
+var rateLimitService = new RateLimitingService(rateLimitStoreFactory, logger);
+
+// Test full routing workflow
+var route = new GatewayRoute
+{
+    Name = "api-route",
+    PathPattern = "/api/users",
+    AllowedMethods = ["GET", "POST"],
+    Targets = [
+        new RouteTarget { Name = "backend-1", BaseUrl = "http://backend1:8080", IsHealthy = true },
+        new RouteTarget { Name = "backend-2", BaseUrl = "http://backend2:8080", IsHealthy = true }
+    ],
+    TimeoutSeconds = 30
+};
+
+await routingService.CreateRouteAsync(route);
+var foundRoute = await routingService.FindRouteAsync("/api/users", "GET");
+var selectedTarget = routingService.SelectTarget(foundRoute);
+
+Assert.NotNull(foundRoute);
+Assert.Equal("api-route", foundRoute.Name);
+Assert.NotNull(selectedTarget);
+
+// Test rate limiting
+var policy = new RateLimitPolicy { Enabled = true, RequestsPerMinute = 100 };
+var isAllowed = await rateLimitService.IsAllowedAsync("client-1", policy);
+Assert.True(isAllowed);
+
+// Test circuit breaker integration
+var cbRepository = new CircuitBreakerRepository();
+var cbService = new CircuitBreakerService(cbRepository);
+var canAttempt = await cbService.CanAttemptAsync("backend-1", new CircuitBreakerPolicy { Enabled = true });
+Assert.True(canAttempt);
+```
