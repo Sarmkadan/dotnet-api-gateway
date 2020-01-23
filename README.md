@@ -82,3 +82,22 @@ bus.Clear();
 ```
 
 Make sure to replace the logger with a real implementation when integrating into the gateway.
+
+## JsonUtilityBenchmarks
+
+The `JsonUtilityBenchmarks` class measures the performance of JSON serialization and deserialization operations using the `JsonUtility` class. It benchmarks the time required to serialize objects to JSON and deserialize JSON back to objects, focusing on typical usage patterns.
+
+Example usage:
+```csharp
+var benchmarks = new JsonUtilityBenchmarks();
+benchmarks.Setup(); // Initializes test data
+
+// Serialize test object to JSON
+string json = benchmarks.Serialize();
+
+// Deserialize JSON back to object
+TestClass? obj = benchmarks.Deserialize();
+
+Console.WriteLine($"Serialized: {json}");
+Console.WriteLine($"Deserialized: {obj?.Name}, {obj?.Value}");
+```
