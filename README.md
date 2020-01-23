@@ -1,3 +1,4 @@
+
 ## CircuitBreakerRepositoryExtensions
 
 The `CircuitBreakerRepositoryExtensions` class provides a set of extension methods for working with circuit breaker repositories. These extensions enable you to retrieve circuit breaker statuses by service name, state, or other criteria, as well as update and reset circuit breakers.
@@ -151,3 +152,28 @@ var cbService = new CircuitBreakerService(cbRepository);
 var canAttempt = await cbService.CanAttemptAsync("backend-1", new CircuitBreakerPolicy { Enabled = true });
 Assert.True(canAttempt);
 ```
+
+## JwtValidationServiceTests
+
+The `JwtValidationServiceTests` class contains comprehensive unit tests for the `JwtValidationService` class. These tests cover scenarios such as validating valid and invalid JWT tokens, handling different authentication policies, and testing various edge cases like token expiration, invalid signatures, and more. The test suite ensures the JWT validation service behaves as expected under various conditions.
+
+Example usage:
+```csharp
+var service = new JwtValidationService();
+var token = JwtValidationServiceTests.GenerateTestToken(JwtValidationServiceTests.TestSecret);
+
+var policy = new AuthenticationPolicy
+{
+    Enabled = true,
+    Type = AuthenticationType.Bearer,
+    ValidateSignature = true,
+    ValidateExpiration = true,
+    JwtSecret = JwtValidationServiceTests.TestSecret,
+    JwtIssuer = JwtValidationServiceTests.TestIssuer,
+    JwtAudience = JwtValidationServiceTests.TestAudience,
+};
+
+var identity = await service.ValidateTokenAsync(token, policy);
+Assert.NotNull(identity);
+Assert.Equal("user-123", identity.Id);
+``` 
