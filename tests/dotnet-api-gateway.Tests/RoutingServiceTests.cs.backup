@@ -1,0 +1,63 @@
+#nullable enable
+// =============================================================================
+// Author: Vladyslav Zaiets | https://sarmkadan.com
+// CTO & Software Architect
+// =====================================================================
+
+using DotNetApiGateway.Constants;
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Repositories;
+using DotNetApiGateway.Services;
+using FluentAssertions;
+using Xunit;
+
+namespace DotNetApiGateway.Tests;
+
+/// <summary>
+/// Test suite for <see cref="RoutingService"/> class that validates routing, load balancing, and gateway functionality.
+/// Tests cover route discovery, target selection strategies, URL construction, header transformations,
+/// and CRUD operations for gateway routes.
+/// </summary>
+public sealed class RoutingServiceTests
+{
+	/// <summary>
+	/// Creates a healthy route target for testing purposes.
+	/// </summary>
+	/// <param name="name">The name of the target backend. Defaults to "backend".</param>
+	/// <returns>A new <see cref="RouteTarget"/> instance configured as healthy.</returns>
+	private static RouteTarget HealthyTarget(string name = "backend") => new()
+	{
+		Name = name,
+		BaseUrl = "http://backend:8080",
+		Weight = 1,
+		IsHealthy = true,
+		HealthCheckIntervalSeconds = 60
+	};
+
+	/// <summary>
+	/// Creates an unhealthy route target for testing purposes.
+	/// </summary>
+	/// <param name="name">The name of the target backend. Defaults to "backend".</param>
+	/// <returns>A new <see cref="RouteTarget"/> instance configured as unhealthy.</returns>
+	private static RouteTarget UnhealthyTarget(string name = "backend") => new()
+	{
+		Name = name,
+		BaseUrl = "http://backend:8080",
+		Weight = 1,
+		IsHealthy = false,
+		HealthCheckIntervalSeconds = 60
+	};
+
+	/// <summary>
+	/// Creates a valid gateway route for testing purposes.
+	/// </summary>
+	/// <param name="path">The path pattern for the route. Defaults to "/api/users".</param>
+	/// <returns>A new <see cref="GatewayRoute"/> instance configured with default values.</returns>
+	private static GatewayRoute ValidRoute(string path = "/api/users") => new()
+	{
+		Name = "UserRoute",
+		PathPattern = path,
+		AllowedMethods = ["GET"],
+		Targets = [HealthyTarget()],
+		TimeoutSeconds = 30
+	};

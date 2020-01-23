@@ -13,8 +13,18 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Test suite for <see cref="RoutingService"/> class that validates routing, load balancing, and gateway functionality.
+/// Tests cover route discovery, target selection strategies, URL construction, header transformations,
+/// and CRUD operations for gateway routes.
+/// </summary>
 public sealed class RoutingServiceTests
 {
+	/// <summary>
+	/// Creates a healthy route target for testing purposes.
+	/// </summary>
+	/// <param name="name">The name of the target backend. Defaults to "backend".</param>
+	/// <returns>A new <see cref="RouteTarget"/> instance configured as healthy.</returns>
     private static RouteTarget HealthyTarget(string name = "backend") => new()
     {
         Name = name,
