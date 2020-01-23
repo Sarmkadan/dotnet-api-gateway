@@ -177,3 +177,49 @@ var identity = await service.ValidateTokenAsync(token, policy);
 Assert.NotNull(identity);
 Assert.Equal("user-123", identity.Id);
 ``` 
+
+## RoutingServiceTests
+
+The `RoutingServiceTests` class provides a comprehensive test suite for the `RoutingService` class. It ensures the correctness of routing logic, target selection strategies, URL construction, and gateway operations. The tests cover route discovery, target selection algorithms, and CRUD operations on gateway routes.
+
+Example usage:
+
+```csharp
+var repository = new GatewayRouteRepository();
+var service = new RoutingService(repository);
+
+var healthyTarget = new RouteTarget { BaseUrl = "http://backend:8080" };
+var route = new GatewayRoute
+{
+    Name = "TestRoute",
+    PathPattern = "/api/test",
+    AllowedMethods = ["GET"],
+    Targets = [healthyTarget],
+    TimeoutSeconds = 30
+};
+
+// Test finding an existing route
+await repository.AddAsync(route);
+var foundRoute = await service.FindRouteAsync("/api/test", "GET");
+Assert.NotNull(foundRoute);
+Assert.Equal("TestRoute", foundRoute.Name);
+
+// Test selecting a target using round-robin strategy
+var target1 = service.SelectTarget(route);
+var target2 = service.SelectTarget(route);
+Assert.NotNull(target1);
+Assert.NotNull(target2);
+
+// Test building a forward URL
+var forwardUrl = service.BuildForwardUrl(target1, "/api/test/123");
+Assert.Equal("http://backend:8080/api/test/123", forwardUrl);
+
+// Apply header transformations
+var originalHeaders = new Dictionary<string, string> { ["Authorization"] = "Bearer token" };
+var transformedHeaders = service.ApplyHeaderTransforms(healthyTarget, originalHeaders);
+Assert.Contains("Authorization", transformedHeaders);
+Assert.Contains("X-Gateway-Version", transformedHeaders);
+```
+
+>>>>>>> 
+```
