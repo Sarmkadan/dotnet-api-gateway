@@ -477,3 +477,108 @@ bool missingRequiredKey = ValidationUtility.HasRequiredKeys(
 );
 // Result: false
 ```
+
+## GatewayRouteTests
+
+The `GatewayRouteTests` class provides a comprehensive test suite for the `GatewayRoute` class, which represents a route configuration in the API gateway. These tests verify path matching logic, HTTP method support, and route validation rules. The test suite covers exact path matching, wildcard segments, parameter segments, case-insensitive matching, and various validation scenarios for route configuration.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using System;
+using Xunit;
+
+// Create a route with a parameter segment
+var route = new GatewayRoute
+{
+    Name = "UserRoute",
+    PathPattern = "/api/users/{id}",
+    AllowedMethods = ["GET", "PUT"],
+    Targets = [
+        new RouteTarget
+        {
+            Name = "backend",
+            BaseUrl = "http://backend:8080",
+            Weight = 1,
+            HealthCheckIntervalSeconds = 60
+        }
+    ],
+    TimeoutSeconds = 30
+};
+
+// Test path matching with exact static path
+bool matchesExact = route.MatchesPath("/api/health");
+// Result: true
+
+// Test path matching with wildcard segment
+bool matchesWildcard = route.MatchesPath("/api/users/details");
+// Result: true (wildcard "*" matches "users")
+
+// Test path matching with parameter segment
+bool matchesParameter = route.MatchesPath("/api/users/123");
+// Result: true (parameter {id} matches "123")
+
+// Test path matching with too many segments
+bool tooManySegments = route.MatchesPath("/api/users/123/orders");
+// Result: false
+
+// Test path matching with too few segments
+bool tooFewSegments = route.MatchesPath("/api/users");
+// Result: false
+
+// Test case-insensitive path matching
+bool caseInsensitive = route.MatchesPath("/API/USERS/123");
+// Result: true (case-insensitive matching)
+
+// Test HTTP method support
+bool supportsGet = route.SupportsMethod("GET");
+// Result: true
+
+bool supportsDelete = route.SupportsMethod("DELETE");
+// Result: false
+
+bool supportsCaseInsensitiveMethod = route.SupportsMethod("put");
+// Result: true (case-insensitive method matching)
+
+// Test route validation
+try
+{
+    var invalidRoute = new GatewayRoute
+    {
+        Name = "",
+        PathPattern = "/api/test",
+        AllowedMethods = ["GET"],
+        Targets = [new RouteTarget { Name = "target", BaseUrl = "http://test" }],
+        TimeoutSeconds = 30
+    };
+    invalidRoute.Validate();
+    // Should not reach here
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+    // Expected: Validation failed: ...
+}
+
+// Test timeout validation
+var routeWithInvalidTimeout = new GatewayRoute
+{
+    Name = "TestRoute",
+    PathPattern = "/api/test",
+    AllowedMethods = ["GET"],
+    Targets = [new RouteTarget { Name = "target", BaseUrl = "http://test" }],
+    TimeoutSeconds = 0
+};
+
+try
+{
+    routeWithInvalidTimeout.Validate();
+    // Should not reach here
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine($"Timeout validation failed: {ex.Message}");
+    // Expected: Timeout validation failed: ...
+}
+```
