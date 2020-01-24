@@ -271,3 +271,113 @@ int port = UrlUtility.GetPort("https://api.example.com:8080/api");
 bool hasParam = UrlUtility.HasQueryParameter("https://api.example.com/data?page=1", "page");
 // Result: true
 ```
+
+## ValidationUtilityTests
+
+The `ValidationUtilityTests` class provides a comprehensive test suite for the `ValidationUtility` class, which offers various validation utilities for common data types and formats. These tests cover email validation, URL validation, IP address validation, UUID validation, string validation, collection validation, type checking, and HTTP-specific validations.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+using System.Collections.Generic;
+
+// Validate email addresses
+bool isValidEmail = ValidationUtility.IsValidEmail("user@example.com");
+// Result: true
+
+bool isInvalidEmail = ValidationUtility.IsValidEmail("invalid.email");
+// Result: false
+
+// Validate URLs
+bool isValidUrl = ValidationUtility.IsValidUrl("https://api.example.com/v1/users");
+// Result: true
+
+bool isInvalidUrl = ValidationUtility.IsValidUrl("ftp://files.example.com");
+// Result: false
+
+// Validate IP addresses
+bool isValidIp = ValidationUtility.IsValidIpAddress("192.168.1.1");
+// Result: true
+
+bool isInvalidIp = ValidationUtility.IsValidIpAddress("256.1.1.1");
+// Result: true (basic regex validation)
+
+// Validate UUIDs
+bool isValidUuid = ValidationUtility.IsValidUuid("550e8400-e29b-41d4-a716-446655440000");
+// Result: true
+
+bool isInvalidUuid = ValidationUtility.IsValidUuid("invalid-uuid-format");
+// Result: false
+
+// Validate strings
+bool isNullOrEmpty = ValidationUtility.IsNullOrEmpty("");
+// Result: true
+
+bool isAlphanumeric = ValidationUtility.IsAlphanumeric("abc123");
+// Result: true
+
+bool isAsciiOnly = ValidationUtility.IsAsciiOnly("Hello World");
+// Result: true
+
+bool isValidLength = ValidationUtility.IsValidLength("hello", 0, 10);
+// Result: true
+
+// Validate ports
+bool isValidPort = ValidationUtility.IsValidPort(8080);
+// Result: true
+
+bool isInvalidPort = ValidationUtility.IsValidPort(65536);
+// Result: false
+
+// Validate HTTP methods
+bool isValidHttpMethod = ValidationUtility.IsValidHttpMethod("GET");
+// Result: true
+
+bool isInvalidHttpMethod = ValidationUtility.IsValidHttpMethod("INVALID");
+// Result: false
+
+// Validate HTTP status codes
+bool isValidStatusCode = ValidationUtility.IsValidHttpStatusCode(200);
+// Result: true
+
+bool isInvalidStatusCode = ValidationUtility.IsValidHttpStatusCode(99);
+// Result: false
+
+// Validate null values
+bool isNull = ValidationUtility.IsNull(null);
+// Result: true
+
+bool isNotNull = ValidationUtility.IsNull(new object());
+// Result: false
+
+// Validate types
+bool isCorrectType = ValidationUtility.IsValidType<string>("string");
+// Result: true
+
+bool isWrongType = ValidationUtility.IsValidType<string>(123);
+// Result: false
+
+// Validate collections
+bool isNullOrEmptyCollection = ValidationUtility.IsNullOrEmpty((List<int>)null);
+// Result: true
+
+bool isEmptyCollection = ValidationUtility.IsNullOrEmpty(new List<int>());
+// Result: true
+
+bool isPopulatedCollection = ValidationUtility.IsNullOrEmpty(new List<int> { 1, 2, 3 });
+// Result: false
+
+// Validate dictionary keys
+bool hasRequiredKeys = ValidationUtility.HasRequiredKeys(
+    new Dictionary<string, string> { ["name"] = "John", ["email"] = "john@example.com" },
+    "name", "email"
+);
+// Result: true
+
+bool missingRequiredKey = ValidationUtility.HasRequiredKeys(
+    new Dictionary<string, string> { ["name"] = "John" },
+    "name", "email"
+);
+// Result: false
+```
