@@ -224,6 +224,55 @@ Assert.Contains("Authorization", transformedHeaders);
 Assert.Contains("X-Gateway-Version", transformedHeaders);
 ```
 
+## DateTimeUtilityTests
+
+The `DateTimeUtilityTests` class provides a comprehensive test suite for the `DateTimeUtility` static class, which offers various date and time manipulation utilities. These utilities include Unix timestamp conversion, date formatting, relative time formatting, and business day calculations. The class is useful for API responses, logging, scheduling, and any time-sensitive operations within the gateway.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+using System;
+
+// Convert current time to Unix timestamp
+long currentTimestamp = DateTimeUtility.ToUnixTimestamp(DateTime.UtcNow);
+Console.WriteLine($"Current Unix timestamp: {currentTimestamp}");
+
+// Convert Unix timestamp back to DateTime
+DateTime dateFromTimestamp = DateTimeUtility.FromUnixTimestamp(1672531200L);
+Console.WriteLine($"Date from timestamp: {dateFromTimestamp}");
+
+// Format a DateTime to a standardized string
+string formattedDate = DateTimeUtility.FormatDateTime(DateTime.Now);
+Console.WriteLine($"Formatted date: {formattedDate}");
+
+// Get relative time description (e.g., "just now", "5 minutes ago")
+string relativeTime = DateTimeUtility.GetRelativeTime(DateTime.UtcNow.AddMinutes(-2));
+Console.WriteLine($"Relative time: {relativeTime}");
+
+// Check if a date is in the past
+bool isPast = DateTimeUtility.IsPast(DateTime.UtcNow.AddDays(-1));
+Console.WriteLine($"Is past: {isPast}");
+
+// Check if a date is in the future
+bool isFuture = DateTimeUtility.IsFuture(DateTime.UtcNow.AddDays(1));
+Console.WriteLine($"Is future: {isFuture}");
+
+// Check if two dates are on the same day
+bool isSameDay = DateTimeUtility.IsSameDay(
+    new DateTime(2023, 1, 1, 10, 0, 0),
+    new DateTime(2023, 1, 1, 20, 0, 0)
+);
+Console.WriteLine($"Is same day: {isSameDay}");
+
+// Calculate business days between two dates
+int businessDays = DateTimeUtility.GetBusinessDaysBetween(
+    new DateTime(2023, 1, 2),  // Monday
+    new DateTime(2023, 1, 6)   // Friday
+);
+Console.WriteLine($"Business days between: {businessDays}");
+```
+
 ## UrlUtilityTests
 
 The `UrlUtilityTests` class provides a comprehensive test suite for the `UrlUtility` class, which offers various URL manipulation and parsing utilities. The tests cover URL combination, query string parsing and building, URL sanitization, and URL validation utilities.
