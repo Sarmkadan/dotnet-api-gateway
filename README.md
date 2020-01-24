@@ -272,6 +272,102 @@ bool hasParam = UrlUtility.HasQueryParameter("https://api.example.com/data?page=
 // Result: true
 ```
 
+## RequestTransformationServiceTests
+
+The `RequestTransformationServiceTests` class provides a comprehensive test suite for the `RequestTransformationService` class. It tests the request and response transformation rules that can be applied to HTTP requests and responses, including header manipulation, query parameter management, path rewriting, and rule validation. The tests cover both request-phase and response-phase operations, ensuring that transformations are applied correctly according to the specified rules.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Net.Http;
+using HttpMethod = System.Net.Http.HttpMethod;
+
+// Create the transformation service
+var service = new RequestTransformationService(NullLogger<RequestTransformationService>.Instance);
+
+// Create a sample HTTP request
+var request = new HttpRequestMessage(HttpMethod.Get, "http://backend/api/users");
+
+// Define transformation rules for the request phase
+var requestRules = new List<TransformationRule>
+{
+    new()
+    {
+        Phase = TransformationPhase.Request,
+        Operation = TransformationOperation.AddHeader,
+        Key = "X-Tenant-Id",
+        Value = "acme"
+    },
+    new()
+    {
+        Phase = TransformationPhase.Request,
+        Operation = TransformationOperation.SetQueryParam,
+        Key = "env",
+        Value = "production"
+    },
+    new()
+    {
+        Phase = TransformationPhase.Request,
+        Operation = TransformationOperation.RewritePathPrefix,
+        Key = "/v1",
+        Value = "/api/v1"
+    }
+};
+
+// Apply the transformation rules to the request
+service.ApplyRequestRules(request, requestRules);
+
+// Verify the transformations were applied
+request.Headers.TryGetValues("X-Tenant-Id", out var tenantValues).Should().BeTrue();
+tenantValues!.First().Should().Be("acme");
+
+request.RequestUri!.Query.Should().Contain("env=production");
+request.RequestUri.AbsolutePath.Should().Be("/api/v1/users");
+
+// Create a sample HTTP response
+var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+
+// Define transformation rules for the response phase
+var responseRules = new List<TransformationRule>
+{
+    new()
+    {
+        Phase = TransformationPhase.Response,
+        Operation = TransformationOperation.SetHeader,
+        Key = "X-Gateway-Version",
+        Value = "2.0"
+    },
+    new()
+    {
+        Phase = TransformationPhase.Response,
+        Operation = TransformationOperation.RemoveHeader,
+        Key = "Server"
+    }
+};
+
+// Apply the transformation rules to the response
+service.ApplyResponseRules(response, responseRules);
+
+// Verify the transformations were applied
+response.Headers.TryGetValues("X-Gateway-Version", out var versionValues).Should().BeTrue();
+versionValues!.First().Should().Be("2.0");
+response.Headers.Contains("Server").Should().BeFalse();
+
+// Test rule validation
+var invalidRule = new TransformationRule
+{
+    Operation = TransformationOperation.AddHeader,
+    Key = "",
+    Value = "value"
+};
+
+var act = () => invalidRule.Validate();
+act.Should().Throw<ArgumentException>();
+```
+
 ## ValidationUtilityTests
 
 The `ValidationUtilityTests` class provides a comprehensive test suite for the `ValidationUtility` class, which offers various validation utilities for common data types and formats. These tests cover email validation, URL validation, IP address validation, UUID validation, string validation, collection validation, type checking, and HTTP-specific validations.
