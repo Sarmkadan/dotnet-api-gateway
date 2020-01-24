@@ -527,6 +527,50 @@ bool missingRequiredKey = ValidationUtility.HasRequiredKeys(
 // Result: false
 ```
 
+## CircuitBreakerStatusTests
+
+The `CircuitBreakerStatusTests` class provides a comprehensive test suite for the `CircuitBreakerStatus` class, which tracks the state and metrics of circuit breaker instances. These tests verify the correct behavior of success/failure recording, state transitions, rate calculations, and counter resets, ensuring the circuit breaker accurately reflects system health and recovery patterns.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using Xunit;
+
+// Create a new circuit breaker status in initial Closed state
+var status = new CircuitBreakerStatus();
+
+// Record successful operations
+status.RecordSuccess();
+Assert.Equal(1, status.SuccessCount);
+Assert.Equal(1, status.TotalSuccesses);
+Assert.Equal(1, status.TotalRequests);
+Assert.Null(status.LastError);
+
+// Record failures
+status.RecordFailure("Connection timeout");
+Assert.Equal(1, status.FailureCount);
+Assert.Equal(1, status.TotalFailures);
+Assert.Equal("Connection timeout", status.LastError);
+
+// Calculate success/failure rates
+var successRate = status.GetSuccessRate(); // Returns 0.5 for 1 success, 1 failure
+var failureRate = status.GetFailureRate(); // Returns 0.5
+Assert.Equal(1.0, successRate + failureRate);
+
+// Change circuit state and verify counter resets
+status.ChangeState(CircuitBreakerState.Closed);
+Assert.Equal(0, status.FailureCount);
+Assert.Equal(0, status.SuccessCount);
+
+// Reset circuit breaker to initial state
+status.Reset();
+Assert.Equal(CircuitBreakerState.Closed, status.State);
+Assert.Equal(0, status.FailureCount);
+Assert.Equal(0, status.SuccessCount);
+Assert.Null(status.LastError);
+```
+
 ## GatewayRouteTests
 
 The `GatewayRouteTests` class provides a comprehensive test suite for the `GatewayRoute` class, which represents a route configuration in the API gateway. These tests verify path matching logic, HTTP method support, and route validation rules. The test suite covers exact path matching, wildcard segments, parameter segments, case-insensitive matching, and various validation scenarios for route configuration.
