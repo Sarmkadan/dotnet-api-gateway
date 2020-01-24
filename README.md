@@ -625,9 +625,51 @@ try
     routeWithInvalidTimeout.Validate();
     // Should not reach here
 }
+
 catch (ArgumentException ex)
 {
     Console.WriteLine($"Timeout validation failed: {ex.Message}");
     // Expected: Timeout validation failed: ...
 }
+
+## RequestContextTests
+
+The `RequestContextTests` class provides a comprehensive test suite for the `RequestContext` class, which holds request-scoped metadata such as identifiers, client identity, authentication tokens, headers, query parameters, custom data, and elapsed time. These tests verify the correct initialization, identifier generation, and property manipulation logic, ensuring that the request context reliably maintains state throughout the request lifecycle.
+
+Example usage (using the `RequestContext` class):
+
+```csharp
+using DotNetApiGateway.Models;
+using System;
+using System.Collections.Generic;
+
+// Instantiate the RequestContext
+var context = new RequestContext();
+
+// Verify default values and ID generation
+string requestId = context.RequestId;
+
+// Client identification
+context.ClientIdentity = new ClientIdentity { Id = "client-123" };
+string clientId = context.GetClientIdentifier(); // Returns "client-123"
+
+context.ClientIdentity = null;
+context.ClientIp = "192.168.1.1";
+string ip = context.GetClientIdentifier(); // Returns "192.168.1.1"
+
+// Authentication token handling
+context.AuthToken = "Bearer my-token";
+bool hasToken = context.HasAuthToken(); // Returns true
+string token = context.ExtractBearerToken(); // Returns "my-token"
+
+// Elapsed time tracking
+context.ReceivedAt = DateTime.UtcNow.AddSeconds(-2);
+TimeSpan elapsed = context.ElapsedTime(); // Returns ~2 seconds
+
+// Modifying headers, query parameters, and custom data
+context.Headers["X-Custom-Header"] = "value";
+context.QueryParameters["page"] = "1";
+context.CustomData["key"] = "value";
+```
+
 ```
