@@ -1,166 +1,598 @@
 # DotNet API Gateway
 
-A lightweight, production-ready API gateway for .NET built with modern C# and ASP.NET Core 10.
+> A lightweight, production-ready API gateway for .NET applications with advanced routing, rate limiting, JWT validation, request aggregation, circuit breaker patterns, and comprehensive monitoring.
 
-## Features
+![Build Status](https://img.shields.io/github/actions/workflow/status/Sarmkadan/dotnet-api-gateway/build.yml?branch=main)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![.NET Version](https://img.shields.io/badge/.NET-10.0-512BD4)
+![NuGet](https://img.shields.io/badge/nuget-ready-green)
 
-- **Intelligent Routing**: Pattern-based request routing with wildcard and parameter support
-- **Rate Limiting**: Token bucket, sliding window, and fixed window algorithms
-- **JWT Validation**: Secure token validation with configurable policies
-- **Request Aggregation**: Execute multiple backend requests sequentially, in parallel, or until first success
-- **Circuit Breaker**: Fault tolerance with configurable failure thresholds and recovery mechanisms
-- **Response Caching**: Smart caching strategies with cache key generation
-- **Load Balancing**: Round-robin, least connections, and IP-hash load balancing
-- **Health Checks**: Built-in health monitoring for backend services
-- **Request Logging**: Complete request/response tracking with timestamps
-- **Error Handling**: Comprehensive exception handling with custom error codes
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Usage Examples](#usage-examples)
+- [API Reference](#api-reference)
+- [Performance & Monitoring](#performance--monitoring)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Overview
+
+The DotNet API Gateway is a lightweight, high-performance API gateway built on .NET 10. It acts as a central entry point for your microservices architecture, handling cross-cutting concerns like authentication, rate limiting, circuit breaking, request aggregation, and comprehensive monitoring.
+
+### Motivation
+
+Modern applications require sophisticated API management capabilities:
+- **Microservices Coordination**: Route requests across multiple backend services
+- **Security First**: Implement JWT validation, API key management, and role-based access control
+- **Resilience**: Circuit breaker patterns, automatic retries, and graceful degradation
+- **Performance**: Request caching, response aggregation, and efficient load distribution
+- **Observability**: Real-time metrics, request logging, and health monitoring
+
+The DotNet API Gateway provides all these capabilities with minimal overhead and zero external dependencies for core functionality.
 
 ## Architecture
 
-### Core Components
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Client Applications                       │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                ┌──────────────▼───────────────┐
+                │    API Gateway Listener      │
+                │  (HTTP/HTTPS on :5000)      │
+                └──────────────┬───────────────┘
+                               │
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+   ┌────▼────┐        ┌────────▼────────┐      ┌────▼────┐
+   │ Middleware Pipeline                │      │  Handlers│
+   ├──────────┤        ├─────────────────┤      └──────────┘
+   │ Auth     │        │ Request Context │
+   │ Logging  │        │ Validation      │
+   │ Perf Mon │        │ Transformation  │
+   └──────────┘        └────────┬────────┘
+                                 │
+           ┌─────────────────────┼─────────────────────┐
+           │                     │                     │
+      ┌────▼─────┐        ┌──────▼──────┐       ┌────▼────┐
+      │ Routing   │        │ Rate Limit  │       │ Circuit │
+      │ Service   │        │ Service     │       │ Breaker │
+      └────┬─────┘        └──────┬──────┘       └────┬────┘
+           │                     │                     │
+      ┌────┴─────────────────────┼─────────────────────┴────┐
+      │                          │                          │
+ ┌────▼──────┐  ┌──────────┐ ┌──▼────┐  ┌────────────┐ ┌─▼──────┐
+ │ Cache      │  │ HTTP     │ │Health │  │Aggregation│ │Webhook │
+ │ Service    │  │ Client   │ │Check  │  │Service    │ │Registry│
+ └────┬──────┘  └──────┬───┘ │Service│  └────┬──────┘ └────────┘
+      │               │     └──┬────┘        │
+      │               │        │             │
+      └───────┬───────┴────────┴─────────────┘
+              │
+      ┌───────▼──────────────────┐
+      │  Backend Services        │
+      │ (Microservices Cluster)  │
+      │                          │
+      │ ┌──────┐  ┌──────┐      │
+      │ │ API1 │  │ API2 │ ...  │
+      │ └──────┘  └──────┘      │
+      └──────────────────────────┘
+```
 
-- **Models**: Domain entities representing routes, policies, and requests
-- **Services**: Business logic for routing, rate limiting, JWT validation, circuit breaking
-- **Repositories**: In-memory data access layer with thread-safe operations
-- **Middleware**: Request/response processing pipeline
-- **Configuration**: Dependency injection and configuration management
+### Component Layers
 
-## Building & Running
+**Presentation Layer**: Gateway listeners handling HTTP/HTTPS protocols
+**Request Pipeline**: Middleware for logging, validation, and request context enrichment
+**Business Logic**: Services for routing, rate limiting, caching, and aggregation
+**Integration Layer**: HTTP client factories and webhook management
+**Persistence**: In-memory repositories for routes, rate limits, and circuit breaker state
+
+## Features
+
+✅ **Smart Routing**: Dynamic route matching, regex patterns, method-based routing  
+✅ **Rate Limiting**: Token bucket algorithm, per-client/endpoint limits, sliding window  
+✅ **JWT Validation**: Token verification, claim extraction, role-based access control  
+✅ **Request Caching**: Response caching with TTL, conditional caching, cache invalidation  
+✅ **Circuit Breaker**: Fail-fast pattern, automatic recovery, configurable thresholds  
+✅ **Request Aggregation**: Combine multiple backend calls into single response  
+✅ **Retry Policies**: Exponential backoff, jitter, transient error handling  
+✅ **Request Transformation**: Header manipulation, payload transformation, compression  
+✅ **Webhook Management**: Webhook registration, delivery, retry logic  
+✅ **Health Monitoring**: Service health checks, dependency monitoring  
+✅ **Metrics & Analytics**: Request metrics, latency tracking, error rates  
+✅ **Performance Monitoring**: Real-time performance analysis, bottleneck detection  
+✅ **Request Logging**: Structured logging, request/response capture  
+✅ **Background Tasks**: Cleanup workers, metrics export, health checks  
+✅ **Format Support**: JSON, XML, CSV response formatting  
+✅ **Event Bus**: Internal event system for extensibility  
+
+## Installation
 
 ### Prerequisites
 
-- .NET 10 SDK
-- Visual Studio / VS Code (optional)
+- .NET 10 SDK ([download](https://dotnet.microsoft.com/download/dotnet/10.0))
+- Windows, macOS, or Linux
+- 512MB RAM minimum, 2GB recommended
 
-### Build
+### Method 1: Clone from Repository
 
 ```bash
-dotnet build
+# Clone the repository
+git clone https://github.com/Sarmkadan/dotnet-api-gateway.git
+cd dotnet-api-gateway
+
+# Restore dependencies
+dotnet restore
+
+# Build the project
+dotnet build -c Release
+
+# Run the gateway
+dotnet run --configuration Release
 ```
 
-### Run
+### Method 2: Docker (Recommended)
+
+```bash
+# Build Docker image
+docker build -t dotnet-api-gateway:latest .
+
+# Run with Docker Compose
+docker-compose up -d
+```
+
+### Method 3: NuGet Package
+
+```bash
+# Add as NuGet package (once published)
+dotnet add package DotNetApiGateway
+
+# In your Program.cs
+builder.Services.AddApiGateway();
+```
+
+### Method 4: Build from Source
+
+```bash
+# Clone and build
+git clone https://github.com/Sarmkadan/dotnet-api-gateway.git
+cd dotnet-api-gateway
+
+# Build and publish
+dotnet publish -c Release -o ./publish
+
+# Run published version
+./publish/DotNetApiGateway
+```
+
+## Quick Start
+
+### 1. Basic Configuration
+
+Create `appsettings.json`:
+
+```json
+{
+  "GatewayConfiguration": {
+    "Port": 5000,
+    "EnableHttps": false,
+    "Routes": [
+      {
+        "name": "user-service",
+        "pattern": "^/api/users(/.*)?$",
+        "method": "ANY",
+        "targets": [
+          {
+            "url": "http://localhost:3001/api/users",
+            "weight": 100,
+            "healthCheckUrl": "http://localhost:3001/health"
+          }
+        ],
+        "rateLimitPolicy": {
+          "enabled": true,
+          "requestsPerMinute": 100
+        },
+        "cachingPolicy": {
+          "enabled": true,
+          "ttlSeconds": 300
+        },
+        "circuitBreakerPolicy": {
+          "enabled": true,
+          "failureThreshold": 5,
+          "successThreshold": 2,
+          "timeoutSeconds": 60
+        }
+      }
+    ],
+    "JwtValidation": {
+      "enabled": true,
+      "issuer": "https://your-auth-provider.com",
+      "audience": "api.gateway",
+      "secretKey": "your-secret-key-here"
+    }
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "DotNetApiGateway": "Debug"
+    }
+  }
+}
+```
+
+### 2. Start the Gateway
 
 ```bash
 dotnet run
 ```
 
-The gateway will start on `http://localhost:5000` (HTTP) and `http://localhost:5001` (HTTPS).
+Gateway will listen on `http://localhost:5000`
 
-## API Endpoints
+### 3. Test a Route
 
-### Health & Info
+```bash
+# Without authentication
+curl http://localhost:5000/api/users
 
-- `GET /health` - Gateway health status
-- `GET /gateway/info` - Gateway information and available endpoints
-- `GET /gateway/routes` - List all active routes
-- `GET /gateway/circuit-breakers` - Show circuit breaker statuses
-- `POST /gateway/rate-limit-info` - Get rate limit info for a client
+# With JWT token
+curl -H "Authorization: Bearer {token}" http://localhost:5000/api/users
+
+# With custom headers
+curl -H "X-Custom-Header: value" http://localhost:5000/api/users
+```
 
 ## Configuration
 
-Edit `appsettings.json` to configure:
+### Complete Configuration Options
 
 ```json
 {
   "GatewayConfiguration": {
-    "ApplicationName": "DotNetApiGateway",
-    "MaxRequestBodySize": 10485760,
-    "DefaultTimeoutSeconds": 30,
-    "MaxConcurrentRequests": 100,
-    "EnableLogging": true,
-    "EnableMetrics": true
+    "Port": 5000,
+    "EnableHttps": false,
+    "CertificatePath": "/path/to/cert.pfx",
+    "CertificatePassword": "password",
+    "RequestTimeoutSeconds": 30,
+    "MaxRequestBodySizeBytes": 10485760,
+    "EnableRequestLogging": true,
+    "EnableMetrics": true,
+    "EnableHealthChecks": true,
+    "HealthCheckIntervalSeconds": 30,
+    
+    "Routes": [
+      {
+        "name": "route-name",
+        "pattern": "^/api/endpoint(/.*)?$",
+        "method": "GET|POST|PUT|DELETE|PATCH|ANY",
+        "description": "Route description",
+        "requiresAuthentication": true,
+        "requiredRoles": ["admin", "user"],
+        "requestTransformPolicy": {
+          "addHeaders": {
+            "X-Gateway-Version": "1.0"
+          },
+          "removeHeaders": ["Authorization"],
+          "modifyHeaders": {
+            "Content-Type": "application/json"
+          }
+        },
+        "targets": [
+          {
+            "url": "http://backend-service:3000/endpoint",
+            "weight": 50,
+            "healthCheckUrl": "http://backend-service:3000/health",
+            "timeout": 30
+          }
+        ],
+        "rateLimitPolicy": {
+          "enabled": true,
+          "requestsPerMinute": 100,
+          "requestsPerSecond": 10,
+          "burst": true,
+          "burstSize": 50
+        },
+        "cachingPolicy": {
+          "enabled": true,
+          "ttlSeconds": 300,
+          "cacheKeyPattern": "{method}:{path}:{querystring}",
+          "conditionalCache": true
+        },
+        "circuitBreakerPolicy": {
+          "enabled": true,
+          "failureThreshold": 5,
+          "successThreshold": 2,
+          "timeoutSeconds": 60
+        },
+        "retryPolicy": {
+          "enabled": true,
+          "maxRetries": 3,
+          "backoffMultiplier": 2.0,
+          "initialBackoffMs": 100
+        }
+      }
+    ],
+    
+    "JwtValidation": {
+      "enabled": true,
+      "issuer": "https://auth-server.com",
+      "audience": "api.gateway",
+      "secretKey": "your-secret-key",
+      "validateIssuer": true,
+      "validateAudience": true,
+      "validateLifetime": true,
+      "clockSkewSeconds": 5
+    },
+    
+    "ApiKeyAuthentication": {
+      "enabled": true,
+      "headerName": "X-API-Key",
+      "keys": {
+        "client-1": "key-1-secret",
+        "client-2": "key-2-secret"
+      }
+    },
+    
+    "CorsPolicy": {
+      "enabled": true,
+      "allowedOrigins": ["*"],
+      "allowedMethods": ["GET", "POST", "PUT", "DELETE"],
+      "allowedHeaders": ["*"],
+      "allowCredentials": false,
+      "maxAgeSeconds": 3600
+    }
+  },
+  
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning"
+    }
   }
 }
 ```
 
-## Usage Example
+### Environment-Specific Configuration
 
-### Create a Route
+```bash
+# Development
+dotnet run --launch-profile Development
+
+# Production
+dotnet run --configuration Release
+
+# Custom environment
+ASPNETCORE_ENVIRONMENT=Production dotnet run
+```
+
+## Usage Examples
+
+### Example 1: Simple Routing
 
 ```csharp
-var route = new GatewayRoute
+// Route all /api/users requests to backend service
+var gatewayConfig = new GatewayConfiguration
 {
-    Name = "user-service",
-    PathPattern = "/users/{id}",
-    AllowedMethods = new[] { "GET", "POST", "PUT", "DELETE" },
-    Targets = new[]
+    Port = 5000,
+    Routes = new List<GatewayRoute>
     {
-        new RouteTarget
+        new GatewayRoute
         {
-            Name = "user-api-1",
-            BaseUrl = "https://api1.example.com",
-            Weight = 1,
-            IsHealthy = true
+            Name = "user-service",
+            Pattern = "^/api/users(/.*)?$",
+            Method = "ANY",
+            Targets = new List<RouteTarget>
+            {
+                new RouteTarget
+                {
+                    Url = "http://localhost:3001/api/users",
+                    Weight = 100
+                }
+            }
         }
-    },
-    RateLimitPolicy = new RateLimitPolicy
-    {
-        RequestsPerMinute = 1000,
-        RequestsPerHour = 50000,
-        Strategy = RateLimitStrategy.TokenBucket
-    },
-    CircuitBreakerPolicy = new CircuitBreakerPolicy
-    {
-        FailureThreshold = 5,
-        TimeoutSeconds = 60
     }
 };
-
-await routingService.CreateRouteAsync(route);
 ```
 
-### Validate JWT
+### Example 2: Load Balancing
 
 ```csharp
-var policy = new AuthenticationPolicy
+new GatewayRoute
 {
-    Enabled = true,
-    Type = AuthenticationType.Bearer,
-    JwtSecret = "your-secret-key",
-    ValidateExpiration = true
-};
-
-var clientIdentity = await jwtService.ValidateTokenAsync(token, policy);
+    Name = "balanced-service",
+    Pattern = "^/api/data(/.*)?$",
+    Method = "ANY",
+    Targets = new List<RouteTarget>
+    {
+        new RouteTarget { Url = "http://api-1:3001/api/data", Weight = 40 },
+        new RouteTarget { Url = "http://api-2:3001/api/data", Weight = 40 },
+        new RouteTarget { Url = "http://api-3:3001/api/data", Weight = 20 }
+    }
+}
 ```
 
-### Check Rate Limits
+### Example 3: JWT Authentication
 
-```csharp
-var allowed = await rateLimitService.IsAllowedAsync(
-    clientId: "client-123",
-    routeId: "user-service",
-    policy: route.RateLimitPolicy
-);
-
-if (!allowed)
-    // Return 429 Too Many Requests
+```json
+{
+  "Routes": [
+    {
+      "name": "protected-api",
+      "pattern": "^/api/admin(/.*)?$",
+      "requiresAuthentication": true,
+      "requiredRoles": ["admin"],
+      "targets": [{"url": "http://admin-service:3000"}]
+    }
+  ],
+  "JwtValidation": {
+    "enabled": true,
+    "secretKey": "your-secret-key",
+    "issuer": "https://auth-provider.com"
+  }
+}
 ```
 
-## Project Structure
+### Example 4: Response Caching
 
+```json
+{
+  "Routes": [
+    {
+      "name": "cached-data",
+      "pattern": "^/api/catalog(/.*)?$",
+      "targets": [{"url": "http://catalog-service:3000"}],
+      "cachingPolicy": {
+        "enabled": true,
+        "ttlSeconds": 600
+      }
+    }
+  ]
+}
 ```
-DotNetApiGateway/
-├── Models/               # Domain entities
-├── Services/             # Business logic services
-├── Repositories/         # Data access layer
-├── Configuration/        # DI and configuration
-├── Constants/           # Enums and constants
-├── Exceptions/          # Custom exception types
-├── Program.cs           # Entry point
-├── GlobalUsings.cs      # Global using directives
-└── appsettings.json     # Configuration file
+
+### Example 5: Circuit Breaker Protection
+
+```json
+{
+  "Routes": [
+    {
+      "name": "resilient-service",
+      "pattern": "^/api/orders(/.*)?$",
+      "targets": [{"url": "http://order-service:3000"}],
+      "circuitBreakerPolicy": {
+        "enabled": true,
+        "failureThreshold": 5,
+        "successThreshold": 2,
+        "timeoutSeconds": 60
+      }
+    }
+  ]
+}
 ```
+
+## API Reference
+
+### Health Endpoint
+
+```bash
+GET /health
+```
+
+Returns gateway and backend service health status.
+
+### Routes Management
+
+```bash
+# List routes
+GET /api/gateway/routes
+
+# Get route details
+GET /api/gateway/routes/{routeName}
+
+# Create route
+POST /api/gateway/routes
+
+# Update route
+PUT /api/gateway/routes/{routeName}
+
+# Delete route
+DELETE /api/gateway/routes/{routeName}
+```
+
+### Rate Limit Status
+
+```bash
+GET /api/gateway/ratelimit/{clientId}
+```
+
+### Circuit Breaker Status
+
+```bash
+GET /api/gateway/circuitbreaker/{routeName}
+```
+
+### Metrics
+
+```bash
+GET /api/metrics
+```
+
+## Performance & Monitoring
+
+The gateway collects comprehensive metrics including:
+- Request throughput and latency (p50, p95, p99)
+- Error rates and types
+- Cache hit/miss rates
+- Circuit breaker state transitions
+- Rate limit violations
+- Backend service health
+
+### Monitoring Tools Integration
+
+- Prometheus endpoint at `/metrics`
+- Application Insights integration
+- Structured logging with Serilog
+- Health checks for orchestrators
+
+## Troubleshooting
+
+### High Latency Issues
+
+Check backend service health:
+```bash
+curl http://localhost:5000/health
+```
+
+Review circuit breaker status:
+```bash
+curl http://localhost:5000/api/gateway/circuitbreaker/{route}
+```
+
+### Rate Limiting Problems
+
+Check current limits:
+```bash
+curl http://localhost:5000/api/gateway/ratelimit/{clientId}
+```
+
+Increase limits in configuration if needed.
+
+### Authentication Failures
+
+Verify JWT configuration in `appsettings.json`:
+- Check `issuer` matches token issuer
+- Verify `secretKey` is correct
+- Ensure `audience` matches token claims
+
+### Memory Leaks
+
+Monitor with dotnet-trace:
+```bash
+dotnet trace collect dotnet {pid}
+```
+
+Check cache TTL settings and review background workers.
+
+## Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ## License
 
 MIT License - Copyright (c) 2026 Vladyslav Zaiets
 
-## Author
-
-**Vladyslav Zaiets**
-- Website: https://sarmkadan.com
-- Title: CTO & Software Architect
-
 ---
 
-Built with ❤️ for the .NET community
+**Built by [Vladyslav Zaiets](https://sarmkadan.com) - CTO & Software Architect**
+
+[Portfolio](https://sarmkadan.com) | [GitHub](https://github.com/Sarmkadan) | [Telegram](https://t.me/sarmkadan)
