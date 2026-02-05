@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Services;
 /// <summary>
 /// Service for enforcing rate limiting on requests
 /// </summary>
-public class RateLimitingService
+public sealed class RateLimitingService
 {
     private readonly RateLimitRepository _rateLimitRepository;
     private readonly Timer _cleanupTimer;
@@ -26,7 +27,7 @@ public class RateLimitingService
 
         var entry = await _rateLimitRepository.GetByClientAndRouteAsync(clientId, routeId);
 
-        if (entry == null)
+        if (entry is null)
         {
             entry = new RateLimitEntry
             {
@@ -67,7 +68,7 @@ public class RateLimitingService
     {
         var entry = await _rateLimitRepository.GetByClientAndRouteAsync(clientId, routeId);
 
-        if (entry == null)
+        if (entry is null)
         {
             return new RateLimitInfo
             {
@@ -113,7 +114,7 @@ public class RateLimitingService
     }
 }
 
-public class RateLimitInfo
+public sealed class RateLimitInfo
 {
     public int Limit { get; set; }
     public int Remaining { get; set; }

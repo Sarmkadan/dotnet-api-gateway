@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -19,7 +20,7 @@ public static class XmlFormatter
     /// </summary>
     public static string Serialize<T>(T obj) where T : class
     {
-        if (obj == null)
+        if (obj is null)
             return "<null />";
 
         try

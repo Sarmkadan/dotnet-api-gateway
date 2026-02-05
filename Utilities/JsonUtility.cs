@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -120,7 +121,7 @@ public static class JsonUtility
         var obj1 = ParseDynamic(json1);
         var obj2 = ParseDynamic(json2);
 
-        if (obj1 == null || obj2 == null)
+        if (obj1 is null || obj2 is null)
             return json1;
 
         var doc1 = JsonDocument.Parse(json1);

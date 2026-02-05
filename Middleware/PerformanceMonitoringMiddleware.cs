@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -11,7 +12,7 @@ using DotNetApiGateway.Services;
 /// Middleware for monitoring and recording request performance metrics.
 /// Tracks response times, status codes, and provides performance insights.
 /// </summary>
-public class PerformanceMonitoringMiddleware
+public sealed class PerformanceMonitoringMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<PerformanceMonitoringMiddleware> _logger;

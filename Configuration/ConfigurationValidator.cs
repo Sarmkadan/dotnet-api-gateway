@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ using DotNetApiGateway.Utilities;
 /// Validator for gateway configuration and route definitions.
 /// Ensures all routes and policies have valid configurations before deployment.
 /// </summary>
-public class ConfigurationValidator
+public sealed class ConfigurationValidator
 {
     private readonly ILogger<ConfigurationValidator> _logger;
 
@@ -28,7 +29,7 @@ public class ConfigurationValidator
     {
         var result = new ValidationResult();
 
-        if (config == null)
+        if (config is null)
         {
             result.AddError("Gateway configuration is null");
             return result;
@@ -53,7 +54,7 @@ public class ConfigurationValidator
     {
         var result = new ValidationResult();
 
-        if (route == null)
+        if (route is null)
         {
             result.AddError("Route is null");
             return result;
@@ -68,7 +69,7 @@ public class ConfigurationValidator
         if (string.IsNullOrWhiteSpace(route.PathPattern))
             result.AddError("Route path pattern is required");
 
-        if (route.Targets == null || route.Targets.Count == 0)
+        if (route.Targets is null || route.Targets.Count == 0)
             result.AddError("Route must have at least one target");
         else
         {
@@ -81,7 +82,7 @@ public class ConfigurationValidator
         }
 
         // Validate HTTP methods
-        if (route.AllowedMethods != null && route.AllowedMethods.Count > 0)
+        if (route.AllowedMethods is not null && route.AllowedMethods.Count > 0)
         {
             foreach (var method in route.AllowedMethods)
             {
@@ -91,14 +92,14 @@ public class ConfigurationValidator
         }
 
         // Validate policies
-        if (route.RateLimitPolicy != null)
+        if (route.RateLimitPolicy is not null)
         {
             var policyResult = ValidateRateLimitPolicy(route.RateLimitPolicy);
             if (!policyResult.IsValid)
                 result.Errors.AddRange(policyResult.Errors);
         }
 
-        if (route.CircuitBreakerPolicy != null)
+        if (route.CircuitBreakerPolicy is not null)
         {
             var policyResult = ValidateCircuitBreakerPolicy(route.CircuitBreakerPolicy);
             if (!policyResult.IsValid)
@@ -115,7 +116,7 @@ public class ConfigurationValidator
     {
         var result = new ValidationResult();
 
-        if (target == null)
+        if (target is null)
         {
             result.AddError("Route target is null");
             return result;
@@ -143,7 +144,7 @@ public class ConfigurationValidator
     {
         var result = new ValidationResult();
 
-        if (policy == null)
+        if (policy is null)
         {
             result.AddError("Rate limit policy is null");
             return result;
@@ -165,7 +166,7 @@ public class ConfigurationValidator
     {
         var result = new ValidationResult();
 
-        if (policy == null)
+        if (policy is null)
         {
             result.AddError("Circuit breaker policy is null");
             return result;
@@ -190,7 +191,7 @@ public class ConfigurationValidator
     {
         var result = new ValidationResult();
 
-        if (policy == null)
+        if (policy is null)
         {
             result.AddError("Cache policy is null");
             return result;
@@ -206,7 +207,7 @@ public class ConfigurationValidator
 /// <summary>
 /// Result of configuration validation.
 /// </summary>
-public class ValidationResult
+public sealed class ValidationResult
 {
     public List<string> Errors { get; } = new();
 

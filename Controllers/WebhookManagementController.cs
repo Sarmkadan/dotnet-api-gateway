@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -36,7 +37,7 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult CreateWebhookSubscription([FromBody] CreateWebhookSubscriptionRequest request)
     {
-        if (request == null || string.IsNullOrWhiteSpace(request.CallbackUrl))
+        if (request is null || string.IsNullOrWhiteSpace(request.CallbackUrl))
             return BadRequest(new { error = "Callback URL required" });
 
         if (!Uri.TryCreate(request.CallbackUrl, UriKind.Absolute, out _))
@@ -108,7 +109,7 @@ public class WebhookManagementController : ControllerBase
             subscription.CallbackUrl = request.CallbackUrl;
         }
 
-        if (request.EventTypes != null && request.EventTypes.Length > 0)
+        if (request.EventTypes is not null && request.EventTypes.Length > 0)
             subscription.EventTypes = request.EventTypes;
 
         if (request.MaxRetries.HasValue)
@@ -173,7 +174,7 @@ public class WebhookManagementController : ControllerBase
     }
 }
 
-public class CreateWebhookSubscriptionRequest
+public sealed class CreateWebhookSubscriptionRequest
 {
     public string? CallbackUrl { get; set; }
     public string[]? EventTypes { get; set; }
@@ -182,7 +183,7 @@ public class CreateWebhookSubscriptionRequest
     public int? MaxDelayMs { get; set; }
 }
 
-public class UpdateWebhookSubscriptionRequest
+public sealed class UpdateWebhookSubscriptionRequest
 {
     public string? CallbackUrl { get; set; }
     public string[]? EventTypes { get; set; }

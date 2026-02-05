@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
-public class GatewayRouteTests
+public sealed class GatewayRouteTests
 {
     private static RouteTarget ValidTarget() => new()
     {

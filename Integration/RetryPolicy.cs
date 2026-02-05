@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotNetApiGateway.Integration;
 /// Implements retry logic for HTTP requests with exponential backoff.
 /// Configurable for different failure scenarios and retry strategies.
 /// </summary>
-public class RetryPolicy
+public sealed class RetryPolicy
 {
     private readonly int _maxRetries;
     private readonly TimeSpan _initialDelay;

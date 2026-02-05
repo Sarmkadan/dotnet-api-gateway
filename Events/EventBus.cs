@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotNetApiGateway.Events;
 /// In-memory event bus for pub-sub messaging within the gateway.
 /// Allows components to publish and subscribe to domain events.
 /// </summary>
-public class EventBus
+public sealed class EventBus
 {
     private readonly Dictionary<string, List<Delegate>> _subscribers = new();
     private readonly ReaderWriterLockSlim _lock = new();
@@ -25,7 +26,7 @@ public class EventBus
     /// </summary>
     public void Subscribe<TEvent>(Func<TEvent, Task> handler) where TEvent : class, IGatewayEvent
     {
-        if (handler == null)
+        if (handler is null)
             throw new ArgumentNullException(nameof(handler));
 
         var eventType = typeof(TEvent).Name;
@@ -50,7 +51,7 @@ public class EventBus
     /// </summary>
     public void Unsubscribe<TEvent>(Func<TEvent, Task> handler) where TEvent : class, IGatewayEvent
     {
-        if (handler == null)
+        if (handler is null)
             return;
 
         var eventType = typeof(TEvent).Name;
@@ -75,7 +76,7 @@ public class EventBus
     /// </summary>
     public async Task PublishAsync<TEvent>(TEvent evt) where TEvent : class, IGatewayEvent
     {
-        if (evt == null)
+        if (evt is null)
             throw new ArgumentNullException(nameof(evt));
 
         var eventType = typeof(TEvent).Name;

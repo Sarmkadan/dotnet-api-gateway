@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -49,7 +50,7 @@ public class GatewayManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateRoute([FromBody] GatewayRoute route)
     {
-        if (route == null || string.IsNullOrWhiteSpace(route.Id))
+        if (route is null || string.IsNullOrWhiteSpace(route.Id))
         {
             _logger.LogWarning("Invalid route creation attempt");
             return BadRequest(new { error = "Route ID and configuration required" });
@@ -96,7 +97,7 @@ public class GatewayManagementController : ControllerBase
     public async Task<IActionResult> GetRouteById(string id)
     {
         var route = await _routeRepository.GetByIdAsync(id);
-        if (route == null)
+        if (route is null)
             return NotFound(new { error = "Route not found", id });
 
         var metrics = await _metricsService.GetRouteMetricsAsync(id);
@@ -112,7 +113,7 @@ public class GatewayManagementController : ControllerBase
     public async Task<IActionResult> UpdateRoute(string id, [FromBody] GatewayRoute updatedRoute)
     {
         var existing = await _routeRepository.GetByIdAsync(id);
-        if (existing == null)
+        if (existing is null)
             return NotFound(new { error = "Route not found", id });
 
         updatedRoute.Id = id;
@@ -130,7 +131,7 @@ public class GatewayManagementController : ControllerBase
     public async Task<IActionResult> DeleteRoute(string id)
     {
         var route = await _routeRepository.GetByIdAsync(id);
-        if (route == null)
+        if (route is null)
             return NotFound(new { error = "Route not found", id });
 
         await _routeRepository.DeleteAsync(id);
@@ -168,7 +169,7 @@ public class GatewayManagementController : ControllerBase
     public async Task<IActionResult> ResetCircuitBreaker(string targetId)
     {
         var status = await _circuitBreakerService.GetStatusAsync(targetId);
-        if (status == null)
+        if (status is null)
             return NotFound(new { error = "Circuit breaker not found", targetId });
 
         status.State = CircuitBreakerState.Closed;
