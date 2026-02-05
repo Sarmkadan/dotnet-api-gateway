@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Various edge cases found through testing
 
+### Security
+- Added input validation and length limits to prevent resource exhaustion attacks
+- Added request timeout configuration to HttpClient calls
+- Added security policy and vulnerability reporting
+
 ---
 
 ## [1.0.0] - 2025-09-06
