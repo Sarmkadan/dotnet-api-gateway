@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Defines caching behavior for route responses
 /// </summary>
-public class CachePolicy
+public sealed class CachePolicy
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public bool Enabled { get; set; } = false;

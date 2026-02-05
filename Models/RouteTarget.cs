@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Represents a backend service target for a route
 /// </summary>
-public class RouteTarget
+public sealed class RouteTarget
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Name { get; set; } = string.Empty;

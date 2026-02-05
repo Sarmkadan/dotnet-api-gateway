@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Defines rate limiting rules for a route
 /// </summary>
-public class RateLimitPolicy
+public sealed class RateLimitPolicy
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public int RequestsPerMinute { get; set; } = 1000;

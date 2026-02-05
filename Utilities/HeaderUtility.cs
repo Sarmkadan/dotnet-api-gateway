@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -17,7 +18,7 @@ public static class HeaderUtility
     /// </summary>
     public static string? GetHeader(IHeaderDictionary headers, string headerName)
     {
-        if (headers == null || string.IsNullOrWhiteSpace(headerName))
+        if (headers is null || string.IsNullOrWhiteSpace(headerName))
             return null;
 
         return headers.FirstOrDefault(h => h.Key.Equals(headerName, StringComparison.OrdinalIgnoreCase)).Value.ToString();
@@ -28,7 +29,7 @@ public static class HeaderUtility
     /// </summary>
     public static void SetHeader(IHeaderDictionary headers, string headerName, string value)
     {
-        if (headers == null || string.IsNullOrWhiteSpace(headerName))
+        if (headers is null || string.IsNullOrWhiteSpace(headerName))
             return;
 
         headers[headerName] = value;
@@ -39,7 +40,7 @@ public static class HeaderUtility
     /// </summary>
     public static void AddHeader(IHeaderDictionary headers, string headerName, string value)
     {
-        if (headers == null || string.IsNullOrWhiteSpace(headerName))
+        if (headers is null || string.IsNullOrWhiteSpace(headerName))
             return;
 
         headers.Append(headerName, value);
@@ -50,7 +51,7 @@ public static class HeaderUtility
     /// </summary>
     public static void RemoveHeader(IHeaderDictionary headers, string headerName)
     {
-        if (headers == null || string.IsNullOrWhiteSpace(headerName))
+        if (headers is null || string.IsNullOrWhiteSpace(headerName))
             return;
 
         var keysToRemove = headers
@@ -69,7 +70,7 @@ public static class HeaderUtility
     /// </summary>
     public static bool HasHeader(IHeaderDictionary headers, string headerName)
     {
-        if (headers == null || string.IsNullOrWhiteSpace(headerName))
+        if (headers is null || string.IsNullOrWhiteSpace(headerName))
             return false;
 
         return headers.Any(h => h.Key.Equals(headerName, StringComparison.OrdinalIgnoreCase));
@@ -131,7 +132,7 @@ public static class HeaderUtility
     {
         excludeHeaders ??= new[] { "Host", "Transfer-Encoding", "Content-Length" };
 
-        if (source == null || destination == null)
+        if (source is null || destination is null)
             return;
 
         foreach (var header in source)

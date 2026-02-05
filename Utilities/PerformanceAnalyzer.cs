@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotNetApiGateway.Utilities;
 /// Utility for analyzing and reporting performance metrics.
 /// Tracks operation timing and provides statistical analysis.
 /// </summary>
-public class PerformanceAnalyzer
+public sealed class PerformanceAnalyzer
 {
     private readonly List<long> _measurements = new();
     private readonly object _lock = new();
@@ -150,7 +151,7 @@ public class PerformanceAnalyzer
 /// <summary>
 /// Summary of performance statistics.
 /// </summary>
-public class PerformanceSummary
+public sealed class PerformanceSummary
 {
     public int Count { get; set; }
     public double Average { get; set; }

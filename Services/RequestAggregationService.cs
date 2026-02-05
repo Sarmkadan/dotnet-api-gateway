@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Services;
 /// <summary>
 /// Service for aggregating responses from multiple backend requests
 /// </summary>
-public class RequestAggregationService
+public sealed class RequestAggregationService
 {
     private readonly HttpClient _httpClient;
 
@@ -134,7 +135,7 @@ public class RequestAggregationService
             new System.Net.Http.HttpMethod(request.Method),
             url);
 
-        if (request.Headers != null)
+        if (request.Headers is not null)
         {
             foreach (var header in request.Headers)
                 httpRequest.Headers.Add(header.Key, header.Value);

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace DotNetApiGateway.Examples;
 /// Example: Basic Routing Configuration
 /// Demonstrates how to configure simple request routing to backend services.
 /// </summary>
-public class BasicRoutingExample
+public sealed class BasicRoutingExample
 {
     public static async Task Main()
     {
@@ -114,7 +115,7 @@ public class BasicRoutingExample
                 (r.Method == "ANY" || r.Method == "GET"));
 
             Console.WriteLine($"Request: GET {path}");
-            if (matchedRoute != null)
+            if (matchedRoute is not null)
             {
                 Console.WriteLine($"  ✓ Matched route: {matchedRoute.Name}");
                 Console.WriteLine($"  ✓ Target URL: {matchedRoute.Targets[0].Url}");

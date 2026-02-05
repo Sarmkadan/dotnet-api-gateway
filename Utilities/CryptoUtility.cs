@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -33,7 +34,7 @@ public static class CryptoUtility
     /// </summary>
     public static string GenerateSha256Hash(byte[] data)
     {
-        if (data == null || data.Length == 0)
+        if (data is null || data.Length == 0)
             return string.Empty;
 
         using var sha256 = SHA256.Create();
@@ -62,7 +63,7 @@ public static class CryptoUtility
     /// </summary>
     public static string GenerateHmacSha256(byte[] data, string secret)
     {
-        if (data == null || data.Length == 0 || string.IsNullOrWhiteSpace(secret))
+        if (data is null || data.Length == 0 || string.IsNullOrWhiteSpace(secret))
             return string.Empty;
 
         var secretBytes = Encoding.UTF8.GetBytes(secret);
@@ -89,7 +90,7 @@ public static class CryptoUtility
     /// </summary>
     public static bool VerifyHmacSha256(byte[] data, string signature, string secret)
     {
-        if (data == null || string.IsNullOrWhiteSpace(signature))
+        if (data is null || string.IsNullOrWhiteSpace(signature))
             return false;
 
         var computedSignature = GenerateHmacSha256(data, secret);
@@ -102,7 +103,7 @@ public static class CryptoUtility
     /// </summary>
     private static bool ConstantTimeCompare(string a, string b)
     {
-        if (a == null || b == null)
+        if (a is null || b is null)
             return a == b;
 
         if (a.Length != b.Length)

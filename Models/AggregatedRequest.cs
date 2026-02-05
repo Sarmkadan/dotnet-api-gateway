@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Models;
 /// <summary>
 /// Represents a request that is part of a request aggregation
 /// </summary>
-public class AggregatedRequest
+public sealed class AggregatedRequest
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Alias { get; set; } = string.Empty;

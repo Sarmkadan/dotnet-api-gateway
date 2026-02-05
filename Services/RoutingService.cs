@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Services;
 /// <summary>
 /// Service for routing requests to appropriate backend targets
 /// </summary>
-public class RoutingService
+public sealed class RoutingService
 {
     private readonly GatewayRouteRepository _routeRepository;
     private readonly LoadBalancingStrategy _loadBalancingStrategy;
@@ -25,7 +26,7 @@ public class RoutingService
     {
         var route = await _routeRepository.FindRouteByPathAsync(path, method);
 
-        if (route == null)
+        if (route is null)
             throw new RouteNotFoundException(path, method);
 
         return route;

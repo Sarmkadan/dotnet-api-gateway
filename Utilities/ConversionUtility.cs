@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -18,7 +19,7 @@ public static class ConversionUtility
     /// </summary>
     public static string ToString(object? obj, string defaultValue = "")
     {
-        if (obj == null)
+        if (obj is null)
             return defaultValue;
 
         try
@@ -132,7 +133,7 @@ public static class ConversionUtility
     /// </summary>
     public static string ToBase64(byte[] data)
     {
-        if (data == null || data.Length == 0)
+        if (data is null || data.Length == 0)
             return string.Empty;
 
         return Convert.ToBase64String(data);
@@ -162,7 +163,7 @@ public static class ConversionUtility
     /// </summary>
     public static T? ConvertTo<T>(object? value) where T : class
     {
-        if (value == null)
+        if (value is null)
             return null;
 
         if (value is T typedValue)
