@@ -291,7 +291,7 @@ curl -H "X-Custom-Header: value" http://localhost:5000/api/users
         "requiredRoles": ["admin", "user"],
         "requestTransformPolicy": {
           "addHeaders": {
-            "X-Gateway-Version": "1.0"
+            "X-Gateway-Version": "2.0.2"
           },
           "removeHeaders": ["Authorization"],
           "modifyHeaders": {
