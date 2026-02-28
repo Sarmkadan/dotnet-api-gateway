@@ -10,7 +10,8 @@
 ## Table of Contents
 
 - [Overview](#overview)
-- [Architecture](#architecture)
+- [Architecture Overview](#architecture-overview)
+- [Configuration Reference](#configuration-reference)
 - [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -40,62 +41,9 @@ Modern applications require sophisticated API management capabilities:
 
 The DotNet API Gateway provides all these capabilities with minimal overhead and zero external dependencies for core functionality.
 
-## Architecture
+## Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Client Applications                       │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-                ┌──────────────▼───────────────┐
-                │    API Gateway Listener      │
-                │  (HTTP/HTTPS on :5000)      │
-                └──────────────┬───────────────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-   ┌────▼────┐        ┌────────▼────────┐      ┌────▼────┐
-   │ Middleware Pipeline                │      │  Handlers│
-   ├──────────┤        ├─────────────────┤      └──────────┘
-   │ Auth     │        │ Request Context │
-   │ Logging  │        │ Validation      │
-   │ Perf Mon │        │ Transformation  │
-   └──────────┘        └────────┬────────┘
-                                 │
-           ┌─────────────────────┼─────────────────────┐
-           │                     │                     │
-      ┌────▼─────┐        ┌──────▼──────┐       ┌────▼────┐
-      │ Routing   │        │ Rate Limit  │       │ Circuit │
-      │ Service   │        │ Service     │       │ Breaker │
-      └────┬─────┘        └──────┬──────┘       └────┬────┘
-           │                     │                     │
-      ┌────┴─────────────────────┼─────────────────────┴────┐
-      │                          │                          │
- ┌────▼──────┐  ┌──────────┐ ┌──▼────┐  ┌────────────┐ ┌─▼──────┐
- │ Cache      │  │ HTTP     │ │Health │  │Aggregation│ │Webhook │
- │ Service    │  │ Client   │ │Check  │  │Service    │ │Registry│
- └────┬──────┘  └──────┬───┘ │Service│  └────┬──────┘ └────────┘
-      │               │     └──┬────┘        │
-      │               │        │             │
-      └───────┬───────┴────────┴─────────────┘
-              │
-      ┌───────▼──────────────────┐
-      │  Backend Services        │
-      │ (Microservices Cluster)  │
-      │                          │
-      │ ┌──────┐  ┌──────┐      │
-      │ │ API1 │  │ API2 │ ...  │
-      │ └──────┘  └──────┘      │
-      └──────────────────────────┘
-```
-
-### Component Layers
-
-**Presentation Layer**: Gateway listeners handling HTTP/HTTPS protocols
-**Request Pipeline**: Middleware for logging, validation, and request context enrichment
-**Business Logic**: Services for routing, rate limiting, caching, and aggregation
-**Integration Layer**: HTTP client factories and webhook management
-**Persistence**: In-memory repositories for routes, rate limits, and circuit breaker state
+For a detailed overview of the API Gateway's architecture, including its components and request lifecycle, please refer to the dedicated [Architecture Overview](docs/architecture.md) documentation.
 
 ## Features
 
@@ -263,128 +211,9 @@ curl -H "Authorization: Bearer {token}" http://localhost:5000/api/users
 curl -H "X-Custom-Header: value" http://localhost:5000/api/users
 ```
 
-## Configuration
+## Configuration Reference
 
-### Complete Configuration Options
-
-```json
-{
-  "GatewayConfiguration": {
-    "Port": 5000,
-    "EnableHttps": false,
-    "CertificatePath": "/path/to/cert.pfx",
-    "CertificatePassword": "password",
-    "RequestTimeoutSeconds": 30,
-    "MaxRequestBodySizeBytes": 10485760,
-    "EnableRequestLogging": true,
-    "EnableMetrics": true,
-    "EnableHealthChecks": true,
-    "HealthCheckIntervalSeconds": 30,
-    
-    "Routes": [
-      {
-        "name": "route-name",
-        "pattern": "^/api/endpoint(/.*)?$",
-        "method": "GET|POST|PUT|DELETE|PATCH|ANY",
-        "description": "Route description",
-        "requiresAuthentication": true,
-        "requiredRoles": ["admin", "user"],
-        "requestTransformPolicy": {
-          "addHeaders": {
-            "X-Gateway-Version": "2.0.2"
-          },
-          "removeHeaders": ["Authorization"],
-          "modifyHeaders": {
-            "Content-Type": "application/json"
-          }
-        },
-        "targets": [
-          {
-            "url": "http://backend-service:3000/endpoint",
-            "weight": 50,
-            "healthCheckUrl": "http://backend-service:3000/health",
-            "timeout": 30
-          }
-        ],
-        "rateLimitPolicy": {
-          "enabled": true,
-          "requestsPerMinute": 100,
-          "requestsPerSecond": 10,
-          "burst": true,
-          "burstSize": 50
-        },
-        "cachingPolicy": {
-          "enabled": true,
-          "ttlSeconds": 300,
-          "cacheKeyPattern": "{method}:{path}:{querystring}",
-          "conditionalCache": true
-        },
-        "circuitBreakerPolicy": {
-          "enabled": true,
-          "failureThreshold": 5,
-          "successThreshold": 2,
-          "timeoutSeconds": 60
-        },
-        "retryPolicy": {
-          "enabled": true,
-          "maxRetries": 3,
-          "backoffMultiplier": 2.0,
-          "initialBackoffMs": 100
-        }
-      }
-    ],
-    
-    "JwtValidation": {
-      "enabled": true,
-      "issuer": "https://auth-server.com",
-      "audience": "api.gateway",
-      "secretKey": "your-secret-key",
-      "validateIssuer": true,
-      "validateAudience": true,
-      "validateLifetime": true,
-      "clockSkewSeconds": 5
-    },
-    
-    "ApiKeyAuthentication": {
-      "enabled": true,
-      "headerName": "X-API-Key",
-      "keys": {
-        "client-1": "key-1-secret",
-        "client-2": "key-2-secret"
-      }
-    },
-    
-    "CorsPolicy": {
-      "enabled": true,
-      "allowedOrigins": ["*"],
-      "allowedMethods": ["GET", "POST", "PUT", "DELETE"],
-      "allowedHeaders": ["*"],
-      "allowCredentials": false,
-      "maxAgeSeconds": 3600
-    }
-  },
-  
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft": "Warning"
-    }
-  }
-}
-```
-
-### Environment-Specific Configuration
-
-```bash
-# Development
-dotnet run --launch-profile Development
-
-# Production
-dotnet run --configuration Release
-
-# Custom environment
-ASPNETCORE_ENVIRONMENT=Production dotnet run
-```
+For a comprehensive guide to all configuration options, including gateway-level settings and detailed policy configurations for routes (Authentication, Caching, Circuit Breaker, Rate Limiting, Request Coalescing), please see the [Configuration Reference](docs/configuration-reference.md) documentation.
 
 ## Usage Examples
 
