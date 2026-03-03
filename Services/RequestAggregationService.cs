@@ -4,147 +4,229 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using DotNetApiGateway.Constants;
+using DotNetApiGateway.Models;
+using JsonCons.JsonPath;
+using Microsoft.Extensions.Logging;
+
 namespace DotNetApiGateway.Services;
 
 /// <summary>
-/// Service for aggregating responses from multiple backend requests
+/// Service for aggregating responses from multiple backend requests, optionally with conditional fan-out.
 /// </summary>
 public sealed class RequestAggregationService
 {
     private readonly HttpClient _httpClient;
+    private readonly ILogger<RequestAggregationService> _logger;
 
-    public RequestAggregationService(HttpClient httpClient)
+    public RequestAggregationService(HttpClient httpClient, ILogger<RequestAggregationService> logger)
     {
         _httpClient = httpClient;
+        _logger = logger;
     }
 
+    /// <summary>
+    /// Aggregates responses from multiple backend requests based on the provided aggregation policy.
+    /// Supports conditional fan-out based on the incoming request body.
+    /// </summary>
+    /// <param name="policy">The aggregation policy for selecting targets and strategy.</param>
+    /// <param name="incomingRequestBody">The incoming HTTP request body as a string, used for JSONPath evaluation.</param>
+    /// <returns>An AggregatedResponse containing results from the selected backend calls.</returns>
     public async Task<AggregatedResponse> AggregateAsync(
-        IEnumerable<AggregatedRequest> requests,
-        AggregationStrategy strategy,
-        RouteTarget target)
+        AggregationPolicy policy,
+        string? incomingRequestBody)
     {
         var response = new AggregatedResponse();
-
-        return strategy switch
-        {
-            AggregationStrategy.Sequential => await ExecuteSequentialAsync(requests, response, target),
-            AggregationStrategy.Parallel => await ExecuteParallelAsync(requests, response, target),
-            AggregationStrategy.FirstSuccess => await ExecuteFirstSuccessAsync(requests, response, target),
-            _ => await ExecuteSequentialAsync(requests, response, target)
-        };
-    }
-
-    private async Task<AggregatedResponse> ExecuteSequentialAsync(
-        IEnumerable<AggregatedRequest> requests,
-        AggregatedResponse response,
-        RouteTarget target)
-    {
         var startTime = DateTime.UtcNow;
 
-        foreach (var request in requests)
+        if (!policy.Enabled)
+        {
+            _logger.LogInformation("Aggregation policy is not enabled. Returning empty aggregated response.");
+            response.TotalDuration = DateTime.UtcNow - startTime;
+            return response;
+        }
+
+        JsonNode? requestJsonNode = null;
+        if (!string.IsNullOrWhiteSpace(incomingRequestBody))
         {
             try
             {
-                request.Validate();
-                var result = await ExecuteRequestAsync(request, target);
-                response.AddResponse(request.Alias, result.StatusCode, result.Body, result.Headers, result.Duration);
+                requestJsonNode = JsonNode.Parse(incomingRequestBody);
             }
-            catch (Exception)
+            catch (JsonException ex)
             {
-                if (!request.Optional)
-                    throw;
-
-                response.AddResponse(request.Alias, 0, null, null, null);
+                _logger.LogWarning(ex, "Could not parse incoming request body as JSON for aggregation. JSONPath conditions will not be evaluated.");
             }
+        }
+
+        var selectedTargets = SelectConditionalTargets(policy, requestJsonNode);
+
+        if (!selectedTargets.Any())
+        {
+            _logger.LogInformation("No targets selected for aggregation based on policy and conditions. Returning empty aggregated response.");
+            response.TotalDuration = DateTime.UtcNow - startTime;
+            return response;
+        }
+
+        switch (policy.Strategy)
+        {
+            case AggregationStrategy.Sequential:
+                await ExecuteSequentialAsync(selectedTargets, response);
+                break;
+            case AggregationStrategy.Parallel:
+                await ExecuteParallelAsync(selectedTargets, response);
+                break;
+            case AggregationStrategy.FirstSuccess:
+                await ExecuteFirstSuccessAsync(selectedTargets, response);
+                break;
+            default:
+                _logger.LogWarning("Unsupported aggregation strategy: {Strategy}. Falling back to Parallel.", policy.Strategy);
+                await ExecuteParallelAsync(selectedTargets, response);
+                break;
         }
 
         response.TotalDuration = DateTime.UtcNow - startTime;
         return response;
     }
 
-    private async Task<AggregatedResponse> ExecuteParallelAsync(
-        IEnumerable<AggregatedRequest> requests,
-        AggregatedResponse response,
-        RouteTarget target)
+    private IEnumerable<ConditionalAggregationTarget> SelectConditionalTargets(AggregationPolicy policy, JsonNode? requestJsonNode)
     {
-        var startTime = DateTime.UtcNow;
+        var selected = new List<ConditionalAggregationTarget>();
+        foreach (var target in policy.Targets)
+        {
+            if (string.IsNullOrWhiteSpace(target.JsonPathCondition))
+            {
+                selected.Add(target); // No condition, always select
+                continue;
+            }
+
+            if (requestJsonNode is null)
+            {
+                _logger.LogDebug("Target '{TargetId}' has JSONPath condition but incoming request body is not JSON or empty. Skipping.", target.Id);
+                continue;
+            }
+
+            try
+            {
+                var result = JsonPath.Select(requestJsonNode, target.JsonPathCondition);
+                if (result != null && result.Any())
+                {
+                    selected.Add(target);
+                }
+            }
+            catch (JsonPathException ex)
+            {
+                _logger.LogError(ex, "Invalid JSONPath condition '{Condition}' for target '{TargetId}'. Skipping.", target.JsonPathCondition, target.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error evaluating JSONPath condition '{Condition}' for target '{TargetId}'. Skipping.", target.JsonPathCondition, target.Id);
+            }
+        }
+        return selected;
+    }
+
+    private async Task ExecuteSequentialAsync(
+        IEnumerable<ConditionalAggregationTarget> targets,
+        AggregatedResponse response)
+    {
+        foreach (var target in targets)
+        {
+            try
+            {
+                target.Validate();
+                var result = await ExecuteTargetRequestAsync(target);
+                response.AddResponse(target.Id, result.StatusCode, result.Body, result.Headers, result.Duration);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error executing sequential aggregated request for target '{TargetId}'", target.Id);
+                if (!target.Optional)
+                    throw; // Re-throw if target is not optional
+
+                response.AddResponse(target.Id, 500, null, null, null, ex.Message);
+            }
+        }
+    }
+
+    private async Task ExecuteParallelAsync(
+        IEnumerable<ConditionalAggregationTarget> targets,
+        AggregatedResponse response)
+    {
         var tasks = new List<Task>();
 
-        foreach (var request in requests)
+        foreach (var target in targets)
         {
             var task = Task.Run(async () =>
             {
                 try
                 {
-                    request.Validate();
-                    var result = await ExecuteRequestAsync(request, target);
-                    response.AddResponse(request.Alias, result.StatusCode, result.Body, result.Headers, result.Duration);
+                    target.Validate();
+                    var result = await ExecuteTargetRequestAsync(target);
+                    response.AddResponse(target.Id, result.StatusCode, result.Body, result.Headers, result.Duration);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    if (!request.Optional)
-                        throw;
+                    _logger.LogError(ex, "Error executing parallel aggregated request for target '{TargetId}'", target.Id);
+                    if (!target.Optional)
+                        throw; // Re-throw if target is not optional
 
-                    response.AddResponse(request.Alias, 0, null, null, null);
+                    response.AddResponse(target.Id, 500, null, null, null, ex.Message);
                 }
             });
-
             tasks.Add(task);
         }
 
         await Task.WhenAll(tasks);
-        response.TotalDuration = DateTime.UtcNow - startTime;
-        return response;
     }
 
-    private async Task<AggregatedResponse> ExecuteFirstSuccessAsync(
-        IEnumerable<AggregatedRequest> requests,
-        AggregatedResponse response,
-        RouteTarget target)
+    private async Task ExecuteFirstSuccessAsync(
+        IEnumerable<ConditionalAggregationTarget> targets,
+        AggregatedResponse response)
     {
-        var startTime = DateTime.UtcNow;
-
-        foreach (var request in requests)
+        foreach (var target in targets)
         {
             try
             {
-                request.Validate();
-                var result = await ExecuteRequestAsync(request, target);
-                response.AddResponse(request.Alias, result.StatusCode, result.Body, result.Headers, result.Duration);
+                target.Validate();
+                var result = await ExecuteTargetRequestAsync(target);
+                response.AddResponse(target.Id, result.StatusCode, result.Body, result.Headers, result.Duration);
 
                 if (result.StatusCode >= 200 && result.StatusCode < 300)
-                    break;
+                {
+                    _logger.LogInformation("First successful aggregated request for target '{TargetId}', stopping.", target.Id);
+                    break; // Stop on first success
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                if (!request.Optional)
-                    throw;
+                _logger.LogError(ex, "Error executing first-success aggregated request for target '{TargetId}'", target.Id);
+                if (!target.Optional)
+                    throw; // Re-throw if target is not optional
             }
         }
-
-        response.TotalDuration = DateTime.UtcNow - startTime;
-        return response;
     }
 
-    private async Task<RequestAggregationResult> ExecuteRequestAsync(AggregatedRequest request, RouteTarget target)
+    private async Task<RequestAggregationResult> ExecuteTargetRequestAsync(ConditionalAggregationTarget target)
     {
         var startTime = DateTime.UtcNow;
-        var url = target.GetForwardUrl(request.Path);
 
         using var httpRequest = new HttpRequestMessage(
-            new System.Net.Http.HttpMethod(request.Method),
-            url);
+            new System.Net.Http.HttpMethod(target.Method.ToString()),
+            target.UpstreamUrl);
 
-        if (request.Headers is not null)
+        if (target.Headers is not null)
         {
-            foreach (var header in request.Headers)
+            foreach (var header in target.Headers)
                 httpRequest.Headers.Add(header.Key, header.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Body))
-            httpRequest.Content = new StringContent(request.Body);
+        if (!string.IsNullOrWhiteSpace(target.Body))
+            httpRequest.Content = new StringContent(target.Body);
 
-        var timeout = TimeSpan.FromSeconds(request.TimeoutSeconds ?? 30);
+        var timeout = TimeSpan.FromSeconds(target.TimeoutSeconds);
         using var cts = new CancellationTokenSource(timeout);
 
         var httpResponse = await _httpClient.SendAsync(httpRequest, cts.Token);

@@ -20,6 +20,8 @@ public sealed class GatewayRoute
     public CircuitBreakerPolicy? CircuitBreakerPolicy { get; set; }
     public CachePolicy? CachePolicy { get; set; }
     public AuthenticationPolicy? AuthenticationPolicy { get; set; }
+    public RequestCoalescingPolicy? RequestCoalescingPolicy { get; set; } // Added for completeness based on docs/config-ref
+    public AggregationPolicy? AggregationPolicy { get; set; } // New: for conditional aggregation
     public bool IsActive { get; set; } = true;
     public int TimeoutSeconds { get; set; } = 30;
     public Dictionary<string, string> CustomHeaders { get; set; } = [];
