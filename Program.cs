@@ -33,6 +33,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 
+// Core Gateway Middleware - Order is important!
+app.UseRoutingMiddleware();      // 1. Resolve GatewayRoute and store in HttpContext.Items
+app.UseRateLimitingMiddleware(); // 2. Apply rate limiting based on resolved route
+
 // Health check endpoint
 app.MapGet("/health", () => new
 {
@@ -50,7 +54,8 @@ app.MapGet("/gateway/info", () => new
     {
         health = "/health",
         routes = "/gateway/routes",
-        circuitBreakers = "/gateway/circuit-breakers"
+        circuitBreakers = "/gateway/circuit-breakers",
+        rateLimits = "/api/GatewayManagement/rate-limits/{key}" // Updated info for new endpoint
     }
 }).WithName("GatewayInfo");
 
@@ -68,56 +73,43 @@ app.MapGet("/gateway/circuit-breakers", async (DotNetApiGateway.Services.Circuit
     return Results.Ok(statuses);
 }).WithName("GetCircuitBreakers");
 
-// Rate limit info endpoint
-app.MapPost("/gateway/rate-limit-info", async (
-    string clientId,
-    string routeId,
-    DotNetApiGateway.Services.RateLimitingService rateLimitService,
-    DotNetApiGateway.Repositories.GatewayRouteRepository routeRepository) =>
-{
-    var route = await routeRepository.GetByIdAsync(routeId);
-    if (route?.RateLimitPolicy is null)
-        return Results.NotFound("Route or rate limit policy not found");
-
-    var info = await rateLimitService.GetRateLimitInfoAsync(clientId, routeId, route.RateLimitPolicy);
-    return Results.Ok(info);
-}).WithName("GetRateLimitInfo");
-
-// Default routing endpoint
+// Default routing and forwarding endpoint
 app.MapFallback(async (HttpContext context, DotNetApiGateway.Services.RoutingService routingService) =>
 {
-    var path = context.Request.Path.Value ?? "/";
-    var method = context.Request.Method;
-
-    try
-    {
-        var route = await routingService.FindRouteAsync(path, method);
-
-        if (route is null)
-            return Results.NotFound(new { error = "Route not found", path, method });
-
-        var target = routingService.SelectTarget(route, context.Connection.RemoteIpAddress?.ToString());
-        var forwardUrl = routingService.BuildForwardUrl(target, path);
-
-        return Results.Json(new
-        {
-            message = "Request would be forwarded",
-            route = route.Name,
-            target = target.Name,
-            forwardUrl,
-            timestamp = DateTime.UtcNow
-        });
-    }
-    catch (DotNetApiGateway.Exceptions.RouteNotFoundException ex)
+    // Check if route resolution failed in RoutingMiddleware
+    if (context.Items.TryGetValue("RouteNotFoundException", out var notFoundEx) && notFoundEx is RouteNotFoundException rnf)
     {
         context.Response.StatusCode = 404;
-        return Results.Json(new { error = ex.Message, errorCode = ex.ErrorCode });
+        return Results.Json(new { error = rnf.Message, errorCode = rnf.ErrorCode });
     }
-    catch (DotNetApiGateway.Exceptions.GatewayException ex)
+    if (context.Items.TryGetValue("RouteResolutionError", out var resolutionEx) && resolutionEx is Exception resEx)
     {
-        context.Response.StatusCode = ex.StatusCode;
-        return Results.Json(new { error = ex.Message, errorCode = ex.ErrorCode });
+        context.Response.StatusCode = 500;
+        return Results.Json(new { error = $"Error during route resolution: {resEx.Message}" });
     }
+
+    // Retrieve the resolved route from HttpContext.Items
+    if (!context.Items.TryGetValue("GatewayRoute", out var routeObj) || routeObj is not GatewayRoute route)
+    {
+        // This should not happen if RoutingMiddleware ran correctly and found no explicit error.
+        // It implies no route was found, so return 404.
+        context.Response.StatusCode = 404;
+        return Results.Json(new { error = "Route not found", path = context.Request.Path.Value, method = context.Request.Method });
+    }
+    
+    // Proceed with forwarding the request using the resolved route
+    // (This part would involve calling a service to forward the request)
+    var target = routingService.SelectTarget(route, context.Connection.RemoteIpAddress?.ToString());
+    var forwardUrl = routingService.BuildForwardUrl(target, context.Request.Path.Value ?? "/");
+
+    return Results.Json(new
+    {
+        message = "Request would be forwarded",
+        route = route.Id, // Changed from route.Name to route.Id for consistency
+        target = target.Name,
+        forwardUrl,
+        timestamp = DateTime.UtcNow
+    });
 });
 
 app.Run();

@@ -7,73 +7,32 @@
 namespace DotNetApiGateway.Models;
 
 /// <summary>
-/// Tracks rate limit counters for a client within a time window
+/// Represents the current state of a rate limit for a specific key.
 /// </summary>
 public sealed class RateLimitEntry
 {
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string ClientId { get; set; } = string.Empty;
-    public string RouteId { get; set; } = string.Empty;
-    public long RequestCountPerMinute { get; set; } = 0;
-    public long RequestCountPerHour { get; set; } = 0;
-    public DateTime MinuteWindowStart { get; set; } = DateTime.UtcNow;
-    public DateTime HourWindowStart { get; set; } = DateTime.UtcNow;
-    public DateTime LastRequestAt { get; set; } = DateTime.UtcNow;
-    public int TokensAvailable { get; set; } = 0;
-    public DateTime LastTokenRefillAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// The unique key for which the rate limit is being tracked (e.g., client IP, user ID).
+    /// </summary>
+    public string Key { get; set; } = string.Empty;
 
-    public void IncrementMinuteCounter()
-    {
-        RequestCountPerMinute++;
-        LastRequestAt = DateTime.UtcNow;
-    }
+    /// <summary>
+    /// The current count of requests within the active rate limit window.
+    /// </summary>
+    public int Count { get; set; } = 0;
 
-    public void IncrementHourCounter()
-    {
-        RequestCountPerHour++;
-    }
+    /// <summary>
+    /// The number of seconds remaining until the rate limit window resets.
+    /// </summary>
+    public int RemainingTimeSeconds { get; set; } = 0;
 
-    public void ResetMinuteWindow()
-    {
-        RequestCountPerMinute = 0;
-        MinuteWindowStart = DateTime.UtcNow;
-    }
+    /// <summary>
+    /// The current number of tokens available in a token bucket rate limiting strategy.
+    /// </summary>
+    public double Tokens { get; set; } = 0;
 
-    public void ResetHourWindow()
-    {
-        RequestCountPerHour = 0;
-        HourWindowStart = DateTime.UtcNow;
-    }
-
-    public bool IsMinuteWindowExpired(int windowMinutes = 1)
-    {
-        return DateTime.UtcNow - MinuteWindowStart > TimeSpan.FromMinutes(windowMinutes);
-    }
-
-    public bool IsHourWindowExpired()
-    {
-        return DateTime.UtcNow - HourWindowStart > TimeSpan.FromHours(1);
-    }
-
-    public TimeSpan GetMinuteWindowTimeRemaining()
-    {
-        var remaining = TimeSpan.FromMinutes(1) - (DateTime.UtcNow - MinuteWindowStart);
-        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
-    }
-
-    public TimeSpan GetHourWindowTimeRemaining()
-    {
-        var remaining = TimeSpan.FromHours(1) - (DateTime.UtcNow - HourWindowStart);
-        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
-    }
-
-    public int GetMinuteWindowSecondsRemaining()
-    {
-        return (int)Math.Ceiling(GetMinuteWindowTimeRemaining().TotalSeconds);
-    }
-
-    public int GetHourWindowSecondsRemaining()
-    {
-        return (int)Math.Ceiling(GetHourWindowTimeRemaining().TotalSeconds);
-    }
+    /// <summary>
+    /// The timestamp of the last recorded request or token refill.
+    /// </summary>
+    public DateTime LastRequest { get; set; } = DateTime.UtcNow;
 }

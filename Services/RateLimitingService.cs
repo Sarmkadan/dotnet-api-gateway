@@ -4,129 +4,105 @@
 // CTO & Software Architect
 // =============================================================================
 
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Repositories;
+using Microsoft.Extensions.Logging;
+
 namespace DotNetApiGateway.Services;
 
 /// <summary>
-/// Service for enforcing rate limiting on requests
+/// Service for enforcing rate limiting on requests using pluggable storage.
 /// </summary>
 public sealed class RateLimitingService : IDisposable
 {
-    private readonly RateLimitRepository _rateLimitRepository;
+    private readonly IRateLimitStoreFactory _rateLimitStoreFactory;
     private readonly ILogger<RateLimitingService> _logger;
-    private readonly Timer _cleanupTimer;
 
-    public RateLimitingService(RateLimitRepository rateLimitRepository, ILogger<RateLimitingService> logger)
+    public RateLimitingService(IRateLimitStoreFactory rateLimitStoreFactory, ILogger<RateLimitingService> logger)
     {
-        _rateLimitRepository = rateLimitRepository;
+        _rateLimitStoreFactory = rateLimitStoreFactory;
         _logger = logger;
-        _cleanupTimer = new Timer(CleanupExpiredEntries, null, TimeSpan.FromHours(1), TimeSpan.FromHours(1));
     }
 
-    public async Task<bool> IsAllowedAsync(string clientId, string routeId, RateLimitPolicy policy)
+    /// <summary>
+    /// Checks if a request is allowed based on the provided rate limit policy.
+    /// </summary>
+    /// <param name="key">The unique key for the rate limit (e.g., client IP, user ID).</param>
+    /// <param name="policy">The rate limit policy to apply.</param>
+    /// <returns>True if the request is allowed, false otherwise.</returns>
+    public async Task<bool> IsAllowedAsync(string key, RateLimitPolicy policy)
     {
         if (!policy.IsEnabled())
             return true;
 
-        var entry = await _rateLimitRepository.GetByClientAndRouteAsync(clientId, routeId);
-
-        if (entry is null)
-        {
-            entry = new RateLimitEntry
-            {
-                ClientId = clientId,
-                RouteId = routeId,
-                RequestCountPerMinute = 1,
-                RequestCountPerHour = 1,
-                TokensAvailable = policy.BurstSize
-            };
-            await _rateLimitRepository.AddAsync(entry);
-            return true;
-        }
-
-        // Check and reset windows if expired
-        if (entry.IsMinuteWindowExpired())
-            entry.ResetMinuteWindow();
-
-        if (entry.IsHourWindowExpired())
-            entry.ResetHourWindow();
-
-        // Check minute limit
-        if (entry.RequestCountPerMinute >= policy.RequestsPerMinute)
-            return false;
-
-        // Check hour limit
-        if (entry.RequestCountPerHour >= policy.RequestsPerHour)
-            return false;
-
-        // Increment counters
-        entry.IncrementMinuteCounter();
-        entry.IncrementHourCounter();
-        await _rateLimitRepository.UpdateAsync(entry);
-
-        return true;
+        var store = _rateLimitStoreFactory.GetStore(policy);
+        return await store.IsRequestAllowedAsync(key, policy);
     }
 
-    public async Task<RateLimitInfo> GetRateLimitInfoAsync(string clientId, string routeId, RateLimitPolicy policy)
+    /// <summary>
+    /// Retrieves the current rate limit information for a given key and policy.
+    /// </summary>
+    /// <param name="key">The unique key for the rate limit.</param>
+    /// <param name="policy">The rate limit policy.</param>
+    /// <returns>Rate limit information.</returns>
+    public async Task<RateLimitInfo> GetRateLimitInfoAsync(string key, RateLimitPolicy policy)
     {
-        var entry = await _rateLimitRepository.GetByClientAndRouteAsync(clientId, routeId);
+        var store = _rateLimitStoreFactory.GetStore(policy);
+        var entry = await store.GetEntryAsync(key, policy);
 
-        if (entry is null)
+        // Map the generic RateLimitEntry to RateLimitInfo for external consumption
+        int limit = policy.RequestsPerMinute;
+        int remaining = policy.RequestsPerMinute - entry.Count;
+
+        if (policy.Strategy == RateLimitStrategy.TokenBucket)
         {
-            return new RateLimitInfo
-            {
-                Limit = policy.RequestsPerMinute,
-                Remaining = policy.RequestsPerMinute,
-                Reset = (int)TimeSpan.FromMinutes(1).TotalSeconds
-            };
+            limit = policy.BurstSize;
+            remaining = (int)entry.Tokens;
         }
-
-        // Refresh windows if expired
-        if (entry.IsMinuteWindowExpired())
-            entry.ResetMinuteWindow();
-
-        var remaining = Math.Max(0, policy.RequestsPerMinute - (int)entry.RequestCountPerMinute);
 
         return new RateLimitInfo
         {
-            Limit = policy.RequestsPerMinute,
+            Limit = limit,
             Remaining = remaining,
-            Reset = (int)entry.GetMinuteWindowSecondsRemaining()
+            Reset = entry.RemainingTimeSeconds
         };
     }
 
-    public async Task ResetClientLimitAsync(string clientId)
+    /// <summary>
+    /// Resets the rate limits for a specific key across all configured stores.
+    /// </summary>
+    /// <param name="key">The unique key to reset (e.g., client IP, user ID).</param>
+    public async Task ResetKeyLimitsAsync(string key)
     {
-        var entries = await _rateLimitRepository.GetByClientAsync(clientId);
-        foreach (var entry in entries)
+        foreach (var store in _rateLimitStoreFactory.GetAllStores())
         {
-            entry.ResetMinuteWindow();
-            entry.ResetHourWindow();
-            await _rateLimitRepository.UpdateAsync(entry);
+            await store.ResetKeyAsync(key);
         }
+        _logger.LogInformation("Rate limits for key {Key} reset across all stores.", key);
     }
 
-    private async void CleanupExpiredEntries(object? state)
+    /// <summary>
+    /// Resets all rate limit counters across all configured stores.
+    /// </summary>
+    public async Task ResetAllLimitsAsync()
     {
-        try
+        foreach (var store in _rateLimitStoreFactory.GetAllStores())
         {
-            await _rateLimitRepository.CleanupExpiredEntriesAsync();
+            await store.ResetAllAsync();
         }
-        catch (ObjectDisposedException)
-        {
-            // Timer fired after disposal - ignore
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to cleanup expired rate limit entries");
-        }
+        _logger.LogInformation("All rate limits reset across all stores.");
     }
 
     public void Dispose()
     {
-        _cleanupTimer.Dispose();
+        // Dispose the factory, which will dispose managed Redis stores
+        (_rateLimitStoreFactory as IDisposable)?.Dispose();
     }
 }
 
+/// <summary>
+/// Provides a snapshot of current rate limit status for external display.
+/// </summary>
 public sealed class RateLimitInfo
 {
     public int Limit { get; set; }
