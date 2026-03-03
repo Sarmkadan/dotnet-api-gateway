@@ -179,6 +179,51 @@ public class GatewayManagementController : ControllerBase
     }
 
     /// <summary>
+    /// Get the current rate limit status for a specific key.
+    /// </summary>
+    [HttpGet("rate-limits/{key}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetRateLimitStatus(string key)
+    {
+        // To get accurate rate limit info, we need the policy applied to the route.
+        // For simplicity, this endpoint will assume a default policy or retrieve it
+        // from a route context if available. For now, we'll return an approximation
+        // or require the policy to be passed. Let's make it simpler for admin by
+        // just getting a general status without a specific route policy.
+        // This will require a default or global policy for RateLimitingService.GetRateLimitInfoAsync
+
+        // For now, let's assume a dummy policy for retrieving status in admin panel
+        // In a real scenario, you'd get the policy from the relevant GatewayRoute
+        // and its associated target. This is an admin endpoint, so a broad view is okay.
+        var dummyPolicy = new RateLimitPolicy { RequestsPerMinute = 1000, BurstSize = 10 };
+        var info = await _rateLimitingService.GetRateLimitInfoAsync(key, dummyPolicy);
+        return Ok(info);
+    }
+
+    /// <summary>
+    /// Resets the rate limit for a specific key.
+    /// </summary>
+    [HttpPost("rate-limits/{key}/reset")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResetRateLimitForKey(string key)
+    {
+        await _rateLimitingService.ResetKeyLimitsAsync(key);
+        return Ok(new { message = $"Rate limit for key '{key}' reset." });
+    }
+
+    /// <summary>
+    /// Resets all rate limits.
+    /// </summary>
+    [HttpPost("rate-limits/reset-all")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResetAllRateLimits()
+    {
+        await _rateLimitingService.ResetAllLimitsAsync();
+        return Ok(new { message = "All rate limits reset." });
+    }
+
+    /// <summary>
     /// Get overall gateway metrics including total requests, success rate, and performance stats.
     /// </summary>
     [HttpGet("metrics/global")]

@@ -80,3 +80,12 @@ public enum LoadBalancingStrategy
     LeastConnections, // Route to least busy backend
     IpHash           // Route based on client IP
 }
+
+/// <summary>
+/// Rate limiting storage types
+/// </summary>
+public enum RateLimitStorageType
+{
+    InMemory,
+    Redis
+}
