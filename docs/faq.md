@@ -186,6 +186,41 @@ Cache is in-memory. When TTL expires, the entry is automatically removed.
 
 **A:** Currently, caching is per-route with uniform TTL. Future versions may support conditional caching based on response headers.
 
+### Q: How does the circuit breaker interact with rate limiting?
+
+**A:** The gateway processes each request through its middleware pipeline in this order:
+
+```
+Request → Routing → Rate Limiting → Forwarding (Circuit Breaker check)
+```
+
+**Key implication:** Rate limiting is evaluated *before* the circuit breaker state is checked. This means:
+
+- A request that would be immediately rejected by an open circuit breaker is still counted against the client's rate limit quota.
+- If a downstream service is failing and the circuit opens, clients can still exhaust their rate limit window with requests that are instantly rejected.
+
+**Why this ordering?**  
+Rate limiting is enforced at the gateway edge to protect both the gateway and downstream services from overload. Allowing circuit-breaker-blocked requests to bypass rate limit counting could let clients issue unlimited requests while the circuit is open, which would create a burst the moment the circuit closes.
+
+**Recommended practice:**  
+Configure your circuit breaker `timeoutSeconds` to be shorter than the rate limit window so the circuit has a chance to close (and succeed) within a single rate limit period. Also set appropriate `failureThreshold` values so the circuit does not open on transient errors alone.
+
+```json
+{
+  "rateLimitPolicy": {
+    "requestsPerMinute": 100,
+    "burstSize": 20
+  },
+  "circuitBreakerPolicy": {
+    "failureThreshold": 5,
+    "successThreshold": 2,
+    "timeoutSeconds": 15
+  }
+}
+```
+
+With this configuration the circuit can recover multiple times within the one-minute rate limit window, and clients have budget for both successful requests and the handful of requests that hit the open circuit.
+
 ### Q: How does the circuit breaker work?
 
 **A:** State machine:
