@@ -34,6 +34,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<RateLimitingService>();
         services.AddSingleton<JwtValidationService>();
         services.AddSingleton<CircuitBreakerService>();
+        services.AddSingleton<MetricsService>();
+        services.AddSingleton<IResponseTransformer, ResponseTransformationService>();
         services.AddScoped<RequestAggregationService>();
 
         // Register HTTP client
