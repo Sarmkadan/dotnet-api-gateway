@@ -158,4 +158,11 @@ public class GatewayRouteRepository : IRepository<GatewayRoute>
             _lock.ExitWriteLock();
         }
     }
+
+    public Task<int> GetCountAsync()
+    {
+        _lock.EnterReadLock();
+        try { return Task.FromResult(_routes.Count); }
+        finally { _lock.ExitReadLock(); }
+    }
 }
