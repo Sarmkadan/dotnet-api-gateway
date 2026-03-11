@@ -175,7 +175,7 @@ public sealed class WebhookSubscription
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string CallbackUrl { get; set; } = string.Empty;
-    public string[] EventTypes { get; set; } = []string>();
+    public string[] EventTypes { get; set; } = [];
     public string Secret { get; set; } = string.Empty;
     public bool Active { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
