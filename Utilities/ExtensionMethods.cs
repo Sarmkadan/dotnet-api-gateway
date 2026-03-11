@@ -85,7 +85,7 @@ public static class ExtensionMethods
     public static byte[] ToBytes(this string value, Encoding? encoding = null)
     {
         if (string.IsNullOrEmpty(value))
-            return []byte>();
+            return [];
 
         encoding ??= Encoding.UTF8;
         return encoding.GetBytes(value);

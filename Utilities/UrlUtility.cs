@@ -127,7 +127,7 @@ public static class UrlUtility
     /// Remove or replace sensitive parameters from query string (e.g., passwords, tokens).
     /// Useful for logging URLs without exposing secrets.
     /// </summary>
-    public static string SanitizeUrl(string url, string[] sensitiveParams = null)
+    public static string SanitizeUrl(string url, string[]? sensitiveParams = null)
     {
         sensitiveParams ??= new[] { "password", "token", "api_key", "secret", "authorization" };
 
