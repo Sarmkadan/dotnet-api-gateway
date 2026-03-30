@@ -36,6 +36,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<CircuitBreakerService>();
         services.AddSingleton<MetricsService>();
         services.AddSingleton<IResponseTransformer, ResponseTransformationService>();
+        services.AddSingleton<RequestTransformationService>();
+        services.AddSingleton<ApiVersioningService>();
         services.AddScoped<RequestAggregationService>();
 
         // Register HTTP client
