@@ -108,6 +108,7 @@ app.MapFallback(async (
     DotNetApiGateway.Services.RequestAggregationService aggregationService,
     DotNetApiGateway.Integration.ExternalApiClient externalApiClient,
     DotNetApiGateway.Services.IResponseTransformer responseTransformer,
+    DotNetApiGateway.Services.RequestTransformationService requestTransformationService,
     ILogger<Program> logger) =>
 {
     // Check if route resolution failed in RoutingMiddleware
@@ -157,7 +158,10 @@ app.MapFallback(async (
     try
     {
         var target = routingService.SelectTarget(route, context.Connection.RemoteIpAddress?.ToString());
-        var forwardUrl = routingService.BuildForwardUrl(target, context.Request.Path.Value ?? "/");
+        var requestPath = context.Items.TryGetValue("StrippedPath", out var stripped) && stripped is string sp
+            ? sp
+            : context.Request.Path.Value ?? "/";
+        var forwardUrl = routingService.BuildForwardUrl(target, requestPath);
 
         // Forward the request using ExternalApiClient
         // Need to read the request body for forwarding
@@ -186,6 +190,10 @@ app.MapFallback(async (
                 requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
             }
         }
+
+        // Apply request-phase transformation rules before forwarding
+        if (route.TransformationRules.Count > 0)
+            requestTransformationService.ApplyRequestRules(requestMessage, route.TransformationRules);
         
         // Timeout handling for individual target
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(target.TimeoutSeconds ?? route.TimeoutSeconds));
@@ -194,6 +202,10 @@ app.MapFallback(async (
 
         // Apply response transformations (security headers, custom headers, etc.)
         responseMessage = await responseTransformer.TransformAsync(responseMessage, route);
+
+        // Apply response-phase transformation rules
+        if (route.TransformationRules.Count > 0)
+            requestTransformationService.ApplyResponseRules(responseMessage, route.TransformationRules);
 
         // Copy status code and headers from upstream response to downstream response
         context.Response.StatusCode = (int)responseMessage.StatusCode;
