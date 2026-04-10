@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotNetApiGateway.Services;
 /// Decorator that wraps request handling with caching layer.
 /// Intercepts requests and returns cached responses when available.
 /// </summary>
-public class RequestCachingDecorator
+public sealed class RequestCachingDecorator
 {
     private readonly CacheService _cacheService;
     private readonly ILogger<RequestCachingDecorator> _logger;
@@ -33,7 +34,7 @@ public class RequestCachingDecorator
 
         // Try cache first
         var cached = await _cacheService.GetAsync<T>(cacheKey);
-        if (cached != null)
+        if (cached is not null)
         {
             _logger.LogDebug("Cache hit for key: {CacheKey}", cacheKey);
             return cached;
@@ -45,7 +46,7 @@ public class RequestCachingDecorator
         var result = await fetchFunc();
 
         // Cache result
-        if (result != null && cacheDuration.HasValue)
+        if (result is not null && cacheDuration.HasValue)
         {
             await _cacheService.SetAsync(cacheKey, result, cacheDuration.Value);
             _logger.LogDebug("Cached result for key: {CacheKey}", cacheKey);
@@ -69,7 +70,7 @@ public class RequestCachingDecorator
 
         // Try fresh cache
         var cached = await _cacheService.GetAsync<T>(cacheKey);
-        if (cached != null)
+        if (cached is not null)
         {
             _logger.LogDebug("Fresh cache hit for key: {CacheKey}", cacheKey);
             return cached;
@@ -81,7 +82,7 @@ public class RequestCachingDecorator
             var result = await fetchFunc();
 
             // Cache result
-            if (result != null && cacheDuration.HasValue)
+            if (result is not null && cacheDuration.HasValue)
             {
                 await _cacheService.SetAsync(cacheKey, result, cacheDuration.Value);
                 _logger.LogDebug("Cached result for key: {CacheKey}", cacheKey);
@@ -97,7 +98,7 @@ public class RequestCachingDecorator
             var staleKey = $"{cacheKey}:stale";
             var staleCache = await _cacheService.GetAsync<T>(staleKey);
 
-            if (staleCache != null)
+            if (staleCache is not null)
             {
                 _logger.LogInformation("Returning stale cache for key: {CacheKey}", cacheKey);
 

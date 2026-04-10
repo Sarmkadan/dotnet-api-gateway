@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotNetApiGateway.Integration;
 /// Registry for managing webhook subscriptions and event routing.
 /// Maintains thread-safe collection of active webhooks and routes events to subscribers.
 /// </summary>
-public class WebhookRegistry
+public sealed class WebhookRegistry
 {
     private readonly List<WebhookSubscription> _subscriptions = new();
     private readonly ReaderWriterLockSlim _lock = new();
@@ -25,7 +26,7 @@ public class WebhookRegistry
     /// </summary>
     public void Register(WebhookSubscription subscription)
     {
-        if (subscription == null)
+        if (subscription is null)
             throw new ArgumentNullException(nameof(subscription));
 
         _lock.EnterWriteLock();
@@ -52,7 +53,7 @@ public class WebhookRegistry
         try
         {
             var subscription = _subscriptions.FirstOrDefault(s => s.Id == subscriptionId);
-            if (subscription != null)
+            if (subscription is not null)
             {
                 _subscriptions.Remove(subscription);
                 _logger.LogInformation("Webhook unregistered: {SubscriptionId}", subscriptionId);
@@ -107,7 +108,7 @@ public class WebhookRegistry
     /// </summary>
     public async Task PublishEventAsync(WebhookEvent webhookEvent)
     {
-        if (webhookEvent == null)
+        if (webhookEvent is null)
             throw new ArgumentNullException(nameof(webhookEvent));
 
         var subscriptions = GetSubscriptionsForEvent(webhookEvent.EventType);
@@ -170,11 +171,11 @@ public class WebhookRegistry
 /// <summary>
 /// Represents a webhook subscription with event type filters and retry policy.
 /// </summary>
-public class WebhookSubscription
+public sealed class WebhookSubscription
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string CallbackUrl { get; set; } = string.Empty;
-    public string[] EventTypes { get; set; } = Array.Empty<string>();
+    public string[] EventTypes { get; set; } = []string>();
     public string Secret { get; set; } = string.Empty;
     public bool Active { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -184,7 +185,7 @@ public class WebhookSubscription
 /// <summary>
 /// Retry policy configuration for webhook delivery.
 /// </summary>
-public class WebhookRetryPolicy
+public sealed class WebhookRetryPolicy
 {
     public int MaxRetries { get; set; } = 3;
     public int InitialDelayMs { get; set; } = 1000;
@@ -194,7 +195,7 @@ public class WebhookRetryPolicy
 /// <summary>
 /// Webhook event payload sent to subscribers.
 /// </summary>
-public class WebhookEvent
+public sealed class WebhookEvent
 {
     public string EventType { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;

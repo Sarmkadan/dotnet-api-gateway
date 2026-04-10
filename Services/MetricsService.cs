@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,7 @@ namespace DotNetApiGateway.Services;
 /// <summary>
 /// Service for collecting and reporting gateway metrics
 /// </summary>
-public class MetricsService
+public sealed class MetricsService
 {
     private readonly ReaderWriterLockSlim _lock = new();
     private long _totalRequests = 0;
@@ -119,7 +120,7 @@ public class MetricsService
     }
 }
 
-public class GatewayMetrics
+public sealed class GatewayMetrics
 {
     public long TotalRequests { get; set; }
     public long SuccessfulRequests { get; set; }
@@ -140,7 +141,7 @@ public class GatewayMetrics
     }
 }
 
-public class RouteMetrics
+public sealed class RouteMetrics
 {
     public string RouteId { get; set; } = string.Empty;
     public long RequestCount { get; set; } = 0;

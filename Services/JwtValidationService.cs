@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -11,7 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 /// <summary>
 /// Service for validating JWT tokens and extracting claims
 /// </summary>
-public class JwtValidationService
+public sealed class JwtValidationService
 {
     private readonly JwtSecurityTokenHandler _tokenHandler;
 

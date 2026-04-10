@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ namespace DotNetApiGateway.Middleware;
 /// Middleware for comprehensive request and response logging.
 /// Logs all incoming requests with headers, body, and response details for audit trails.
 /// </summary>
-public class RequestLoggingMiddleware
+public sealed class RequestLoggingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<RequestLoggingMiddleware> _logger;

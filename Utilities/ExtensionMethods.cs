@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -35,7 +36,7 @@ public static class ExtensionMethods
     /// </summary>
     public static string Truncate(this string value, int maxLength, string suffix = "...")
     {
-        if (value == null || value.Length <= maxLength)
+        if (value is null || value.Length <= maxLength)
             return value;
 
         return value.Substring(0, maxLength - suffix.Length) + suffix;
@@ -46,7 +47,7 @@ public static class ExtensionMethods
     /// </summary>
     public static string Remove(this string value, params char[] chars)
     {
-        if (value == null || chars == null || chars.Length == 0)
+        if (value is null || chars is null || chars.Length == 0)
             return value;
 
         var sb = new StringBuilder(value.Length);
@@ -84,7 +85,7 @@ public static class ExtensionMethods
     public static byte[] ToBytes(this string value, Encoding? encoding = null)
     {
         if (string.IsNullOrEmpty(value))
-            return Array.Empty<byte>();
+            return []byte>();
 
         encoding ??= Encoding.UTF8;
         return encoding.GetBytes(value);
@@ -95,7 +96,7 @@ public static class ExtensionMethods
     /// </summary>
     public static string ToHexString(this byte[] data)
     {
-        if (data == null || data.Length == 0)
+        if (data is null || data.Length == 0)
             return string.Empty;
 
         return Convert.ToHexString(data);
@@ -106,7 +107,7 @@ public static class ExtensionMethods
     /// </summary>
     public static bool IsEmpty<T>(this IEnumerable<T>? collection)
     {
-        return collection == null || !collection.Any();
+        return collection is null || !collection.Any();
     }
 
     /// <summary>
@@ -114,7 +115,7 @@ public static class ExtensionMethods
     /// </summary>
     public static bool HasElements<T>(this IEnumerable<T>? collection)
     {
-        return collection != null && collection.Any();
+        return collection is not null && collection.Any();
     }
 
     /// <summary>
@@ -122,7 +123,7 @@ public static class ExtensionMethods
     /// </summary>
     public static T? GetOrDefault<T>(this List<T> list, int index, T? defaultValue = default)
     {
-        if (list == null || index < 0 || index >= list.Count)
+        if (list is null || index < 0 || index >= list.Count)
             return defaultValue;
 
         return list[index];
@@ -133,7 +134,7 @@ public static class ExtensionMethods
     /// </summary>
     public static Dictionary<string, T> ToLowerKeyDictionary<T>(this Dictionary<string, T> dict)
     {
-        if (dict == null)
+        if (dict is null)
             return new Dictionary<string, T>();
 
         return dict.ToDictionary(k => k.Key.ToLowerInvariant(), v => v.Value);
@@ -146,10 +147,10 @@ public static class ExtensionMethods
         this Dictionary<TKey, TValue> destination,
         Dictionary<TKey, TValue> source) where TKey : notnull
     {
-        if (destination == null)
+        if (destination is null)
             return source ?? new Dictionary<TKey, TValue>();
 
-        if (source == null)
+        if (source is null)
             return destination;
 
         foreach (var kvp in source)
@@ -181,7 +182,7 @@ public static class ExtensionMethods
     /// </summary>
     public static bool MatchesAny(this string value, params string[] patterns)
     {
-        if (string.IsNullOrEmpty(value) || patterns == null || patterns.Length == 0)
+        if (string.IsNullOrEmpty(value) || patterns is null || patterns.Length == 0)
             return false;
 
         return patterns.Any(p => value.Equals(p, StringComparison.OrdinalIgnoreCase));
@@ -192,7 +193,7 @@ public static class ExtensionMethods
     /// </summary>
     public static long GetMemorySize(this string value)
     {
-        if (value == null)
+        if (value is null)
             return 0;
 
         return System.Text.Encoding.UTF8.GetByteCount(value) + 48; // Account for string object overhead
