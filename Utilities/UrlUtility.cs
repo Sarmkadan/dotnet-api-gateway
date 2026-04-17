@@ -18,13 +18,19 @@ public static class UrlUtility
     /// Combine base URL with path, handling trailing slashes correctly.
     /// Ensures no double slashes in the final URL.
     /// </summary>
-    public static string CombineUrl(string baseUrl, string path)
+    public static string CombineUrl(string baseUrl, string path, bool encodePath = false)
     {
         if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(path))
             return baseUrl ?? path ?? "/";
 
-        var trimmedBase = baseUrl.TrimEnd('/');
-        var trimmedPath = path.TrimStart('/');
+        var trimmedBase = baseUrl.TrimEnd('/').Replace("%2f", "/");
+        var trimmedPath = path.TrimStart('/').Replace("%2f", "/");
+
+        // Hotfix: Handle encoded path segments properly
+        if (encodePath)
+        {
+            trimmedPath = HttpUtility.UrlPathEncode(trimmedPath);
+        }
 
         return $"{trimmedBase}/{trimmedPath}";
     }
