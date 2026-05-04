@@ -73,7 +73,7 @@ public class RateLimitingService
             {
                 Limit = policy.RequestsPerMinute,
                 Remaining = policy.RequestsPerMinute,
-                Reset = (long)TimeSpan.FromMinutes(1).TotalSeconds
+                Reset = (int)TimeSpan.FromMinutes(1).TotalSeconds
             };
         }
 
@@ -87,7 +87,7 @@ public class RateLimitingService
         {
             Limit = policy.RequestsPerMinute,
             Remaining = remaining,
-            Reset = entry.GetMinuteWindowSecondsRemaining()
+            Reset = (int)entry.GetMinuteWindowSecondsRemaining()
         };
     }
 

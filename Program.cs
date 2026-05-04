@@ -38,8 +38,7 @@ app.MapGet("/health", () => new
     status = "healthy",
     timestamp = DateTime.UtcNow,
     version = "1.0.0"
-}).WithName("Health")
-  .WithOpenApi();
+}).WithName("Health");
 
 // Gateway info endpoint
 app.MapGet("/gateway/info", () => new
@@ -52,24 +51,21 @@ app.MapGet("/gateway/info", () => new
         routes = "/gateway/routes",
         circuitBreakers = "/gateway/circuit-breakers"
     }
-}).WithName("GatewayInfo")
-  .WithOpenApi();
+}).WithName("GatewayInfo");
 
 // Routes endpoint
 app.MapGet("/gateway/routes", async (DotNetApiGateway.Services.RoutingService routingService) =>
 {
     var routes = await routingService.GetAllActiveRoutesAsync();
     return Results.Ok(routes);
-}).WithName("GetRoutes")
-  .WithOpenApi();
+}).WithName("GetRoutes");
 
 // Circuit breaker status endpoint
 app.MapGet("/gateway/circuit-breakers", async (DotNetApiGateway.Services.CircuitBreakerService cbService) =>
 {
     var statuses = await cbService.GetAllStatusesAsync();
     return Results.Ok(statuses);
-}).WithName("GetCircuitBreakers")
-  .WithOpenApi();
+}).WithName("GetCircuitBreakers");
 
 // Rate limit info endpoint
 app.MapPost("/gateway/rate-limit-info", async (
@@ -84,8 +80,7 @@ app.MapPost("/gateway/rate-limit-info", async (
 
     var info = await rateLimitService.GetRateLimitInfoAsync(clientId, routeId, route.RateLimitPolicy);
     return Results.Ok(info);
-}).WithName("GetRateLimitInfo")
-  .WithOpenApi();
+}).WithName("GetRateLimitInfo");
 
 // Default routing endpoint
 app.MapFallback(async (HttpContext context, DotNetApiGateway.Services.RoutingService routingService) =>

@@ -48,7 +48,7 @@ public class RequestAggregationService
                 var result = await ExecuteRequestAsync(request, target);
                 response.AddResponse(request.Alias, result.StatusCode, result.Body, result.Headers, result.Duration);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 if (!request.Optional)
                     throw;
@@ -79,7 +79,7 @@ public class RequestAggregationService
                     var result = await ExecuteRequestAsync(request, target);
                     response.AddResponse(request.Alias, result.StatusCode, result.Body, result.Headers, result.Duration);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     if (!request.Optional)
                         throw;
@@ -114,7 +114,7 @@ public class RequestAggregationService
                 if (result.StatusCode >= 200 && result.StatusCode < 300)
                     break;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 if (!request.Optional)
                     throw;
