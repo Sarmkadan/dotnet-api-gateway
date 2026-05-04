@@ -716,4 +716,28 @@ context.QueryParameters["page"] = "1";
 context.CustomData["key"] = "value";
 ```
 
+## JsonUtilityTests
+
+The `JsonUtilityTests` class provides a comprehensive unit testing suite for the `JsonUtility` class, validating JSON serialization, deserialization, parsing, and merging operations. These tests ensure that JSON processing in the API gateway robustly handles various data structures, edge cases, and type conversions.
+
+Example usage demonstrating the test class properties and structure:
+
+```csharp
+using DotNetApiGateway.Tests;
+
+// Instantiate the test class
+var tests = new JsonUtilityTests();
+
+// Set properties used in testing scenarios
+tests.Name = "John";
+tests.Age = 30;
+tests.OptionalField = "OptionalValue";
+
+// The class contains various [Fact] methods to test JsonUtility, such as:
+// tests.Serialize_ValidObject_ReturnsJsonString();
+// tests.Deserialize_ValidJson_ReturnsObject();
+// tests.MergeJson_BothValidJson_ReturnsMergedJson();
+```
+
+
 ```
