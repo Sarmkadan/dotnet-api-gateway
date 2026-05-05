@@ -96,22 +96,22 @@ The DotNet API Gateway provides all these capabilities with minimal overhead and
 
 ## Features
 
-✅ **Smart Routing**: Dynamic route matching, regex patterns, method-based routing  
-✅ **Rate Limiting**: Token bucket algorithm, per-client/endpoint limits, sliding window  
-✅ **JWT Validation**: Token verification, claim extraction, role-based access control  
-✅ **Request Caching**: Response caching with TTL, conditional caching, cache invalidation  
-✅ **Circuit Breaker**: Fail-fast pattern, automatic recovery, configurable thresholds  
-✅ **Request Aggregation**: Combine multiple backend calls into single response  
-✅ **Retry Policies**: Exponential backoff, jitter, transient error handling  
-✅ **Request Transformation**: Header manipulation, payload transformation, compression  
-✅ **Webhook Management**: Webhook registration, delivery, retry logic  
-✅ **Health Monitoring**: Service health checks, dependency monitoring  
-✅ **Metrics & Analytics**: Request metrics, latency tracking, error rates  
-✅ **Performance Monitoring**: Real-time performance analysis, bottleneck detection  
-✅ **Request Logging**: Structured logging, request/response capture  
-✅ **Background Tasks**: Cleanup workers, metrics export, health checks  
-✅ **Format Support**: JSON, XML, CSV response formatting  
-✅ **Event Bus**: Internal event system for extensibility  
+- **Smart Routing**: Dynamic route matching, regex patterns, method-based routing  
+- **Rate Limiting**: Token bucket algorithm, per-client/endpoint limits, sliding window  
+- **JWT Validation**: Token verification, claim extraction, role-based access control  
+- **Request Caching**: Response caching with TTL, conditional caching, cache invalidation  
+- **Circuit Breaker**: Fail-fast pattern, automatic recovery, configurable thresholds  
+- **Request Aggregation**: Combine multiple backend calls into single response  
+- **Retry Policies**: Exponential backoff, jitter, transient error handling  
+- **Request Transformation**: Header manipulation, payload transformation, compression  
+- **Webhook Management**: Webhook registration, delivery, retry logic  
+- **Health Monitoring**: Service health checks, dependency monitoring  
+- **Metrics & Analytics**: Request metrics, latency tracking, error rates  
+- **Performance Monitoring**: Real-time performance analysis, bottleneck detection  
+- **Request Logging**: Structured logging, request/response capture  
+- **Background Tasks**: Cleanup workers, metrics export, health checks  
+- **Format Support**: JSON, XML, CSV response formatting  
+- **Event Bus**: Internal event system for extensibility  
 
 ## Installation
 
