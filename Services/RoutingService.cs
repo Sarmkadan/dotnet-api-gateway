@@ -22,6 +22,13 @@ public sealed class RoutingService
         _loadBalancingStrategy = loadBalancingStrategy;
     }
 
+    /// <summary>
+    /// Finds a route matching the specified path and HTTP method.
+    /// </summary>
+    /// <param name="path">The request path.</param>
+    /// <param name="method">The HTTP method.</param>
+    /// <returns>The matching gateway route, or null if not found.</returns>
+    /// <exception cref="RouteNotFoundException">Thrown if no route is found.</exception>
     public async Task<GatewayRoute?> FindRouteAsync(string path, string method)
     {
         var route = await _routeRepository.FindRouteByPathAsync(path, method);
@@ -32,6 +39,13 @@ public sealed class RoutingService
         return route;
     }
 
+    /// <summary>
+    /// Selects a target for the given route based on the configured load balancing strategy.
+    /// </summary>
+    /// <param name="route">The gateway route.</param>
+    /// <param name="clientIp">The client IP address, used for IP hash strategy.</param>
+    /// <returns>The selected route target.</returns>
+    /// <exception cref="GatewayException">Thrown if no healthy targets are available.</exception>
     public RouteTarget SelectTarget(GatewayRoute route, string? clientIp = null)
     {
         var healthyTargets = route.Targets.Where(t => t.IsHealthy).ToList();
@@ -51,8 +65,17 @@ public sealed class RoutingService
         };
     }
 
-    private RouteTarget SelectTargetRoundRobin(List<RouteTarget> targets)
+    /// <summary>
+    /// Builds the URL to forward the request to the target.
+    /// </summary>
+    /// <param name="target">The target to forward to.</param>
+    /// <param name="requestPath">The original request path.</param>
+    /// <returns>The full URL for the backend target.</returns>
+    public string BuildForwardUrl(RouteTarget target, string requestPath)
     {
+        return target.GetForwardUrl(requestPath);
+    }
+
         var target = targets[_roundRobinIndex % targets.Count];
         _roundRobinIndex++;
         return target;
