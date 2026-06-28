@@ -223,33 +223,16 @@ For a comprehensive guide to all configuration options, including gateway-level 
 
 ## Usage Examples
 
+The `examples/` directory contains complete, runnable code snippets demonstrating common gateway usage scenarios.
+
+- [BasicUsage.cs](examples/BasicUsage.cs) - Minimal setup for a gateway.
+- [AdvancedUsage.cs](examples/AdvancedUsage.cs) - Advanced configuration, custom options, and error handling.
+- [IntegrationExample.cs](examples/IntegrationExample.cs) - Integrating gateway services into an existing ASP.NET Core DI container.
+
+The following snippets provide a quick overview:
+
 ### Example 1: Simple Routing
-
-```csharp
-// Route all /api/users requests to backend service
-var gatewayConfig = new GatewayConfiguration
-{
-    Port = 5000,
-    Routes = new List<GatewayRoute>
-    {
-        new GatewayRoute
-        {
-            Name = "user-service",
-            Pattern = "^/api/users(/.*)?$",
-            Method = "ANY",
-            Targets = new List<RouteTarget>
-            {
-                new RouteTarget
-                {
-                    Url = "http://localhost:3001/api/users",
-                    Weight = 100
-                }
-            }
-        }
-    }
-};
-```
-
+... (keeping the rest as is)
 ### Example 2: Load Balancing
 
 ```csharp
