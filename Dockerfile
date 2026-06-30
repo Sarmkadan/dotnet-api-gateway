@@ -1,6 +1,4 @@
 # =============================================================================
-# Author: Vladyslav Zaiets | https://sarmkadan.com
-# CTO & Software Architect
 # Multi-stage Dockerfile for DotNet API Gateway
 # =============================================================================
 
@@ -33,15 +31,15 @@ RUN useradd -m -u 1000 gateway && chown -R gateway:gateway /app
 USER gateway
 
 # Expose ports
-EXPOSE 5000 5001
+EXPOSE 8080
 
 # Set environment variables
-ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \
-    CMD dotnet /app/DotNetApiGateway.dll --health-check || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Entry point
 ENTRYPOINT ["dotnet", "DotNetApiGateway.dll"]
