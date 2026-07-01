@@ -575,6 +575,17 @@ Measured on a single core (Intel Core i7-12700, .NET 10, Linux) with in-memory r
 
 Memory footprint at steady state with 50 active routes: ~35 MB. Scales linearly with the number of concurrent connections; 1,000 concurrent clients add roughly 12 MB.
 
+### Running Benchmarks
+
+To run the performance benchmarks, navigate to the benchmarks project directory and run with the `Release` configuration:
+
+```bash
+cd benchmarks/dotnet-api-gateway.Benchmarks
+dotnet run -c Release
+```
+
+The benchmarks are implemented using [BenchmarkDotNet](https://benchmarkdotnet.org/).
+
 ## Troubleshooting
 
 ### High Latency Issues

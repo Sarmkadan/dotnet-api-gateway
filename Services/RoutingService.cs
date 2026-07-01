@@ -76,6 +76,8 @@ public sealed class RoutingService
         return target.GetForwardUrl(requestPath);
     }
 
+    private RouteTarget SelectTargetRoundRobin(List<RouteTarget> targets)
+    {
         var target = targets[_roundRobinIndex % targets.Count];
         _roundRobinIndex++;
         return target;
@@ -94,11 +96,6 @@ public sealed class RoutingService
     {
         // Simplified: select by weight (lower weight = less loaded)
         return targets.OrderBy(t => t.Weight).First();
-    }
-
-    public string BuildForwardUrl(RouteTarget target, string requestPath)
-    {
-        return target.GetForwardUrl(requestPath);
     }
 
     public Dictionary<string, string> ApplyHeaderTransforms(RouteTarget target, Dictionary<string, string> originalHeaders)
