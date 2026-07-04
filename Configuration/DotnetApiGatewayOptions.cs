@@ -7,11 +7,12 @@
 namespace DotNetApiGateway.Configuration;
 
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 /// <summary>
 /// Configuration settings for the API gateway
 /// </summary>
-public sealed class DotnetApiGatewayOptions
+public sealed class DotnetApiGatewayOptions : IValidatableObject
 {
     public const string SectionName = "DotnetApiGateway";
 
@@ -44,4 +45,27 @@ public sealed class DotnetApiGatewayOptions
 
     [Required]
     public string HealthCheckPath { get; set; } = "/health";
+
+    public JwtValidationOptions JwtValidation { get; set; } = new();
+
+    public List<Models.GatewayRoute> Routes { get; set; } = new();
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (JwtValidation.Enabled)
+        {
+            if (string.IsNullOrWhiteSpace(JwtValidation.SecretKey) && string.IsNullOrWhiteSpace(JwtValidation.Issuer))
+            {
+                yield return new ValidationResult("JwtValidation.SecretKey or JwtValidation.Issuer is required when JwtValidation is enabled.", new[] { nameof(JwtValidation) });
+            }
+        }
+    }
+}
+
+public sealed class JwtValidationOptions
+{
+    public bool Enabled { get; set; }
+    public string? Issuer { get; set; }
+    public string? Audience { get; set; }
+    public string? SecretKey { get; set; }
 }
