@@ -23,7 +23,7 @@ public sealed class AdminDashboardController : ControllerBase
     private readonly RoutingService _routingService;
     private readonly CircuitBreakerService _circuitBreakerService;
     private readonly GatewayRouteRepository _routeRepository;
-    private readonly GatewayConfiguration _configuration;
+    private readonly DotnetApiGatewayOptions _configuration;
     private readonly ILogger<AdminDashboardController> _logger;
 
     public AdminDashboardController(
@@ -31,7 +31,7 @@ public sealed class AdminDashboardController : ControllerBase
         RoutingService routingService,
         CircuitBreakerService circuitBreakerService,
         GatewayRouteRepository routeRepository,
-        GatewayConfiguration configuration,
+        DotnetApiGatewayOptions configuration,
         ILogger<AdminDashboardController> logger)
     {
         _metricsService = metricsService;

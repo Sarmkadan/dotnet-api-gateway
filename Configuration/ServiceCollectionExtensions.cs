@@ -6,6 +6,10 @@
 
 namespace DotNetApiGateway.Configuration;
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+
 /// <summary>
 /// Extension methods for configuring gateway services in dependency injection
 /// </summary>
@@ -13,13 +17,13 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddGatewayServices(
         this IServiceCollection services,
-        GatewayConfiguration? configuration = null)
+        IConfiguration configuration)
     {
-        var config = configuration ?? new GatewayConfiguration();
-        config.Validate();
-
         // Register configuration
-        services.AddSingleton(config);
+        services.AddOptions<DotnetApiGatewayOptions>()
+            .Bind(configuration.GetSection(DotnetApiGatewayOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         // Register repositories
         services.AddSingleton<GatewayRouteRepository>();
@@ -42,9 +46,10 @@ public static class ServiceCollectionExtensions
 
         // Register HTTP client
         services.AddHttpClient<RequestAggregationService>()
-            .ConfigureHttpClient(client =>
+            .ConfigureHttpClient((sp, client) =>
             {
-                client.Timeout = TimeSpan.FromSeconds(config.DefaultTimeoutSeconds);
+                var options = sp.GetRequiredService<IOptions<DotnetApiGatewayOptions>>().Value;
+                client.Timeout = TimeSpan.FromSeconds(options.DefaultTimeoutSeconds);
             });
 
         return services;

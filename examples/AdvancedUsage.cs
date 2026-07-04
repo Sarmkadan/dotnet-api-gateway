@@ -7,7 +7,7 @@ using DotNetApiGateway.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Advanced configuration
-var gatewayConfig = new GatewayConfiguration
+var gatewayConfig = new DotnetApiGatewayOptions
 {
     ApplicationName = "AdvancedGateway",
     Version = "2.0.0",

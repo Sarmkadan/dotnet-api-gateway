@@ -7,7 +7,7 @@
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure services
-var gatewayConfig = new DotNetApiGateway.Configuration.GatewayConfiguration
+var gatewayConfig = new DotNetApiGateway.Configuration.DotnetApiGatewayOptions
 {
     MaxRequestBodySize = 10 * 1024 * 1024,
     DefaultTimeoutSeconds = 30,
