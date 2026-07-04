@@ -150,11 +150,10 @@ public sealed class RoutingAndRateLimitingIntegrationTests
     public async Task ConfigurationLoading_ValidConfig_AllPropertiesSet()
     {
         // Arrange
-        var config = new GatewayConfiguration
+        var config = new DotnetApiGatewayOptions
         {
             ApplicationName = "TestGateway",
             Version = "1.0.0",
-            Port = 5000,
             MaxRequestBodySize = 10 * 1024 * 1024,
             DefaultTimeoutSeconds = 30,
             MaxConcurrentRequests = 100,
@@ -165,7 +164,6 @@ public sealed class RoutingAndRateLimitingIntegrationTests
         // Act & Assert
         config.ApplicationName.Should().Be("TestGateway");
         config.Version.Should().Be("1.0.0");
-        config.Port.Should().Be(5000);
         config.MaxRequestBodySize.Should().Be(10 * 1024 * 1024);
     }
 }

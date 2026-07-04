@@ -51,7 +51,7 @@ Cost: Only need to talk to backend once per 5 minutes!
 
         var config = @"
 {
-  ""GatewayConfiguration"": {
+  ""DotnetApiGateway"": {
     ""Routes"": [
       {
         ""name"": ""public-data"",
