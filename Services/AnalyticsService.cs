@@ -37,6 +37,7 @@ public sealed class AnalyticsService
     /// </summary>
     public async Task<GatewayHealthReport> GetHealthReportAsync()
     {
+        _logger.LogDebug("Generating health report");
         var totalRequests = await _metricsService.GetTotalRequestCountAsync();
         var successfulRequests = await _metricsService.GetSuccessfulRequestCountAsync();
         var failedRequests = await _metricsService.GetFailedRequestCountAsync();
@@ -56,7 +57,7 @@ public sealed class AnalyticsService
         else
             healthStatus = "Poor";
 
-        return new GatewayHealthReport
+        var report = new GatewayHealthReport
         {
             Timestamp = DateTime.UtcNow,
             HealthStatus = healthStatus,
@@ -67,6 +68,9 @@ public sealed class AnalyticsService
             FailedRequests = failedRequests,
             AverageResponseTimeMs = avgResponseTime
         };
+
+        _logger.LogInformation("Generated health report: {Status}, SuccessRate: {SuccessRate:F2}%", healthStatus, successRate);
+        return report;
     }
 
     /// <summary>
@@ -74,6 +78,7 @@ public sealed class AnalyticsService
     /// </summary>
     public async Task<PerformanceTrend> GetPerformanceTrendAsync(int lastNMinutes = 60)
     {
+        _logger.LogDebug("Getting performance trend for last {Minutes} minutes", lastNMinutes);
         var trend = new PerformanceTrend
         {
             Period = $"Last {lastNMinutes} minutes",
@@ -93,6 +98,7 @@ public sealed class AnalyticsService
             RequestsPerSecond = totalRequests > 0 ? totalRequests / (lastNMinutes * 60) : 0
         });
 
+        _logger.LogDebug("Performance trend generated for {Period}", trend.Period);
         return trend;
     }
 
@@ -101,6 +107,7 @@ public sealed class AnalyticsService
     /// </summary>
     public async Task<List<RouteAnalytics>> GetTopRoutesByVolumeAsync(int limit = 10)
     {
+        _logger.LogDebug("Getting top {Limit} routes by volume", limit);
         var routes = await _routeRepository.GetAllAsync();
         var analytics = new List<RouteAnalytics>();
 
@@ -118,10 +125,13 @@ public sealed class AnalyticsService
             });
         }
 
-        return analytics
+        var result = analytics
             .OrderByDescending(r => r.TotalRequests)
             .Take(limit)
             .ToList();
+        
+        _logger.LogDebug("Retrieved {Count} routes for top volume report", result.Count);
+        return result;
     }
 
     /// <summary>
@@ -129,6 +139,7 @@ public sealed class AnalyticsService
     /// </summary>
     public async Task<List<RouteAnalytics>> GetProblematicRoutesAsync(int limit = 10)
     {
+        _logger.LogDebug("Getting top {Limit} routes by error rate", limit);
         var routes = await _routeRepository.GetAllAsync();
         var analytics = new List<RouteAnalytics>();
 
@@ -152,10 +163,13 @@ public sealed class AnalyticsService
             });
         }
 
-        return analytics
+        var result = analytics
             .OrderByDescending(r => r.ErrorRate)
             .Take(limit)
             .ToList();
+            
+        _logger.LogDebug("Retrieved {Count} routes for problematic report", result.Count);
+        return result;
     }
 
     /// <summary>
@@ -163,6 +177,7 @@ public sealed class AnalyticsService
     /// </summary>
     public async Task<List<RouteAnalytics>> GetSlowestRoutesAsync(int limit = 10)
     {
+        _logger.LogDebug("Getting slowest {Limit} routes", limit);
         var routes = await _routeRepository.GetAllAsync();
         var analytics = new List<RouteAnalytics>();
 
@@ -178,10 +193,13 @@ public sealed class AnalyticsService
             });
         }
 
-        return analytics
+        var result = analytics
             .OrderByDescending(r => r.AverageResponseTimeMs)
             .Take(limit)
             .ToList();
+            
+        _logger.LogDebug("Retrieved {Count} routes for slowest report", result.Count);
+        return result;
     }
 }
 
