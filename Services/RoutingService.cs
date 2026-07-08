@@ -17,11 +17,11 @@ public sealed class RoutingService
     private int _roundRobinIndex = 0;
 
     public RoutingService(GatewayRouteRepository routeRepository,
-        ILogger<RoutingService> logger,
-        LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.RoundRobin)
+        LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.RoundRobin,
+        ILogger<RoutingService>? logger = null)
     {
         _routeRepository = routeRepository;
-        _logger = logger;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RoutingService>.Instance;
         _loadBalancingStrategy = loadBalancingStrategy;
     }
 
@@ -74,7 +74,7 @@ public sealed class RoutingService
             _ => SelectTargetRoundRobin(healthyTargets)
         };
 
-        _logger.LogDebug("Selected target {TargetUrl} for route {RouteId} using {Strategy}", target.UpstreamUrl, route.Id, _loadBalancingStrategy);
+        _logger.LogDebug("Selected target {TargetUrl} for route {RouteId} using {Strategy}", target.BaseUrl, route.Id, _loadBalancingStrategy);
         return target;
     }
 

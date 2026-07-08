@@ -52,11 +52,26 @@ public sealed class MetricsService
 
             if (duration.TotalMilliseconds < routeMetric.MinResponseTimeMs || routeMetric.MinResponseTimeMs == 0)
                 routeMetric.MinResponseTimeMs = duration.TotalMilliseconds;
+
+            if (statusCode >= 200 && statusCode < 300)
+                routeMetric.SuccessfulRequests++;
+            else if (statusCode >= 400)
+                routeMetric.FailedRequests++;
         }
         finally
         {
             _lock.ExitWriteLock();
         }
+    }
+
+    /// <summary>
+    /// Record a completed request's metrics asynchronously. Requests are bucketed by path
+    /// since a resolved route id may not be available at this point in the pipeline.
+    /// </summary>
+    public Task RecordRequestAsync(string method, string path, int statusCode, int responseTimeMs, DateTime timestamp)
+    {
+        RecordRequest(path, statusCode, TimeSpan.FromMilliseconds(responseTimeMs));
+        return Task.CompletedTask;
     }
 
     public GatewayMetrics GetMetrics()
@@ -184,6 +199,11 @@ public sealed class RouteMetrics
     public double MinResponseTimeMs { get; set; } = 0;
     public double MaxResponseTimeMs { get; set; } = 0;
     public DateTime LastRequestAt { get; set; }
+    public long SuccessfulRequests { get; set; } = 0;
+    public long FailedRequests { get; set; } = 0;
+
+    public long TotalRequests => RequestCount;
+    public double AverageResponseTimeMs => GetAverageResponseTime();
 
     public double GetAverageResponseTime()
     {

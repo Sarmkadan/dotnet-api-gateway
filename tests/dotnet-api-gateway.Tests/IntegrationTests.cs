@@ -32,7 +32,7 @@ public sealed class RoutingAndRateLimitingIntegrationTests
         Name = name,
         PathPattern = pattern,
         AllowedMethods = ["GET", "POST", "PUT", "DELETE"],
-        Targets = targets.ToList(),
+        Targets = targets,
         TimeoutSeconds = 30
     };
 
@@ -471,10 +471,10 @@ public sealed class MetricsServiceIntegrationTests
         var metricsService = new MetricsService();
 
         // Act
-        metricsService.RecordRequest("route1", 200, 100);
-        metricsService.RecordRequest("route1", 200, 150);
-        metricsService.RecordRequest("route1", 404, 50);
-        metricsService.RecordRequest("route2", 200, 200);
+        metricsService.RecordRequest("route1", 200, TimeSpan.FromMilliseconds(100));
+        metricsService.RecordRequest("route1", 200, TimeSpan.FromMilliseconds(150));
+        metricsService.RecordRequest("route1", 404, TimeSpan.FromMilliseconds(50));
+        metricsService.RecordRequest("route2", 200, TimeSpan.FromMilliseconds(200));
 
         var metrics = metricsService.GetMetrics();
 

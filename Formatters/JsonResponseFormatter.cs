@@ -21,7 +21,7 @@ public static class JsonResponseFormatter
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = new List<JsonConverter> { new JsonStringEnumConverter() }
+        Converters = { new JsonStringEnumConverter() }
     };
 
     /// <summary>

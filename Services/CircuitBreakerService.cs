@@ -16,10 +16,10 @@ public sealed class CircuitBreakerService
     private readonly ILogger<CircuitBreakerService> _logger;
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _serviceLocks = new();
 
-    public CircuitBreakerService(CircuitBreakerRepository repository, ILogger<CircuitBreakerService> logger)
+    public CircuitBreakerService(CircuitBreakerRepository repository, ILogger<CircuitBreakerService>? logger = null)
     {
         _repository = repository;
-        _logger = logger;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<CircuitBreakerService>.Instance;
     }
 
     /// <summary>

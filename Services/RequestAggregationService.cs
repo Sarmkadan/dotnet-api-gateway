@@ -5,7 +5,6 @@
 // =============================================================================
 
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using DotNetApiGateway.Constants;
 using DotNetApiGateway.Models;
 using JsonCons.JsonPath;
@@ -48,12 +47,12 @@ public sealed class RequestAggregationService
             return response;
         }
 
-        JsonNode? requestJsonNode = null;
+        JsonElement? requestJsonElement = null;
         if (!string.IsNullOrWhiteSpace(incomingRequestBody))
         {
             try
             {
-                requestJsonNode = JsonNode.Parse(incomingRequestBody);
+                requestJsonElement = JsonDocument.Parse(incomingRequestBody).RootElement;
             }
             catch (JsonException ex)
             {
@@ -61,7 +60,7 @@ public sealed class RequestAggregationService
             }
         }
 
-        var selectedTargets = SelectConditionalTargets(policy, requestJsonNode);
+        var selectedTargets = SelectConditionalTargets(policy, requestJsonElement);
 
         if (!selectedTargets.Any())
         {
@@ -91,7 +90,7 @@ public sealed class RequestAggregationService
         return response;
     }
 
-    private IEnumerable<ConditionalAggregationTarget> SelectConditionalTargets(AggregationPolicy policy, JsonNode? requestJsonNode)
+    private IEnumerable<ConditionalAggregationTarget> SelectConditionalTargets(AggregationPolicy policy, JsonElement? requestJsonElement)
     {
         var selected = new List<ConditionalAggregationTarget>();
         foreach (var target in policy.Targets)
@@ -102,7 +101,7 @@ public sealed class RequestAggregationService
                 continue;
             }
 
-            if (requestJsonNode is null)
+            if (requestJsonElement is null)
             {
                 _logger.LogDebug("Target '{TargetId}' has JSONPath condition but incoming request body is not JSON or empty. Skipping.", target.Id);
                 continue;
@@ -110,13 +109,14 @@ public sealed class RequestAggregationService
 
             try
             {
-                var result = JsonPath.Select(requestJsonNode, target.JsonPathCondition);
-                if (result != null && result.Any())
+                var selector = JsonSelector.Parse(target.JsonPathCondition);
+                var result = selector.Select(requestJsonElement.Value);
+                if (result is not null && result.Count > 0)
                 {
                     selected.Add(target);
                 }
             }
-            catch (JsonPathException ex)
+            catch (JsonPathParseException ex)
             {
                 _logger.LogError(ex, "Invalid JSONPath condition '{Condition}' for target '{TargetId}'. Skipping.", target.JsonPathCondition, target.Id);
             }

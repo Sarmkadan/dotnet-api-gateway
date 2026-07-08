@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <Compile Remove="benchmarks\**" />
+    <Compile Remove="tests\**" />
+    <Compile Remove="examples\**" />
   </ItemGroup>
 
   <ItemGroup>

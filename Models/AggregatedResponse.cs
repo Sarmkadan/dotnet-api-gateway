@@ -19,7 +19,7 @@ public sealed class AggregatedResponse
     public int FailureCount { get; set; } = 0;
     public bool HasErrors => FailureCount > 0;
 
-    public void AddResponse(string alias, int statusCode, string? body, Dictionary<string, string>? headers = null, TimeSpan? duration = null)
+    public void AddResponse(string alias, int statusCode, string? body, Dictionary<string, string>? headers = null, TimeSpan? duration = null, string? errorMessage = null)
     {
         var response = new AggregatedResponseData
         {
@@ -28,7 +28,8 @@ public sealed class AggregatedResponse
             Body = body,
             Headers = headers ?? [],
             Duration = duration ?? TimeSpan.Zero,
-            ReceivedAt = DateTime.UtcNow
+            ReceivedAt = DateTime.UtcNow,
+            Error = errorMessage
         };
 
         Responses[alias] = response;

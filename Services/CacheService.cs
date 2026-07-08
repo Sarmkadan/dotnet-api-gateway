@@ -130,6 +130,69 @@ public sealed class CacheService
         }
     }
 
+    /// <summary>
+    /// Remove all expired entries from the cache and return the number removed.
+    /// </summary>
+    public Task<int> RemoveExpiredEntriesAsync()
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var keysToRemove = _cache
+                .Where(kvp => kvp.Value.IsExpired())
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var key in keysToRemove)
+                _cache.Remove(key);
+
+            return Task.FromResult(keysToRemove.Count);
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
+
+    /// <summary>
+    /// Get a strongly-typed cached value, deserialized from the underlying cache entry.
+    /// </summary>
+    public Task<T?> GetAsync<T>(string cacheKey) where T : class
+    {
+        if (TryGetCachedResponse(cacheKey, out var entry) && entry is not null)
+        {
+            try
+            {
+                return Task.FromResult(System.Text.Json.JsonSerializer.Deserialize<T>(entry.ResponseBody));
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return Task.FromResult<T?>(null);
+            }
+        }
+
+        return Task.FromResult<T?>(null);
+    }
+
+    /// <summary>
+    /// Store a strongly-typed value in the cache, serialized as JSON, for the given duration.
+    /// </summary>
+    public Task SetAsync<T>(string cacheKey, T value, TimeSpan duration) where T : class
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(value);
+        SetCachedResponse(cacheKey, 200, json, [], (int)Math.Max(1, duration.TotalSeconds));
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Invalidate all cached entries whose key starts with the given prefix.
+    /// </summary>
+    public Task InvalidatePrefixAsync(string prefix)
+    {
+        InvalidateCacheByPrefix(prefix);
+        return Task.CompletedTask;
+    }
+
     public void ClearAll()
     {
         _lock.EnterWriteLock();

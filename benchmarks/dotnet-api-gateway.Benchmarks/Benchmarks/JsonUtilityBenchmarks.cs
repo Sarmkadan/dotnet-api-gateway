@@ -6,7 +6,7 @@ namespace DotNetApiGateway.Benchmarks.Benchmarks
     [MemoryDiagnoser]
     public class JsonUtilityBenchmarks
     {
-        private class TestClass
+        public class TestClass
         {
             public string Name { get; set; } = "Test";
             public int Value { get; set; } = 123;
