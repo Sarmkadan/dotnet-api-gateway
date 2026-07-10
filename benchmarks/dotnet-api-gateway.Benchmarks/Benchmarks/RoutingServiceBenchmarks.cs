@@ -6,12 +6,18 @@ using DotNetApiGateway.Constants;
 
 namespace DotNetApiGateway.Benchmarks.Benchmarks
 {
+    /// <summary>
+    /// Benchmark class for the RoutingService.
+    /// </summary>
     [MemoryDiagnoser]
     public class RoutingServiceBenchmarks
     {
         private RoutingService _routingService = null!;
         private GatewayRoute _route = null!;
 
+        /// <summary>
+        /// Sets up the benchmark by creating a new RoutingService instance and a GatewayRoute instance.
+        /// </summary>
         [GlobalSetup]
         public void Setup()
         {
@@ -30,6 +36,10 @@ namespace DotNetApiGateway.Benchmarks.Benchmarks
             };
         }
 
+        /// <summary>
+        /// Benchmarks the SelectTarget method of the RoutingService using a round-robin strategy.
+        /// </summary>
+        /// <returns>The selected RouteTarget.</returns>
         [Benchmark]
         public RouteTarget SelectTargetRoundRobin()
         {
