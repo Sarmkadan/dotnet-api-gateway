@@ -183,21 +183,20 @@ public class GatewayManagementController : ControllerBase
     /// </summary>
     [HttpGet("rate-limits/{key}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetRateLimitStatus(string key)
     {
-        // To get accurate rate limit info, we need the policy applied to the route.
-        // For simplicity, this endpoint will assume a default policy or retrieve it
-        // from a route context if available. For now, we'll return an approximation
-        // or require the policy to be passed. Let's make it simpler for admin by
-        // just getting a general status without a specific route policy.
-        // This will require a default or global policy for RateLimitingService.GetRateLimitInfoAsync
+        // Try to get a rate limit policy from an active route
+        var activeRoute = (await _routeRepository.GetAllAsync())
+            .FirstOrDefault(r => r.IsActive && r.RateLimitPolicy?.IsEnabled() == true);
 
-        // For now, let's assume a dummy policy for retrieving status in admin panel
-        // In a real scenario, you'd get the policy from the relevant GatewayRoute
-        // and its associated target. This is an admin endpoint, so a broad view is okay.
-        var dummyPolicy = new RateLimitPolicy { RequestsPerMinute = 1000, BurstSize = 10 };
-        var info = await _rateLimitingService.GetRateLimitInfoAsync(key, dummyPolicy);
+        var policy = activeRoute?.RateLimitPolicy ?? new RateLimitPolicy
+        {
+            RequestsPerMinute = 1000,
+            BurstSize = 10,
+            Enabled = true
+        };
+
+        var info = await _rateLimitingService.GetRateLimitInfoAsync(key, policy);
         return Ok(info);
     }
 
