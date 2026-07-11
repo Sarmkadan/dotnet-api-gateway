@@ -14,6 +14,10 @@ namespace DotNetApiGateway.Tests;
 
 public sealed class JsonUtilityTests
 {
+    public string Name { get; set; } = string.Empty;
+    public int Age { get; set; }
+    public string? OptionalField { get; set; }
+
     private class TestObject
     {
         public string Name { get; set; } = string.Empty;
