@@ -82,7 +82,8 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
         switch (policy.Strategy)
         {
             case RateLimitStrategy.FixedWindow:
-                count = (int)await _db.StringGetAsync(redisKey);
+                var rawCount = await _db.StringGetAsync(redisKey);
+                count = rawCount.TryParse(out int parsedCount) ? parsedCount : 0;
                 break;
             case RateLimitStrategy.SlidingWindow:
                 var windowDuration = TimeSpan.FromMinutes(1); // Assuming 1-minute window
@@ -93,22 +94,22 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
                 // For token bucket, count refers to tokens available.
                 var hashEntries = await _db.HashGetAllAsync(redisKey);
                 var tokens = (double)policy.BurstSize;
-                var lastRefillTimeTicks = now.Ticks;
+                var lastRefillSeconds = ToUnixSeconds(now);
 
                 foreach (var entry in hashEntries)
                 {
                     if (entry.Name == "tokens") tokens = (double)entry.Value;
-                    if (entry.Name == "last_refill_time") lastRefillTimeTicks = (long)entry.Value;
+                    if (entry.Name == "last_refill_time") lastRefillSeconds = (double)entry.Value;
                 }
-                
+
                 var refillRate = policy.RequestsPerMinute / 60.0;
-                var timeElapsed = (now - new DateTime(lastRefillTimeTicks, DateTimeKind.Utc)).TotalSeconds;
+                var timeElapsed = Math.Max(0, ToUnixSeconds(now) - lastRefillSeconds);
                 tokens = Math.Min(tokens + (timeElapsed * refillRate), policy.BurstSize);
 
                 count = (int)tokens; // Approximate tokens as count
-                remainingTimeSeconds = (int)Math.Ceiling(1 / refillRate); // Time until next token if < 1
                 if (tokens >= 1) remainingTimeSeconds = 1; // Indicate a token is available
-                else if (policy.RequestsPerMinute == 0) remainingTimeSeconds = 0; // No refill if rate is zero
+                else if (refillRate > 0) remainingTimeSeconds = (int)Math.Ceiling(1 / refillRate); // Time until next token
+                else remainingTimeSeconds = 0; // No refill if rate is zero
 
                 break;
         }
@@ -166,7 +167,8 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
             "return count;");
 
         var count = (long)await _db.ScriptEvaluateAsync(script, new { key = redisKey, expiry = expiry });
-        var limit = policy.RequestsPerMinute; // Simplified for fixed window to rpm
+        // Per-minute windows apply the per-minute limit; hourly windows apply the hourly limit.
+        var limit = policy.RequestsPerMinute > 0 ? policy.RequestsPerMinute : policy.RequestsPerHour;
 
         var allowed = count <= limit;
         if (!allowed)
@@ -218,6 +220,9 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
         return allowed == 1;
     }
 
+    private static double ToUnixSeconds(DateTime utc)
+        => (utc - DateTime.UnixEpoch).TotalSeconds;
+
     private async Task<bool> HandleTokenBucketAsync(RedisKey redisKey, RateLimitPolicy policy, DateTime now)
     {
         var refillRate = policy.RequestsPerMinute / 60.0;
@@ -252,7 +257,9 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
         {
             key = redisKey,
             capacity = (double)bucketCapacity,
-            now = (double)now.Ticks,
+            // The refill rate is tokens per second, so elapsed time must be in seconds
+            // (ticks here would over-refill by seven orders of magnitude).
+            now = ToUnixSeconds(now),
             refillRate = refillRate,
             expiry = expirySeconds
         });
