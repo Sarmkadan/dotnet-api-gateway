@@ -16,15 +16,20 @@ namespace DotNetApiGateway.Integration
         /// <param name="client">The <see cref="ExternalApiClient"/> instance.</param>
         /// <param name="endpoint">The relative endpoint to call.</param>
         /// <returns>The deserialized response, or <c>null</c> if the request failed.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="client"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="endpoint"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="endpoint"/> is empty or whitespace.</exception>
         public static async Task<T?> GetJsonAsync<T>(this ExternalApiClient client, string endpoint)
             where T : class
         {
-            // The underlying client already provides a GetAsync<T> method that returns the deserialized object.
+            ArgumentNullException.ThrowIfNull(client);
+            ArgumentException.ThrowIfNullOrWhiteSpace(endpoint, nameof(endpoint));
+
             return await client.GetAsync<T>(endpoint);
         }
 
         /// <summary>
-        /// Sends a request using the specified <see cref="System.Net.Http.HttpMethod"/>. This overload
+        /// Sends a request using the specified HTTP method. This overload
         /// places the optional <paramref name="content"/> parameter before <paramref name="contentType"/>
         /// for a more natural call signature.
         /// </summary>
@@ -34,6 +39,10 @@ namespace DotNetApiGateway.Integration
         /// <param name="content">The request body as a string (optional).</param>
         /// <param name="contentType">The MIME type of the request body (optional).</param>
         /// <returns>The raw <see cref="HttpResponseMessage"/> from the server.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="client"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="endpoint"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="endpoint"/> is empty or whitespace.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="method"/> is <c>null</c>.</exception>
         public static async Task<HttpResponseMessage> SendAsyncWithMethod(
             this ExternalApiClient client,
             string endpoint,
@@ -41,7 +50,10 @@ namespace DotNetApiGateway.Integration
             string? content = null,
             string? contentType = null)
         {
-            // Forward to the original SendAsync method, preserving the original parameter order.
+            ArgumentNullException.ThrowIfNull(client);
+            ArgumentException.ThrowIfNullOrWhiteSpace(endpoint, nameof(endpoint));
+            ArgumentNullException.ThrowIfNull(method);
+
             return await client.SendAsync(endpoint, method, contentType, content);
         }
 
@@ -51,11 +63,16 @@ namespace DotNetApiGateway.Integration
         /// <param name="client">The <see cref="ExternalApiClient"/> instance.</param>
         /// <param name="request">The prepared request message.</param>
         /// <returns>The successful <see cref="HttpResponseMessage"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="client"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="request"/> is <c>null</c>.</exception>
         /// <exception cref="HttpRequestException">Thrown when the response status code does not indicate success.</exception>
         public static async Task<HttpResponseMessage> SendRequestAndEnsureSuccessAsync(
             this ExternalApiClient client,
             HttpRequestMessage request)
         {
+            ArgumentNullException.ThrowIfNull(client);
+            ArgumentNullException.ThrowIfNull(request);
+
             var response = await client.SendRequestAsync(request);
             response.EnsureSuccessStatusCode();
             return response;
