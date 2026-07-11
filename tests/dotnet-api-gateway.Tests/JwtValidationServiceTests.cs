@@ -36,13 +36,22 @@ public sealed class JwtValidationServiceTests
             new("scope", "read write")
         };
 
+        var now = DateTime.UtcNow;
+        var expires = now.AddMinutes(expiryMinutes);
+        var notBefore = notBeforeMinutes > 0 ? now.AddMinutes(notBeforeMinutes) : now;
+
+        // JwtSecurityToken rejects expires <= notBefore, so shift notBefore back
+        // when generating an already-expired token.
+        if (notBefore >= expires)
+            notBefore = expires.AddMinutes(-5);
+
         var token = new JwtSecurityToken(
             issuer,
             audience,
             claims,
-            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+            expires: expires,
             signingCredentials: credentials,
-            notBefore: notBeforeMinutes > 0 ? DateTime.UtcNow.AddMinutes(notBeforeMinutes) : DateTime.UtcNow
+            notBefore: notBefore
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -158,7 +167,7 @@ public sealed class JwtValidationServiceTests
     {
         // Arrange
         var service = new JwtValidationService();
-        var token = GenerateTestToken("different-secret");
+        var token = GenerateTestToken("a-completely-different-secret-key-of-sufficient-length");
         var policy = ValidPolicy();
 
         // Act
@@ -261,7 +270,7 @@ public sealed class JwtValidationServiceTests
     {
         // Arrange
         var service = new JwtValidationService();
-        var token = GenerateTestToken("different-secret");
+        var token = GenerateTestToken("a-completely-different-secret-key-of-sufficient-length");
         var policy = new AuthenticationPolicy
         {
             Enabled = true,
