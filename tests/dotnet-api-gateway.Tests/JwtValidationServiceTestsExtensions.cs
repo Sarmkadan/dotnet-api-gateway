@@ -15,6 +15,8 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
+/// <exception cref="ArgumentNullException"><paramref name="claims"/> is null.</exception>
 public static class JwtValidationServiceTestsExtensions
 {
     /// <summary>
@@ -34,6 +36,9 @@ public static class JwtValidationServiceTestsExtensions
         string audience = "test-audience",
         int expiryMinutes = 60)
     {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(claims);
+
         var securityKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secret));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
@@ -68,6 +73,7 @@ public static class JwtValidationServiceTestsExtensions
     /// <param name="jwtIssuer">Token issuer</param>
     /// <param name="jwtAudience">Token audience</param>
     /// <returns>Configured AuthenticationPolicy</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
     public static AuthenticationPolicy CreateTestPolicy(this JwtValidationService service,
         bool enabled = true,
         bool validateSignature = true,
@@ -77,6 +83,8 @@ public static class JwtValidationServiceTestsExtensions
         string? jwtIssuer = null,
         string? jwtAudience = null)
     {
+        ArgumentNullException.ThrowIfNull(service);
+
         return new AuthenticationPolicy
         {
             Enabled = enabled,
@@ -91,36 +99,51 @@ public static class JwtValidationServiceTestsExtensions
     }
 
     /// <summary>
-    /// Validates that a token throws a specific exception type when validation fails.
+    /// Validates that a token throws an <see cref="AuthenticationException"/> when validation fails.
     /// </summary>
     /// <param name="service">The JwtValidationService instance</param>
     /// <param name="token">Token to validate</param>
     /// <param name="policy">Authentication policy to use</param>
-    /// <param name="expectedExceptionType">Expected exception type</param>
     /// <returns>Async assertion for the exception</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="token"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="policy"/> is null.</exception>
     public static async Task<FluentAssertions.Specialized.ExceptionAssertions<AuthenticationException>>
-        ShouldThrowAuthenticationExceptionAsync(this JwtValidationService service,
+    ShouldThrowAuthenticationExceptionAsync(this JwtValidationService service,
         string token,
         AuthenticationPolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(token);
+        ArgumentNullException.ThrowIfNull(policy);
+
         var act = () => service.ValidateTokenAsync(token, policy);
         return await act.Should().ThrowAsync<AuthenticationException>();
     }
 
     /// <summary>
-    /// Validates that a token throws a specific exception type when validation fails.
+    /// Validates that a token throws an <see cref="AuthenticationException"/> with the specified message when validation fails.
     /// </summary>
     /// <param name="service">The JwtValidationService instance</param>
     /// <param name="token">Token to validate</param>
     /// <param name="policy">Authentication policy to use</param>
     /// <param name="expectedExceptionMessage">Expected exception message substring</param>
     /// <returns>Async assertion for the exception</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="token"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="policy"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="expectedExceptionMessage"/> is null.</exception>
     public static async Task<FluentAssertions.Specialized.ExceptionAssertions<AuthenticationException>>
-        ShouldThrowAuthenticationExceptionAsync(this JwtValidationService service,
+    ShouldThrowAuthenticationExceptionAsync(this JwtValidationService service,
         string token,
         AuthenticationPolicy policy,
         string expectedExceptionMessage)
     {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(token);
+        ArgumentNullException.ThrowIfNull(policy);
+        ArgumentNullException.ThrowIfNull(expectedExceptionMessage);
+
         var act = () => service.ValidateTokenAsync(token, policy);
         return await act.Should().ThrowAsync<AuthenticationException>().WithMessage("*" + expectedExceptionMessage + "*");
     }
