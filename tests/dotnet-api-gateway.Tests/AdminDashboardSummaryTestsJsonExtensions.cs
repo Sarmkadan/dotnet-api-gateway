@@ -10,7 +10,7 @@ using System.Text.Json;
 namespace dotnet_api_gateway.Tests;
 
 /// <summary>
-/// Provides JSON serialization and deserialization extension methods for AdminDashboardSummaryTests.
+/// Provides JSON serialization and deserialization extension methods for <see cref="AdminDashboardSummaryTests"/>.
 /// </summary>
 public static class AdminDashboardSummaryTestsJsonExtensions
 {
@@ -21,51 +21,48 @@ public static class AdminDashboardSummaryTestsJsonExtensions
     };
 
     /// <summary>
-    /// Serializes the AdminDashboardSummaryTests instance to a JSON string.
+    /// Serializes the <see cref="AdminDashboardSummaryTests"/> instance to a JSON string.
     /// </summary>
-    /// <param name="value">The AdminDashboardSummaryTests instance to serialize.</param>
+    /// <param name="value">The <see cref="AdminDashboardSummaryTests"/> instance to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation.</param>
-    /// <returns>A JSON string representation of the AdminDashboardSummaryTests instance.</returns>
+    /// <returns>A JSON string representation of the <see cref="AdminDashboardSummaryTests"/> instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
     public static string ToJson(this AdminDashboardSummaryTests? value, bool indented = false)
-    {
-        if (value is null)
-        {
-            return "null";
-        }
-
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions)
-            {
-                WriteIndented = true
-            }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
-    }
+        => value is null
+            ? "null"
+            : JsonSerializer.Serialize(
+                value,
+                indented
+                    ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
+                    : _jsonOptions);
 
     /// <summary>
-    /// Deserializes a JSON string to an AdminDashboardSummaryTests instance.
+    /// Deserializes a JSON string to an <see cref="AdminDashboardSummaryTests"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized AdminDashboardSummaryTests instance, or null if the JSON is null.</returns>
+    /// <returns>The deserialized <see cref="AdminDashboardSummaryTests"/> instance, or <see langword="null"/> if the JSON is <see langword="null"/> or whitespace.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/></exception>
     public static AdminDashboardSummaryTests? FromJson(string json)
     {
-        if (string.IsNullOrWhiteSpace(json) || json == "null")
-        {
-            return null;
-        }
+        ArgumentNullException.ThrowIfNull(json);
 
-        return JsonSerializer.Deserialize<AdminDashboardSummaryTests>(json, _jsonOptions);
+        return string.IsNullOrWhiteSpace(json) || json == "null"
+            ? null
+            : JsonSerializer.Deserialize<AdminDashboardSummaryTests>(json, _jsonOptions);
     }
 
     /// <summary>
-    /// Attempts to deserialize a JSON string to an AdminDashboardSummaryTests instance.
+    /// Attempts to deserialize a JSON string to an <see cref="AdminDashboardSummaryTests"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">The deserialized AdminDashboardSummaryTests instance, or null if deserialization fails.</param>
-    /// <returns>True if deserialization succeeds; otherwise, false.</returns>
+    /// <param name="value">When this method returns, contains the deserialized <see cref="AdminDashboardSummaryTests"/> instance
+    /// if deserialization succeeds; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if deserialization succeeds; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/></exception>
     public static bool TryFromJson(string json, out AdminDashboardSummaryTests? value)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         value = null;
 
         if (string.IsNullOrWhiteSpace(json) || json == "null")
