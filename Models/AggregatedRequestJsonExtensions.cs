@@ -8,11 +8,10 @@ namespace DotNetApiGateway.Models
     /// </summary>
     public static class AggregatedRequestJsonExtensions
     {
-        // Cached options with camel‑case naming policy.
-        private static readonly JsonSerializerOptions _options = new JsonSerializerOptions
+        // Cached options with camel-case naming policy.
+        private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web)
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            // Preserve the default behavior for other settings; callers can request indentation.
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
         /// <summary>
@@ -21,10 +20,10 @@ namespace DotNetApiGateway.Models
         /// <param name="value">The instance to serialize.</param>
         /// <param name="indented">If <c>true</c>, the output will be formatted with indentation.</param>
         /// <returns>A JSON representation of the instance.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
         public static string ToJson(this AggregatedRequest value, bool indented = false)
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             // Clone the cached options so we can set WriteIndented without affecting other calls.
             var options = new JsonSerializerOptions(_options)
@@ -40,8 +39,11 @@ namespace DotNetApiGateway.Models
         /// </summary>
         /// <param name="json">The JSON payload.</param>
         /// <returns>The deserialized <see cref="AggregatedRequest"/> instance, or <c>null</c> if the JSON is empty.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="json"/> is <c>null</c>.</exception>
         public static AggregatedRequest? FromJson(string json)
         {
+            ArgumentNullException.ThrowIfNull(json);
+
             if (string.IsNullOrWhiteSpace(json))
                 return null;
 
@@ -54,8 +56,11 @@ namespace DotNetApiGateway.Models
         /// <param name="json">The JSON payload.</param>
         /// <param name="value">When this method returns, contains the deserialized value if the operation succeeded; otherwise <c>null</c>.</param>
         /// <returns><c>true</c> if deserialization succeeded; otherwise <c>false</c>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="json"/> is <c>null</c>.</exception>
         public static bool TryFromJson(string json, out AggregatedRequest? value)
         {
+            ArgumentNullException.ThrowIfNull(json);
+
             try
             {
                 value = FromJson(json);
