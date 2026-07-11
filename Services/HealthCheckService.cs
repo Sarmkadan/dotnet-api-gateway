@@ -7,13 +7,18 @@
 namespace DotNetApiGateway.Services;
 
 /// <summary>
-/// Service for monitoring health of backend targets
+/// Service for monitoring health of backend targets.
+/// Targets seen by <see cref="CheckTargetHealthAsync"/> or <see cref="CheckAllTargetsAsync"/>
+/// are tracked and re-checked periodically by a background timer.
 /// </summary>
-public sealed class HealthCheckService
+public sealed class HealthCheckService : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly Timer _healthCheckTimer;
     private readonly ILogger<HealthCheckService> _logger;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, RouteTarget> _trackedTargets = new();
+    private readonly DateTime _startedAt = DateTime.UtcNow;
+    private int _periodicCheckRunning;
 
     public HealthCheckService(HttpClient httpClient, ILogger<HealthCheckService> logger)
     {
@@ -25,12 +30,16 @@ public sealed class HealthCheckService
 
     public async Task<bool> CheckTargetHealthAsync(RouteTarget target)
     {
+        _trackedTargets[target.Id] = target;
+
         if (string.IsNullOrWhiteSpace(target.HealthCheckPath))
             return target.IsHealthy;
 
         try
         {
-            var healthCheckUrl = target.GetForwardUrl(target.HealthCheckPath);
+            // The health check path is target-relative already; never run it through
+            // route prefix stripping.
+            var healthCheckUrl = new Uri(new Uri(target.BaseUrl), target.HealthCheckPath).ToString();
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             var response = await _httpClient.GetAsync(healthCheckUrl, cts.Token);
 
@@ -78,26 +87,65 @@ public sealed class HealthCheckService
 
     private void PerformHealthChecks(object? state)
     {
-        _logger.LogDebug("Performing periodic health checks");
-        // This would be called by the timer to check all targets periodically
-        // Implementation would depend on dependency injection of route repository
+        // Skip this tick if the previous sweep is still in flight.
+        if (Interlocked.CompareExchange(ref _periodicCheckRunning, 1, 0) != 0)
+            return;
+
+        var targets = _trackedTargets.Values.ToList();
+        if (targets.Count == 0)
+        {
+            Volatile.Write(ref _periodicCheckRunning, 0);
+            return;
+        }
+
+        _logger.LogDebug("Performing periodic health checks for {TargetCount} tracked targets", targets.Count);
+
+        _ = RunPeriodicChecksAsync(targets);
+    }
+
+    private async Task RunPeriodicChecksAsync(List<RouteTarget> targets)
+    {
+        try
+        {
+            await CheckAllTargetsAsync(targets);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Periodic health check sweep failed: {ErrorMessage}", ex.Message);
+        }
+        finally
+        {
+            Volatile.Write(ref _periodicCheckRunning, 0);
+        }
     }
 
     public GatewayHealth GetGatewayHealth()
     {
-        return new GatewayHealth
+        var targets = _trackedTargets.Values.ToList();
+        var unhealthy = targets.Where(t => !t.IsHealthy).ToList();
+
+        var health = new GatewayHealth
         {
-            IsHealthy = true,
+            IsHealthy = unhealthy.Count == 0,
             Timestamp = DateTime.UtcNow,
-            Uptime = TimeSpan.Zero,
+            Uptime = DateTime.UtcNow - _startedAt,
             Version = "2.0.2"
         };
+
+        health.Details["trackedTargets"] = targets.Count;
+        health.Details["unhealthyTargets"] = unhealthy.Count;
+        if (unhealthy.Count > 0)
+        {
+            health.Details["unhealthyTargetNames"] = unhealthy.Select(t => t.Name).ToArray();
+        }
+
+        return health;
     }
 
     public void Dispose()
     {
-        _healthCheckTimer?.Dispose();
-        _httpClient?.Dispose();
+        _healthCheckTimer.Dispose();
+        _httpClient.Dispose();
     }
 }
 

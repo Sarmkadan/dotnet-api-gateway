@@ -14,7 +14,7 @@ public sealed class RoutingService
     private readonly GatewayRouteRepository _routeRepository;
     private readonly LoadBalancingStrategy _loadBalancingStrategy;
     private readonly ILogger<RoutingService> _logger;
-    private int _roundRobinIndex = 0;
+    private int _roundRobinIndex = -1; // first Interlocked.Increment yields 0
 
     public RoutingService(GatewayRouteRepository routeRepository,
         LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.RoundRobin,
@@ -30,7 +30,7 @@ public sealed class RoutingService
     /// </summary>
     /// <param name="path">The request path.</param>
     /// <param name="method">The HTTP method.</param>
-    /// <returns>The matching gateway route, or null if not found.</returns>
+    /// <returns>The matching gateway route; never null.</returns>
     /// <exception cref="RouteNotFoundException">Thrown if no route is found.</exception>
     public async Task<GatewayRoute?> FindRouteAsync(string path, string method)
     {
@@ -91,9 +91,10 @@ public sealed class RoutingService
 
     private RouteTarget SelectTargetRoundRobin(List<RouteTarget> targets)
     {
-        var target = targets[_roundRobinIndex % targets.Count];
-        _roundRobinIndex++;
-        return target;
+        // Interlocked keeps concurrent callers from losing increments; the unsigned
+        // modulo keeps the index valid after the counter wraps past int.MaxValue.
+        var ticket = unchecked((uint)Interlocked.Increment(ref _roundRobinIndex));
+        return targets[(int)(ticket % (uint)targets.Count)];
     }
 
     private RouteTarget SelectTargetByIpHash(List<RouteTarget> targets, string? clientIp)
@@ -101,13 +102,31 @@ public sealed class RoutingService
         if (string.IsNullOrWhiteSpace(clientIp))
             return SelectTargetRoundRobin(targets);
 
-        var hash = Math.Abs(clientIp.GetHashCode()) % targets.Count;
-        return targets[hash];
+        // string.GetHashCode is randomized per process, which would break client
+        // affinity across restarts; FNV-1a gives a stable, deterministic hash.
+        var hash = ComputeStableHash(clientIp);
+        return targets[(int)(hash % (uint)targets.Count)];
     }
 
-    private RouteTarget SelectTargetLeastConnections(List<RouteTarget> targets)
+    private static uint ComputeStableHash(string value)
     {
-        // Simplified: select by weight (lower weight = less loaded)
+        const uint fnvOffsetBasis = 2166136261;
+        const uint fnvPrime = 16777619;
+
+        var hash = fnvOffsetBasis;
+        foreach (var ch in value)
+        {
+            hash ^= ch;
+            hash *= fnvPrime;
+        }
+
+        return hash;
+    }
+
+    private static RouteTarget SelectTargetLeastConnections(List<RouteTarget> targets)
+    {
+        // Connection counts are not tracked per target, so approximate least-loaded
+        // by weight (lower weight = less loaded).
         return targets.OrderBy(t => t.Weight).First();
     }
 

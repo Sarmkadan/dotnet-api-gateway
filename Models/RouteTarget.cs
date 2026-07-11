@@ -43,12 +43,31 @@ public sealed class RouteTarget
             throw new ArgumentException("Health check interval must be between 10 and 600 seconds");
     }
 
+    /// <summary>
+    /// Builds the absolute backend URL for the given request path.
+    /// When <see cref="StripPathPrefix"/> is set, the first path segment
+    /// (the gateway route prefix) is removed before forwarding.
+    /// </summary>
     public string GetForwardUrl(string requestPath)
     {
-        var targetPath = StripPathPrefix ? requestPath : requestPath;
+        ArgumentNullException.ThrowIfNull(requestPath);
+
+        var targetPath = StripPathPrefix ? RemoveFirstPathSegment(requestPath) : requestPath;
         var baseUri = new Uri(BaseUrl);
         var fullUrl = new Uri(baseUri, targetPath);
         return fullUrl.ToString();
+    }
+
+    private static string RemoveFirstPathSegment(string path)
+    {
+        var queryIndex = path.IndexOfAny(['?', '#']);
+        var pathPart = queryIndex < 0 ? path : path[..queryIndex];
+        var suffix = queryIndex < 0 ? string.Empty : path[queryIndex..];
+
+        var trimmed = pathPart.TrimStart('/');
+        var separatorIndex = trimmed.IndexOf('/');
+        var remainder = separatorIndex < 0 ? "/" : trimmed[separatorIndex..];
+        return remainder + suffix;
     }
 
     public void UpdateHealthStatus(bool isHealthy, string? error = null)
