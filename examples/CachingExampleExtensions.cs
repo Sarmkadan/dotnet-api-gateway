@@ -25,6 +25,8 @@ public static class CachingExampleExtensions
     /// <param name="queryString">Query string parameters</param>
     /// <param name="headers">Optional request headers to include in cache key</param>
     /// <returns>Cache key string</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="method"/> is null or whitespace</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="path"/> is null or whitespace</exception>
     public static string CreateCacheKey(
         this CachingExample _,
         string method,
@@ -32,16 +34,13 @@ public static class CachingExampleExtensions
         string? queryString = null,
         IReadOnlyDictionary<string, string>? headers = null)
     {
-        if (string.IsNullOrWhiteSpace(method))
-            throw new ArgumentException("Method cannot be null or empty", nameof(method));
-
-        if (string.IsNullOrWhiteSpace(path))
-            throw new ArgumentException("Path cannot be null or empty", nameof(path));
+        ArgumentException.ThrowIfNullOrEmpty(method);
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
         var key = $"{method.ToUpperInvariant()}:{path.TrimEnd('/')}:{queryString?.Trim() ?? string.Empty}";
 
         // Include headers in cache key if provided
-        if (headers != null && headers.Count > 0)
+        if (headers?.Count > 0)
         {
             foreach (var header in headers)
             {
@@ -58,13 +57,13 @@ public static class CachingExampleExtensions
     /// <param name="request">HTTP request message</param>
     /// <param name="includeHeaders">Optional headers to include in cache key</param>
     /// <returns>Cache key string</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="request"/> is null</exception>
     public static string CreateCacheKey(
         this CachingExample _,
         System.Net.Http.HttpRequestMessage request,
         bool includeHeaders = false)
     {
-        if (request == null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
         var method = request.Method.ToString().ToUpperInvariant();
         var path = request.RequestUri?.AbsolutePath ?? "/";
@@ -101,12 +100,19 @@ public static class CachingExampleExtensions
     /// <param name="key">Cache key</param>
     /// <param name="fallback">Function to execute if value not in cache</param>
     /// <returns>Cached or newly computed value</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="cache"/> is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="fallback"/> is null</exception>
     public static async Task<T> GetOrCreateAsync<T>(
         this CachingExample _,
         SimpleResponseCache cache,
         string key,
         Func<Task<T>> fallback)
     {
+        ArgumentNullException.ThrowIfNull(cache);
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(fallback);
+
         if (cache.TryGetCached(key, out var cachedValue) && cachedValue is T cachedResult)
         {
             return cachedResult;
@@ -127,12 +133,19 @@ public static class CachingExampleExtensions
     /// <param name="key">Cache key</param>
     /// <param name="fallback">Function to execute if value not in cache</param>
     /// <returns>Cached or newly computed value</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="cache"/> is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="fallback"/> is null</exception>
     public static T GetOrCreate<T>(
         this CachingExample _,
         SimpleResponseCache cache,
         string key,
         Func<T> fallback)
     {
+        ArgumentNullException.ThrowIfNull(cache);
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(fallback);
+
         if (cache.TryGetCached(key, out var cachedValue) && cachedValue is T cachedResult)
         {
             return cachedResult;
@@ -149,8 +162,10 @@ public static class CachingExampleExtensions
     /// </summary>
     /// <param name="ttlSeconds">Time to live in seconds</param>
     /// <returns>New cache instance</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="ttlSeconds"/> is less than 1</exception>
     public static SimpleResponseCache CreateCache(this CachingExample _, int ttlSeconds)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(ttlSeconds, 1);
         return new SimpleResponseCache(ttlSeconds);
     }
 
@@ -160,8 +175,11 @@ public static class CachingExampleExtensions
     /// </summary>
     /// <param name="cache">Cache instance</param>
     /// <returns>Number of entries removed</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="cache"/> is null</exception>
     public static int ClearAll(this CachingExample _, SimpleResponseCache cache)
     {
+        ArgumentNullException.ThrowIfNull(cache);
+
         // Use reflection to access internal cache dictionary
         var cacheField = typeof(SimpleResponseCache).GetField(
             "cache",
@@ -187,8 +205,11 @@ public static class CachingExampleExtensions
     /// </summary>
     /// <param name="cache">Cache instance</param>
     /// <returns>Cache statistics</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="cache"/> is null</exception>
     public static CacheStatistics GetStatistics(this CachingExample _, SimpleResponseCache cache)
     {
+        ArgumentNullException.ThrowIfNull(cache);
+
         var stats = new CacheStatistics();
 
         // Use reflection to access cache internals
@@ -211,7 +232,7 @@ public static class CachingExampleExtensions
     /// <summary>
     /// Cache statistics container.
     /// </summary>
-    public class CacheStatistics
+    public sealed class CacheStatistics
     {
         public int EntryCount { get; set; }
     }
