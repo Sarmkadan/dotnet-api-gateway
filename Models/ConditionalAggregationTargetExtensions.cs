@@ -17,10 +17,10 @@ public static class ConditionalAggregationTargetExtensions
     /// </summary>
     /// <param name="target">The target to clone</param>
     /// <returns>A new instance with copied values</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> is null</exception>
     public static ConditionalAggregationTarget Clone(this ConditionalAggregationTarget target)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
+        ArgumentNullException.ThrowIfNull(target);
 
         return new ConditionalAggregationTarget
         {
@@ -28,7 +28,7 @@ public static class ConditionalAggregationTargetExtensions
             UpstreamUrl = target.UpstreamUrl,
             JsonPathCondition = target.JsonPathCondition,
             Method = target.Method,
-            Headers = target.Headers is null ? null : new Dictionary<string, string>(target.Headers),
+            Headers = target.Headers?.ToDictionary(static kvp => kvp.Key, static kvp => kvp.Value, StringComparer.OrdinalIgnoreCase),
             Body = target.Body,
             TimeoutSeconds = target.TimeoutSeconds,
             Optional = target.Optional
@@ -44,8 +44,7 @@ public static class ConditionalAggregationTargetExtensions
     /// <returns>True if the target should be used; false otherwise</returns>
     public static bool ShouldUse(this ConditionalAggregationTarget target, string? jsonPayload)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
+        ArgumentNullException.ThrowIfNull(target);
 
         // If no condition is specified, always use the target
         if (string.IsNullOrEmpty(target.JsonPathCondition))
@@ -57,13 +56,9 @@ public static class ConditionalAggregationTargetExtensions
 
         try
         {
-            // Simple evaluation: check if the condition path exists in the JSON
-            // This is a basic implementation that checks for existence of the path
             var jsonDocument = JsonDocument.Parse(jsonPayload);
             var root = jsonDocument.RootElement;
 
-            // Try to navigate the JSON path (simplified approach)
-            // For a real implementation, you'd use a proper JSONPath library
             var pathSegments = target.JsonPathCondition.Split('.', StringSplitOptions.RemoveEmptyEntries);
 
             var current = root;
@@ -79,17 +74,14 @@ public static class ConditionalAggregationTargetExtensions
                 }
                 else
                 {
-                    // Path doesn't exist
                     return false;
                 }
             }
 
-            // If we reached a value, it exists (even if it's null, empty string, etc.)
             return true;
         }
         catch
         {
-            // If JSON parsing fails, don't use the target unless it's optional
             return target.Optional;
         }
     }
@@ -102,12 +94,15 @@ public static class ConditionalAggregationTargetExtensions
     /// <param name="name">Header name</param>
     /// <param name="value">Header value</param>
     /// <returns>The modified target (for fluent chaining)</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> is null</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or whitespace</exception>
     public static ConditionalAggregationTarget WithHeader(this ConditionalAggregationTarget target, string name, string value)
+        => target.WithHeaderCore(name, value);
+
+    private static ConditionalAggregationTarget WithHeaderCore(this ConditionalAggregationTarget target, string name, string value)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Header name cannot be null or whitespace", nameof(name));
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
         target.Headers ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         target.Headers[name] = value;
@@ -121,12 +116,14 @@ public static class ConditionalAggregationTargetExtensions
     /// <param name="bodyObject">The object to serialize as JSON body</param>
     /// <param name="jsonSerializerOptions">Optional serializer options</param>
     /// <returns>The modified target (for fluent chaining)</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> or <paramref name="bodyObject"/> is null</exception>
     public static ConditionalAggregationTarget WithJsonBody(this ConditionalAggregationTarget target, object bodyObject, JsonSerializerOptions? jsonSerializerOptions = null)
+        => target.WithJsonBodyCore(bodyObject, jsonSerializerOptions);
+
+    private static ConditionalAggregationTarget WithJsonBodyCore(this ConditionalAggregationTarget target, object bodyObject, JsonSerializerOptions? jsonSerializerOptions = null)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        if (bodyObject is null)
-            throw new ArgumentNullException(nameof(bodyObject));
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(bodyObject);
 
         jsonSerializerOptions ??= new JsonSerializerOptions
         {
@@ -143,27 +140,27 @@ public static class ConditionalAggregationTargetExtensions
     /// </summary>
     /// <param name="target">The target to validate</param>
     /// <param name="includeHeadersCheck">Whether to validate headers if present</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> is null</exception>
     /// <exception cref="ArgumentException">Thrown when validation fails</exception>
     public static void ValidateWithDetails(this ConditionalAggregationTarget target, bool includeHeadersCheck = true)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
+        ArgumentNullException.ThrowIfNull(target);
 
         var errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(target.UpstreamUrl))
             errors.Add("UpstreamUrl cannot be empty for ConditionalAggregationTarget");
 
-        if (target.TimeoutSeconds < 1 || target.TimeoutSeconds > 300)
+        if (target.TimeoutSeconds is < 1 or > 300)
             errors.Add("TimeoutSeconds must be between 1 and 300 seconds");
 
-        if (includeHeadersCheck && target.Headers is not null)
+        if (includeHeadersCheck && target.Headers is { Count: > 0 })
         {
             foreach (var header in target.Headers)
             {
                 if (string.IsNullOrWhiteSpace(header.Key))
                     errors.Add("Header name cannot be null or whitespace");
-                if (string.IsNullOrWhiteSpace(header.Value))
+                else if (string.IsNullOrWhiteSpace(header.Value))
                     errors.Add($"Header '{header.Key}' value cannot be null or whitespace");
             }
         }
@@ -181,10 +178,13 @@ public static class ConditionalAggregationTargetExtensions
     /// <param name="target">The original target</param>
     /// <param name="method">The new HTTP method</param>
     /// <returns>A new target instance with the updated method</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> is null</exception>
     public static ConditionalAggregationTarget WithMethod(this ConditionalAggregationTarget target, HttpMethod method)
+        => target.WithMethodCore(method);
+
+    private static ConditionalAggregationTarget WithMethodCore(this ConditionalAggregationTarget target, HttpMethod method)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
+        ArgumentNullException.ThrowIfNull(target);
 
         var clone = target.Clone();
         clone.Method = method;
@@ -197,10 +197,13 @@ public static class ConditionalAggregationTargetExtensions
     /// <param name="target">The original target</param>
     /// <param name="timeoutSeconds">The new timeout in seconds</param>
     /// <returns>A new target instance with the updated timeout</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="target"/> is null</exception>
     public static ConditionalAggregationTarget WithTimeout(this ConditionalAggregationTarget target, int timeoutSeconds)
+        => target.WithTimeoutCore(timeoutSeconds);
+
+    private static ConditionalAggregationTarget WithTimeoutCore(this ConditionalAggregationTarget target, int timeoutSeconds)
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
+        ArgumentNullException.ThrowIfNull(target);
 
         var clone = target.Clone();
         clone.TimeoutSeconds = timeoutSeconds;
