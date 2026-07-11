@@ -9,16 +9,28 @@ namespace DotNetApiGateway.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
+using DotNetApiGateway.Middleware;
 
 /// <summary>
 /// Extension methods for configuring gateway services in dependency injection
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Adds all gateway services to the dependency injection container.
+    /// </summary>
+    /// <param name="services">The service collection to configure</param>
+    /// <param name="configuration">The application configuration</param>
+    /// <returns>The configured service collection</returns>
+    /// <exception cref="ArgumentNullException">Thrown if services or configuration is null</exception>
     public static IServiceCollection AddGatewayServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
         // Register configuration
         services.AddOptions<DotnetApiGatewayOptions>()
             .Bind(configuration.GetSection(DotnetApiGatewayOptions.SectionName))
@@ -55,8 +67,24 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IApplicationBuilder UseGatewayMiddleware(this IApplicationBuilder app)
+    /// <summary>
+    /// Adds and configures all gateway middleware components to the HTTP request pipeline.
+    /// This includes error handling, request validation, routing, and gateway processing.
+    /// </summary>
+    /// <param name="app">The application builder</param>
+    /// <returns>The configured application builder</returns>
+    /// <exception cref="ArgumentNullException">Thrown if app is null</exception>
+    public static IApplicationBuilder UseAllGatewayMiddleware(this IApplicationBuilder app)
     {
-        return app;
+        ArgumentNullException.ThrowIfNull(app);
+
+        return app
+            .UseMiddleware<ErrorHandlingMiddleware>()
+            .UseMiddleware<RequestValidationMiddleware>()
+            .UseMiddleware<RequestLoggingMiddleware>()
+            .UseMiddleware<RoutingMiddleware>()
+            .UseMiddleware<RateLimitingMiddleware>()
+            .UseMiddleware<PerformanceMonitoringMiddleware>()
+            .UseMiddleware<GatewayMiddleware>();
     }
 }
