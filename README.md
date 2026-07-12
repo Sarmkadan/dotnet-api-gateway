@@ -698,6 +698,47 @@ var route = new GatewayRoute
 
 ---
 
+## TransformationRuleExtensions
+
+The `TransformationRuleExtensions` class provides a set of extension methods that simplify the creation and management of transformation rules. These methods offer a fluent API for configuring common rule operations such as adding headers, setting headers, removing query parameters, and rewriting path prefixes, reducing boilerplate code and ensuring consistent rule configuration.
+
+The extension methods automatically set appropriate phase, operation, and description values, while also validating input parameters to prevent null reference exceptions.
+
+
+
+
+### Usage Examples
+
+```csharp
+// Create a transformation rule to add a request header
+var rule = new TransformationRule()
+  .AddRequestHeader("X-Request-Id", Guid.NewGuid().ToString(), "Add unique request ID", order: 1);
+
+// Create a transformation rule to set a response header
+var responseRule = new TransformationRule()
+  .SetResponseHeader("X-API-Version", "2.1.0", "Set API version header", order: 1);
+
+// Create a transformation rule to remove a query parameter
+var queryRule = new TransformationRule()
+  .RemoveRequestQueryParam("debug", "Remove debug flag from request", order: 2);
+
+// Create a transformation rule to rewrite path prefixes
+var pathRule = new TransformationRule()
+  .RewritePathPrefix("/v1/", "/v2/", "Upgrade API version in path", order: 3);
+
+// Check if a rule is a header operation
+bool isHeaderOp = rule.IsHeaderOperation();
+
+// Check if a rule is a query parameter operation
+bool isQueryOp = queryRule.IsQueryParamOperation();
+
+// Clone a rule for reuse
+var clonedRule = rule.Clone();
+
+// Check if a rule can be applied
+bool canApply = pathRule.CanApply();
+```
+
 ## API Versioning
 
 The gateway supports four version-detection strategies that can be combined in priority order. Versioned routes can enforce a set of supported versions and optionally strip the version segment before forwarding so backends remain unaware of it.
