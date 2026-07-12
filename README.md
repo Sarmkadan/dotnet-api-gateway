@@ -332,6 +332,189 @@ new GatewayRoute
 
 ### Example 5: Circuit Breaker Protection
 
+
+```csharp
+var route = new GatewayRoute
+{
+  Name = "resilient-service",
+  Pattern = "^/api/orders(/.*)?$",
+  Targets = [new RouteTarget { Url = "http://order-service:3000" }],
+  CircuitBreakerPolicy = new CircuitBreakerPolicy
+  {
+    Enabled = true,
+    FailureThreshold = 5,
+    SuccessThreshold = 2,
+    TimeoutSeconds = 60
+  }
+};
+```
+
+## AdminDashboardSummaryTests
+
+The `AdminDashboardSummaryTests` class is a test fixture used for JSON serialization testing of the admin dashboard summary data structure. It provides strongly-typed properties that mirror the actual admin dashboard summary response format, making it ideal for testing serialization/deserialization of gateway metrics, route statistics, and circuit breaker states.
+
+This type is particularly useful for:
+- Validating JSON serialization/deserialization of admin dashboard responses
+- Testing API contract consistency between the gateway and monitoring systems
+- Ensuring backward compatibility when extending the admin dashboard summary API
+
+### Example Usage
+
+```csharp
+// Create a complete admin dashboard summary for testing
+var summary = new AdminDashboardSummaryTests
+{
+    Gateway = new AdminDashboardSummaryTests.GatewayInfo
+    {
+        Name = "Production Gateway",
+        Version = "2.1.0",
+        Uptime = "2.14:32:15",
+        StartedAt = DateTime.UtcNow.AddDays(-2)
+    },
+    Requests = new AdminDashboardSummaryTests.RequestMetrics
+    {
+        Total = 15420,
+        Successful = 15301,
+        Failed = 119,
+        SuccessRatePercent = 99.23,
+        AverageResponseTimeMs = 4.7,
+        RequestsPerSecond = 20.1
+    },
+    Routes = new AdminDashboardSummaryTests.RouteStats
+    {
+        Total = 6,
+        Active = 6,
+        Inactive = 0
+    },
+    CircuitBreakers = new AdminDashboardSummaryTests.CircuitBreakerStats
+    {
+        Total = 3,
+        Open = 0,
+        HalfOpen = 0,
+        Closed = 3
+    },
+    StatusCodeDistribution = new Dictionary<int, long>
+    {
+        { 200, 12540 },
+        { 201, 890 },
+        { 400, 210 },
+        { 404, 150 },
+        { 500, 119 }
+    },
+    Timestamp = DateTime.UtcNow
+};
+
+// Serialize to JSON for testing
+string json = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true });
+```
+
+### Related Types
+
+The `AdminDashboardSummaryTests` class contains the following nested types that mirror the actual admin dashboard response structure:
+
+- **GatewayInfo**: Gateway metadata (Name, Version, Uptime, StartedAt)
+- **RequestMetrics**: Request statistics (Total, Successful, Failed, SuccessRatePercent, AverageResponseTimeMs, RequestsPerSecond)
+- **RouteStats**: Route statistics (Total, Active, Inactive)
+- **CircuitBreakerStats**: Circuit breaker statistics (Total, Open, HalfOpen, Closed)
+
+### Example JSON Output
+
+The serialized JSON matches the format returned by the `/admin/dashboard/summary` endpoint:
+
+```json
+{
+  "Gateway": {
+    "Name": "Production Gateway",
+    "Version": "2.1.0",
+    "Uptime": "2.14:32:15",
+    "StartedAt": "2025-07-10T08:00:00Z"
+  },
+  "Requests": {
+    "Total": 15420,
+    "Successful": 15301,
+    "Failed": 119,
+    "SuccessRatePercent": 99.23,
+    "AverageResponseTimeMs": 4.7,
+    "RequestsPerSecond": 20.1
+  },
+  "Routes": {
+    "Total": 6,
+    "Active": 6,
+    "Inactive": 0
+  },
+  "CircuitBreakers": {
+    "Total": 3,
+    "Open": 0,
+    "HalfOpen": 0,
+    "Closed": 3
+  },
+  "StatusCodeDistribution": {
+    "200": 12540,
+    "201": 890,
+    "400": 210,
+    "404": 150,
+    "500": 119
+  },
+  "Timestamp": "2025-07-12T14:30:00Z"
+}
+```
+
+### Testing Scenarios
+
+This type is commonly used in test scenarios such as:
+
+```csharp
+[Fact]
+public void AdminDashboardSummary_Should_Serialize_To_Expected_Json()
+{
+    // Arrange
+    var summary = new AdminDashboardSummaryTests
+    {
+        Gateway = new AdminDashboardSummaryTests.GatewayInfo
+        {
+            Name = "Test Gateway",
+            Version = "1.0.0",
+            Uptime = "0.00:05:00",
+            StartedAt = DateTime.UtcNow
+        },
+        Requests = new AdminDashboardSummaryTests.RequestMetrics
+        {
+            Total = 1000,
+            Successful = 995,
+            Failed = 5,
+            SuccessRatePercent = 99.5,
+            AverageResponseTimeMs = 2.5,
+            RequestsPerSecond = 3.3
+        },
+        Routes = new AdminDashboardSummaryTests.RouteStats
+        {
+            Total = 2,
+            Active = 2,
+            Inactive = 0
+        },
+        CircuitBreakers = new AdminDashboardSummaryTests.CircuitBreakerStats
+        {
+            Total = 1,
+            Open = 0,
+            HalfOpen = 0,
+            Closed = 1
+        },
+        StatusCodeDistribution = new Dictionary<int, long> { { 200, 995 }, { 404, 5 } },
+        Timestamp = DateTime.UtcNow
+    };
+
+    // Act
+    string json = JsonSerializer.Serialize(summary);
+
+    // Assert
+    Assert.NotNull(json);
+    Assert.Contains("Test Gateway", json);
+    Assert.Contains("99.5", json);
+}
+```
+
+## Example 5: Circuit Breaker Protection
+
 ```json
 {
   "Routes": [
