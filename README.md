@@ -1470,6 +1470,56 @@ cacheService.ClearAll();
 cacheService.Dispose();
 ```
 
+## InMemoryRateLimitStore
+
+The `InMemoryRateLimitStore` class provides an in-memory implementation of rate limiting storage for the API gateway. It supports multiple rate limiting strategies (fixed window, sliding window, and token bucket) and maintains rate limit state in memory using thread-safe collections. This store is ideal for single-instance deployments where distributed coordination is not required.
+
+The implementation tracks request counts, token availability, and time windows for different rate limiting algorithms, providing accurate rate limit enforcement and status information. It includes methods for checking if requests are allowed, retrieving current rate limit status, and resetting limits for specific keys or globally.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Repositories;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection (typically done in Program.cs)
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddSingleton<InMemoryRateLimitStore>();
+
+var serviceProvider = services.BuildServiceProvider();
+var rateLimitStore = serviceProvider.GetRequiredService<InMemoryRateLimitStore>();
+
+// Create a rate limit policy for API clients
+var policy = new RateLimitPolicy
+{
+    Enabled = true,
+    RequestsPerMinute = 100, // Allow 100 requests per minute
+    Strategy = RateLimitStrategy.TokenBucket, // Use token bucket algorithm
+    BurstSize = 200 // Allow bursts up to 200 requests
+};
+
+// Check if a request is allowed (returns false when limit is exceeded)
+bool isAllowed = await rateLimitStore.IsRequestAllowedAsync("client-123", policy);
+Console.WriteLine($"Request allowed: {isAllowed}");
+
+// Get current rate limit information for display to client
+var rateLimitInfo = await rateLimitStore.GetEntryAsync("client-123", policy);
+Console.WriteLine($"Rate limit: {policy.RequestsPerMinute} requests per minute");
+Console.WriteLine($"Remaining tokens: {rateLimitInfo.Tokens}");
+Console.WriteLine($"Reset in: {rateLimitInfo.RemainingTimeSeconds} seconds");
+
+// Reset rate limits for a specific client
+await rateLimitStore.ResetKeyAsync("client-123");
+Console.WriteLine("Rate limits reset for client-123");
+
+// Reset all rate limits globally
+await rateLimitStore.ResetAllAsync();
+Console.WriteLine("All rate limits reset globally");
+```
+
 ## ErrorHandlingMiddleware
 
 The `ErrorHandlingMiddleware` class provides global error handling for the API gateway, catching all unhandled exceptions and converting them to standardized HTTP error responses. It ensures consistent error formatting across all routes and services, logs exceptions for debugging, and maps gateway-specific exceptions to appropriate HTTP status codes.
