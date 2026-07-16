@@ -1571,6 +1571,47 @@ var tokenBucketInfo = await rateLimitingService.GetRateLimitInfoAsync("client-45
 Console.WriteLine($"Token bucket - Tokens: {tokenBucketInfo.Remaining}/{tokenBucketInfo.Limit}");
 ```
 
+## AggregatedRequest
+
+The `AggregatedRequest` type encapsulates HTTP requests with properties for request identification, routing, headers, query parameters, body content, timeout configuration, and optional handling. It is used throughout the API gateway for request aggregation scenarios where multiple requests need to be combined or processed together.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create an aggregated request for processing
+var request = new AggregatedRequest
+{
+    Id = "req-12345",
+    Alias = "user-profile-request",
+    Path = "/api/users/profile",
+    Method = "GET",
+    Headers = new Dictionary<string, string>
+    {
+        ["Accept"] = "application/json",
+        ["Authorization"] = "Bearer token123"
+    },
+    QueryParameters = new Dictionary<string, string>
+    {
+        ["fields"] = "name,email,address",
+        ["include"] = "orders"
+    },
+    Body = "{\"userId\": 123}",
+    TimeoutSeconds = 30,
+    Optional = false
+};
+
+// Validate the request configuration
+request.Validate();
+
+// Access request properties
+Console.WriteLine($"Request ID: {request.Id}");
+Console.WriteLine($"Request Path: {request.Path}");
+Console.WriteLine($"Method: {request.Method}");
+Console.WriteLine($"Timeout: {request.TimeoutSeconds} seconds");
+```
+
 ## JsonUtilityTests
 
 The `JsonUtilityTests` class provides a comprehensive unit testing suite for the `JsonUtility` class, validating JSON serialization, deserialization, parsing, and merging operations. These tests ensure that JSON processing in the API gateway robustly handles various data structures, edge cases, and type conversions.
