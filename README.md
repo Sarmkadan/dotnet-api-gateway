@@ -1077,6 +1077,66 @@ string cacheKey = cachePolicy.GenerateCacheKey(
 // Returns: "GET:/api/users/123?lang=en-US&fields=name,email|Accept-Language:en-US"
 ```
 
+## HealthCheckService
+
+The `HealthCheckService` class monitors the health of backend targets in the API gateway. It performs health checks on individual targets or all tracked targets, maintains a registry of targets for periodic monitoring, and provides comprehensive gateway health information including uptime, version, and detailed status of all tracked targets.
+
+The service automatically tracks targets that are checked and performs periodic health checks every 30 seconds using a background timer. Health check results are used to update target health status and can be queried to determine overall gateway health.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
+
+// Setup dependency injection (typically done in Program.cs)
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddHttpClient();
+services.AddSingleton<HealthCheckService>();
+
+var serviceProvider = services.BuildServiceProvider();
+var healthCheckService = serviceProvider.GetRequiredService<HealthCheckService>();
+
+// Create a route target with health check configuration
+var target = new RouteTarget
+{
+    Id = "user-service-primary",
+    Name = "User Service - Primary",
+    BaseUrl = "https://user-service.internal:8080",
+    IsHealthy = true,
+    HealthCheckPath = "/health",
+    HealthCheckIntervalSeconds = 30
+};
+
+// Check health of a specific target
+bool isHealthy = await healthCheckService.CheckTargetHealthAsync(target);
+Console.WriteLine($"Target health status: {(isHealthy ? "HEALTHY" : "UNHEALTHY")}");
+
+// Check health of multiple targets
+var targets = new List<RouteTarget> { target };
+var allHealthResults = await healthCheckService.CheckAllTargetsAsync(targets);
+foreach (var result in allHealthResults)
+{
+    Console.WriteLine($"Target {result.Key}: {(result.Value ? "HEALTHY" : "UNHEALTHY")}");
+}
+
+// Get comprehensive gateway health report
+gatewayHealth = healthCheckService.GetGatewayHealth();
+Console.WriteLine($"Gateway Health: {gatewayHealth.IsHealthy}");
+Console.WriteLine($"Uptime: {gatewayHealth.Uptime.TotalHours:F2} hours");
+Console.WriteLine($"Version: {gatewayHealth.Version}");
+Console.WriteLine($"Tracked targets: {gatewayHealth.Details["trackedTargets"]}");
+Console.WriteLine($"Unhealthy targets: {gatewayHealth.Details["unhealthyTargets"]}");
+
+// The service runs periodic health checks automatically in the background
+// No manual cleanup needed - Dispose() handles timer and HTTP client cleanup
+```
+
 ## CacheService
 
 The `CacheService` class provides an in-memory response caching mechanism for the API gateway. It manages cached responses with configurable expiration times, supports cache invalidation by key or prefix, and provides statistics about cache usage. The service is thread-safe using `ReaderWriterLockSlim` for concurrent access and includes automatic cleanup of expired entries via a background timer.
