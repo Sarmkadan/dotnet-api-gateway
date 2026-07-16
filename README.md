@@ -854,6 +854,81 @@ clientFactory.RemoveClient("https://api.example.com");
 clientFactory.Clear();
 ```
 
+## AnalyticsService
+
+The `AnalyticsService` class provides advanced analytics and insights about API gateway operations. It collects and processes metrics on gateway health, performance trends, and route-specific analytics to help monitor system behavior and identify issues. The service aggregates data from metrics tracking and route repositories to generate comprehensive reports on request volumes, error rates, and response times.
+
+The service offers methods for generating health reports, analyzing performance trends, and identifying problematic routes based on error rates or response times.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection (typically done in Program.cs)
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddSingleton<MetricsService>();
+services.AddSingleton<GatewayRouteRepository>();
+services.AddSingleton<AnalyticsService>();
+
+var serviceProvider = services.BuildServiceProvider();
+var analyticsService = serviceProvider.GetRequiredService<AnalyticsService>();
+
+// Get comprehensive gateway health report
+var healthReport = await analyticsService.GetHealthReportAsync();
+Console.WriteLine($"Gateway Health: {healthReport.HealthStatus}");
+Console.WriteLine($"Success Rate: {healthReport.SuccessRate:F2}%");
+Console.WriteLine($"Error Rate: {healthReport.ErrorRate:F2}%");
+Console.WriteLine($"Total Requests: {healthReport.TotalRequests}");
+Console.WriteLine($"Average Response Time: {healthReport.AverageResponseTimeMs:F2}ms");
+
+// Get performance trends over the last 30 minutes
+var trend = await analyticsService.GetPerformanceTrendAsync(lastNMinutes: 30);
+Console.WriteLine($"Performance Trend: {trend.Period}");
+Console.WriteLine($"Collection Time: {trend.CollectionTime:O}");
+foreach (var sample in trend.Samples)
+{
+    Console.WriteLine($"  - Timestamp: {sample.Timestamp:O}");
+    Console.WriteLine($"    Avg Response Time: {sample.AverageResponseTimeMs:F2}ms");
+    Console.WriteLine($"    Requests Per Second: {sample.RequestsPerSecond:F2}");
+}
+
+// Get top 5 routes by request volume
+var topRoutes = await analyticsService.GetTopRoutesByVolumeAsync(limit: 5);
+Console.WriteLine("Top Routes by Volume:");
+foreach (var route in topRoutes)
+{
+    Console.WriteLine($"  {route.RouteName}:");
+    Console.WriteLine($"    Total Requests: {route.TotalRequests}");
+    Console.WriteLine($"    Success Rate: {route.SuccessRate:F2}%");
+    Console.WriteLine($"    Avg Response Time: {route.AverageResponseTimeMs:F2}ms");
+}
+
+// Get routes with highest error rates
+var problematicRoutes = await analyticsService.GetProblematicRoutesAsync(limit: 10);
+Console.WriteLine("Problematic Routes (Highest Error Rates):");
+foreach (var route in problematicRoutes)
+{
+    Console.WriteLine($"  {route.RouteName}:");
+    Console.WriteLine($"    Error Rate: {route.ErrorRate:F2}%");
+    Console.WriteLine($"    Total Requests: {route.TotalRequests}");
+    Console.WriteLine($"    Failed Requests: {route.FailedRequests}");
+}
+
+// Get slowest routes by response time
+var slowestRoutes = await analyticsService.GetSlowestRoutesAsync(limit: 5);
+Console.WriteLine("Slowest Routes:");
+foreach (var route in slowestRoutes)
+{
+    Console.WriteLine($"  {route.RouteName}:");
+    Console.WriteLine($"    Avg Response Time: {route.AverageResponseTimeMs:F2}ms");
+    Console.WriteLine($"    Total Requests: {route.TotalRequests}");
+}
+```
+
 ## ExternalApiClient
 
 The `ExternalApiClient` class provides a generic HTTP client wrapper for calling external APIs with built-in error handling, retry logic, and logging. It simplifies making HTTP requests to external services while providing resilience against transient failures.
