@@ -755,6 +755,104 @@ Console.WriteLine($"All {results.Length} requests completed with identical respo
 coalescingService.Dispose();
 ```
 
+## RoutingService
+
+The `RoutingService` class handles request routing, target selection, and URL construction for the API gateway. It finds matching routes based on request paths and HTTP methods, selects appropriate backend targets using configurable load balancing strategies (round-robin, IP hash, or least connections), applies header transformations, and builds forward URLs for request forwarding. The service also provides CRUD operations for managing gateway routes.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection (typically done in Program.cs)
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddSingleton<GatewayRouteRepository>();
+services.AddSingleton<RoutingService>();
+
+var serviceProvider = services.BuildServiceProvider();
+var routingService = serviceProvider.GetRequiredService<RoutingService>();
+
+// Create a gateway route with multiple targets
+var route = new GatewayRoute
+{
+    Name = "user-api",
+    PathPattern = "/api/users/{id}",
+    AllowedMethods = ["GET", "PUT", "DELETE"],
+    Targets = [
+        new RouteTarget
+        {
+            Name = "user-service-primary",
+            BaseUrl = "https://user-service.internal:8080",
+            Weight = 70,
+            IsHealthy = true,
+            TransformHeaders = new Dictionary<string, string>
+            {
+                ["X-Service-Version"] = "v2",
+                ["X-Environment"] = "production"
+            }
+        },
+        new RouteTarget
+        {
+            Name = "user-service-backup",
+            BaseUrl = "https://user-service-backup.internal:8080", 
+            Weight = 30,
+            IsHealthy = true
+        }
+    ],
+    TimeoutSeconds = 30
+};
+
+// Create the route in the gateway
+var createdRoute = await routingService.CreateRouteAsync(route);
+Console.WriteLine($"Created route: {createdRoute.Name} ({createdRoute.Id})");
+
+// Find a route matching a request
+var foundRoute = await routingService.FindRouteAsync("/api/users/123", "GET");
+if (foundRoute != null)
+{
+    Console.WriteLine($"Found route: {foundRoute.Name}");
+    
+    // Select a target using round-robin strategy
+    var selectedTarget = routingService.SelectTarget(foundRoute, "192.168.1.100");
+    Console.WriteLine($"Selected target: {selectedTarget.Name} ({selectedTarget.BaseUrl})");
+    
+    // Build the forward URL for the request
+    var forwardUrl = routingService.BuildForwardUrl(selectedTarget, "/api/users/123");
+    Console.WriteLine($"Forward URL: {forwardUrl}");
+    
+    // Apply header transformations
+    var originalHeaders = new Dictionary<string, string>
+    {
+        ["Authorization"] = "Bearer token123",
+        ["Accept"] = "application/json"
+    };
+    
+    var transformedHeaders = routingService.ApplyHeaderTransforms(selectedTarget, originalHeaders);
+    Console.WriteLine("Transformed headers:");
+    foreach (var header in transformedHeaders)
+    {
+        Console.WriteLine($"  {header.Key}: {header.Value}");
+    }
+}
+
+// Get all active routes
+var allRoutes = await routingService.GetAllActiveRoutesAsync();
+Console.WriteLine($"Total active routes: {allRoutes.Count()}");
+
+// Update a route
+foundRoute.Name = "user-api-updated";
+var updatedRoute = await routingService.UpdateRouteAsync(foundRoute);
+Console.WriteLine($"Updated route: {updatedRoute.Name}");
+
+// Delete a route
+bool deleted = await routingService.DeleteRouteAsync(foundRoute.Id);
+Console.WriteLine($"Route deleted: {deleted}");
+```
+
 ## RequestCoalescingPolicy
 
 The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
