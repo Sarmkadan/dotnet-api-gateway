@@ -96,6 +96,91 @@ if (status.LastFailureAt.HasValue)
 }
 ```
 
+## CircuitBreakerService
+
+The `CircuitBreakerService` class manages circuit breaker state and prevents cascading failures in the API gateway. It provides thread-safe operations for checking circuit state, recording successes and failures, and managing circuit breaker status across all downstream services. The service uses per-service locking to prevent race conditions during concurrent state transitions and automatically handles state transitions between Closed, Open, and HalfOpen states based on configurable policies.
+
+
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+
+// Setup dependency injection (typically done in Program.cs)
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddSingleton<CircuitBreakerRepository>();
+services.AddSingleton<CircuitBreakerService>();
+
+var serviceProvider = services.BuildServiceProvider();
+var circuitBreakerService = serviceProvider.GetRequiredService<CircuitBreakerService>();
+
+// Create a circuit breaker policy with failure thresholds
+var policy = new CircuitBreakerPolicy
+{
+  Enabled = true,
+  FailureThreshold = 3, // Trip circuit after 3 failures
+  SuccessThreshold = 2, // Reset circuit after 2 consecutive successes
+  TimeoutSeconds = 30, // Consider request timed out after 30 seconds
+  MaxRetries = 2,
+  RetryDelayMilliseconds = 100
+};
+
+// Check if a request can be attempted (throws CircuitBreakerException if circuit is open)
+bool canAttempt = await circuitBreakerService.CanAttemptAsync("user-service", policy);
+Console.WriteLine($"Can attempt request: {canAttempt}");
+
+// Record a successful request
+await circuitBreakerService.RecordSuccessAsync("user-service", policy);
+Console.WriteLine("Request succeeded - circuit health improved");
+
+// Record a failed request
+await circuitBreakerService.RecordFailureAsync(
+  "user-service",
+  "Connection timeout",
+  policy
+);
+Console.WriteLine("Request failed - circuit health degraded");
+
+// Check if circuit is currently open
+bool isOpen = await circuitBreakerService.IsCircuitOpenAsync("user-service");
+Console.WriteLine($"Circuit is open: {isOpen}");
+
+// Get circuit breaker status for a specific service
+var status = await circuitBreakerService.GetStatusAsync("user-service");
+if (status != null)
+{
+  Console.WriteLine($"Service: {status.ServiceName}");
+  Console.WriteLine($"State: {status.State}");
+  Console.WriteLine($"Failure count: {status.FailureCount}");
+  Console.WriteLine($"Success count: {status.SuccessCount}");
+}
+
+// Get all open circuits across the gateway
+var openCircuits = await circuitBreakerService.GetOpenCircuitsAsync();
+Console.WriteLine($"Open circuits count: {openCircuits.Count()}");
+
+// Reset a specific circuit breaker
+await circuitBreakerService.ResetCircuitAsync("user-service");
+Console.WriteLine("Circuit manually reset to Closed state");
+
+// Reset all circuit breakers
+await circuitBreakerService.ResetAllCircuitsAsync();
+Console.WriteLine("All circuits reset to Closed state");
+
+// Get all circuit breaker statuses
+var allStatuses = await circuitBreakerService.GetAllStatusesAsync();
+foreach (var s in allStatuses)
+{
+  Console.WriteLine($"{s.ServiceName}: {s.State}");
+}
+```
+
 ## RequestContext
 
 The `RequestContext` class contains request-scoped metadata used throughout the API gateway's request processing pipeline. It holds information about the incoming request including identifiers, client identity, authentication tokens, headers, query parameters, custom data, matched routes, and timing information. This context object is passed through middleware and services to provide consistent access to request state.
