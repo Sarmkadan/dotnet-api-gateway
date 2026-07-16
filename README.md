@@ -502,6 +502,71 @@ string cacheKey = cachePolicy.GenerateCacheKey(
 // Returns: "GET:/api/users/123?lang=en-US&fields=name,email|Accept-Language:en-US"
 ```
 
+## CircuitBreakerExample
+
+The `CircuitBreakerExample` demonstrates the circuit breaker pattern implementation in the API gateway, showing how it protects against cascading failures by monitoring service health and temporarily blocking requests to failing services. This example illustrates state transitions (Closed → Open → Half-Open → Closed), configuration parameters, and realistic usage scenarios.
+
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Examples;
+using System;
+using System.Threading.Tasks;
+
+// Run the circuit breaker example
+await CircuitBreakerExample.Main();
+
+// Output:
+// === DotNet API Gateway - Circuit Breaker Example ===
+//
+// Step 1: Problem Without Circuit Breaker
+// Step 2: Circuit Breaker Configuration
+// Step 3: Circuit Breaker State Transitions
+// ...
+// ✓ Example completed successfully!
+```
+
+The example simulates real-world scenarios:
+
+```csharp
+// Create a simple circuit breaker with custom thresholds
+var breaker = new SimpleCircuitBreaker(
+    failureThreshold: 3,
+    successThreshold: 2,
+    timeoutSeconds: 5);
+
+// Check if request can be executed
+if (breaker.CanExecute())
+{
+    try
+    {
+        // Make request to backend service
+        var response = await httpClient.GetAsync("https://backend/api/data");
+        
+        // Record success
+        breaker.RecordSuccess();
+    }
+    catch (Exception ex)
+    {
+        // Record failure
+        breaker.RecordFailure();
+        
+        // Circuit will open after failureThreshold failures
+        if (breaker.State == CircuitState.Open)
+        {
+            // Return cached response or degraded functionality
+            return await GetCachedResponseAsync();
+        }
+    }
+}
+else
+{
+    // Circuit is OPEN - fail fast
+    return await GetFallbackResponseAsync();
+}
+```
+
 // Create a request coalescing policy with default settings
 var policy = new RequestCoalescingPolicy
 {
