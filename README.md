@@ -24,6 +24,52 @@ await CircuitBreakerRepositoryExtensions.UpdateBatchAsync(circuitBreakerReposito
 await CircuitBreakerRepositoryExtensions.ResetAllToClosedAsync(circuitBreakerRepository);
 ```
 
+## RetryPolicy
+
+The `RetryPolicy` class provides configurable retry behavior for transient operations, particularly useful for handling temporary failures in distributed systems. It supports both synchronous and asynchronous retry patterns with configurable retry counts, delays, and backoff strategies.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Integration;
+using Microsoft.Extensions.Logging;
+
+// Create a logger
+var logger = new LoggerFactory().CreateLogger<RetryPolicy>();
+
+// Create a retry policy with 3 attempts and exponential backoff
+var retryPolicy = new RetryPolicy
+{
+    MaxAttempts = 3,
+    InitialDelayMilliseconds = 100,
+    MaxDelayMilliseconds = 5000,
+    BackoffFactor = 2.0
+};
+
+// Execute an async operation with retry
+var response = await retryPolicy.ExecuteAsync(async () =>
+{
+    var httpClient = new HttpClient();
+    return await httpClient.GetAsync("https://api.example.com/data");
+});
+
+// Execute a typed async operation with retry
+var data = await retryPolicy.ExecuteAsync<WeatherData>(async () =>
+{
+    var httpClient = new HttpClient();
+    var response = await httpClient.GetAsync("https://api.example.com/weather");
+    response.EnsureSuccessStatusCode();
+    var content = await response.Content.ReadAsStringAsync();
+    return JsonUtility.Deserialize<WeatherData>(content);
+});
+
+// Check if retry policy is enabled
+if (retryPolicy.IsEnabled)
+{
+    Console.WriteLine($"Retry enabled with {retryPolicy.MaxAttempts} attempts");
+}
+```
+
 ## WebhookRegistry
 
 The `WebhookRegistry` class manages webhook subscriptions and provides functionality to asynchronously publish domain events to subscribed endpoints. It allows for registering and unregistering subscriptions, filtering by event type, and configuring delivery retry policies with exponential backoff.
