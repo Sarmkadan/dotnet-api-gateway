@@ -727,6 +727,71 @@ bool hasScopes = authPolicy.HasScopeRequirements(); // Returns true
 bool hasRoles = authPolicy.HasRoleRequirements(); // Returns true
 ```
 
+## ClientIdentity
+
+The `ClientIdentity` class represents authenticated client information used throughout the API gateway's request processing pipeline. It holds identity data extracted from authentication tokens (such as JWT claims) and provides helper methods for checking scopes, roles, and claim values. This type is used by `RequestContext` to maintain client context during request processing.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a client identity from authentication token claims
+var clientIdentity = new ClientIdentity
+{
+    Id = "user-456",
+    Subject = "auth0|1234567890",
+    Name = "John Doe",
+    Email = "john.doe@example.com",
+    Scopes = ["read:users", "write:users", "profile"],
+    Roles = ["user", "premium"],
+    Claims = new Dictionary<string, object>
+    {
+        ["tenant_id"] = "acme-corp",
+        ["department"] = "engineering",
+        ["preferred_language"] = "en-US"
+    },
+    ExpiresAt = DateTime.UtcNow.AddHours(1),
+    IssuedAt = DateTime.UtcNow.AddMinutes(-5)
+};
+
+// Check if client has specific scopes
+bool hasReadScope = clientIdentity.HasScope("read:users"); // Returns true
+bool hasWriteScope = clientIdentity.HasScope("write:orders"); // Returns false
+
+// Check if client has specific roles
+bool isAdmin = clientIdentity.HasRole("admin"); // Returns false
+bool isPremium = clientIdentity.HasRole("premium"); // Returns true
+
+// Check multiple scopes at once
+bool hasRequiredScopes = clientIdentity.HasAnyScopeOf(["read:users", "read:products"]); // Returns true
+bool hasAllRequiredScopes = clientIdentity.HasAllScopesOf(["read:users", "write:users"]); // Returns true
+
+// Check multiple roles at once
+bool hasRequiredRoles = clientIdentity.HasAnyRoleOf(["admin", "moderator"]); // Returns false
+bool hasAllRequiredRoles = clientIdentity.HasAllRolesOf(["user", "premium"]); // Returns true
+
+// Access typed claims
+string? tenantId = clientIdentity.GetClaim<string>("tenant_id"); // Returns "acme-corp"
+int? departmentId = clientIdentity.GetClaim<int>("department_id"); // Returns null
+
+// Check token expiration
+bool isExpired = clientIdentity.IsExpired; // Returns false
+if (clientIdentity.IsExpired)
+{
+    Console.WriteLine("Token has expired");
+}
+
+// Access public properties
+Console.WriteLine($"Client ID: {clientIdentity.Id}");
+Console.WriteLine($"Client Name: {clientIdentity.Name}");
+Console.WriteLine($"Client Email: {clientIdentity.Email}");
+Console.WriteLine($"Available Scopes: {string.Join(", ", clientIdentity.Scopes)}");
+Console.WriteLine($"Available Roles: {string.Join(", ", clientIdentity.Roles)}");
+```
+
 ## RouteTarget
 
 The `RouteTarget` class represents a backend service target for a route. It defines the upstream service configuration including connection details, health monitoring, load balancing weight, and request transformation settings. Route targets are used within `GatewayRoute` configurations to specify where requests should be forwarded.
