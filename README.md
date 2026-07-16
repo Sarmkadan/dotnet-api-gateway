@@ -393,6 +393,51 @@ bool isSupported = versioningPolicy.SupportedVersions.Contains("2"); // Returns 
 string headerName = versioningPolicy.HeaderName; // Returns "X-API-Version"
 ```
 
+## CachePolicy
+
+The `CachePolicy` class defines caching behavior for API gateway routes, enabling response caching to improve performance and reduce load on upstream services. It supports configurable cache duration, cacheable HTTP methods and status codes, cache key variation by query strings and headers, and limits on cache size. The policy can be enabled/disabled per route and provides validation to ensure configuration integrity.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a cache policy for frequently accessed endpoints
+var cachePolicy = new CachePolicy
+{
+  Id = "user-profile-cache",
+  Enabled = true,
+  DurationSeconds = 300, // Cache responses for 5 minutes
+  Strategy = CacheStrategy.Response,
+  CacheableStatusCodes = [200, 201, 204], // Cache successful responses
+  CacheableHttpMethods = ["GET", "HEAD"], // Only cache GET and HEAD requests
+  VaryByQueryString = true, // Include query parameters in cache key
+  VaryByHeaders = ["Accept-Language", "Authorization"], // Vary cache by language and auth
+  MaxEntriesInCache = 1000 // Limit cache size to 1000 entries
+};
+
+// Validate the cache policy configuration
+cachePolicy.Validate();
+
+// Check if caching is enabled
+bool isEnabled = cachePolicy.Enabled; // Returns true
+
+// Check if a specific HTTP status code should be cached
+bool isCacheableStatus = cachePolicy.IsCacheable(200); // Returns true
+
+// Check if a specific HTTP method can be cached
+bool isCacheableMethod = cachePolicy.IsCacheable("GET"); // Returns true
+
+// Generate a cache key for a request
+string cacheKey = cachePolicy.GenerateCacheKey(
+  "/api/users/123",
+  "GET",
+  new Dictionary<string, string> { ["lang"] = "en-US", ["fields"] = "name,email" },
+  new Dictionary<string, string> { ["Accept-Language"] = "en-US" }
+);
+// Returns: "GET:/api/users/123?lang=en-US&fields=name,email|Accept-Language:en-US"
+```
+
 // Create a request coalescing policy with default settings
 var policy = new RequestCoalescingPolicy
 {
