@@ -188,6 +188,60 @@ Console.WriteLine($"Serialized: {json}");
 Console.WriteLine($"Deserialized: {obj?.Name}, {obj?.Value}");
 ```
 
+## ExternalApiClient
+
+The `ExternalApiClient` class provides a generic HTTP client wrapper for calling external APIs with built-in error handling, retry logic, and logging. It simplifies making HTTP requests to external services while providing resilience against transient failures.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Integration;
+using Microsoft.Extensions.Logging;
+
+// Create an HTTP client (typically injected via DI in production)
+var httpClient = new HttpClient();
+
+// Create a logger (replace with real logger in production)
+var logger = new LoggerFactory().CreateLogger<ExternalApiClient>();
+
+// Create the external API client with optional retry policy
+var apiClient = new ExternalApiClient(httpClient, logger: logger);
+
+// Make a GET request to retrieve data
+var userData = await apiClient.GetAsync<UserData>("https://api.example.com/users/123");
+
+// Make a POST request to create a resource
+var newUser = new CreateUserRequest { Name = "John Doe", Email = "john@example.com" };
+var createdUser = await apiClient.PostAsync<CreateUserRequest, UserResponse>(
+    "https://api.example.com/users", 
+    newUser
+);
+
+// Make a PUT request to update a resource
+var updatedUser = new UpdateUserRequest { Name = "John Updated", Email = "john.updated@example.com" };
+var result = await apiClient.PutAsync<UpdateUserRequest, UserResponse>(
+    "https://api.example.com/users/123", 
+    updatedUser
+);
+
+// Make a DELETE request to remove a resource
+var isDeleted = await apiClient.DeleteAsync("https://api.example.com/users/123");
+
+// Send a pre-built HTTP request
+var request = new HttpRequestMessage(HttpMethod.Get, "https://api.example.com/data");
+request.Headers.Add("Authorization", "Bearer token123");
+var response = await apiClient.SendRequestAsync(request);
+
+// Make a raw HTTP request with custom configuration
+var customResponse = await apiClient.SendAsync(
+    "https://api.example.com/custom-endpoint",
+    HttpMethod.Post,
+    contentType: "application/json",
+    content: "{\"key\": \"value\"}",
+    headers: new Dictionary<string, string> { ["X-Custom-Header"] = "custom-value" }
+);
+```
+
 ## RoutingAndRateLimitingIntegrationTests
 
 The `RoutingAndRateLimitingIntegrationTests` class provides comprehensive integration tests for the API gateway's routing and rate limiting functionality. It tests the complete workflow from route creation and matching through target selection, rate limiting enforcement, and circuit breaker integration. These tests verify that the gateway correctly handles concurrent requests, maintains proper state across operations, and enforces configuration settings.
