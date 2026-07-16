@@ -538,6 +538,46 @@ Assert.NotNull(identity);
 Assert.Equal("user-123", identity.Id);
 ```
 
+## AuthenticationPolicy
+
+The `AuthenticationPolicy` class defines authentication and authorization requirements for API gateway routes. It configures JWT validation settings, allowed scopes, and role-based access control for securing gateway endpoints. The policy supports Bearer token authentication with configurable signature validation, expiration checking, and algorithm support.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create an authentication policy for JWT Bearer tokens
+var authPolicy = new AuthenticationPolicy
+{
+    Id = "user-auth-policy",
+    Enabled = true,
+    Type = AuthenticationType.Bearer,
+    ValidateSignature = true,
+    ValidateExpiration = true,
+    ClockSkewSeconds = 30,
+    JwtIssuer = "https://auth.example.com",
+    JwtAudience = "api.example.com",
+    JwtSecret = "your-256-bit-secret-key-here",
+    JwtAlgorithms = ["HS256", "HS384"],
+    AllowedScopes = ["read:users", "write:users"],
+    AllowedRoles = ["admin", "user"],
+    RequiresAuthentication() // Returns true
+};
+
+// Validate the policy configuration
+authPolicy.Validate();
+
+// Check if the policy requires authentication
+bool requiresAuth = authPolicy.RequiresAuthentication(); // Returns true
+
+// Check if the policy has scope requirements
+bool hasScopes = authPolicy.HasScopeRequirements(); // Returns true
+
+// Check if the policy has role requirements
+bool hasRoles = authPolicy.HasRoleRequirements(); // Returns true
+```
+
 ## RouteTarget
 
 The `RouteTarget` class represents a backend service target for a route. It defines the upstream service configuration including connection details, health monitoring, load balancing weight, and request transformation settings. Route targets are used within `GatewayRoute` configurations to specify where requests should be forwarded.
