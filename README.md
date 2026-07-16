@@ -502,6 +502,72 @@ string cacheKey = cachePolicy.GenerateCacheKey(
 // Returns: "GET:/api/users/123?lang=en-US&fields=name,email|Accept-Language:en-US"
 ```
 
+## ErrorHandlingMiddleware
+
+The `ErrorHandlingMiddleware` class provides global error handling for the API gateway, catching all unhandled exceptions and converting them to standardized HTTP error responses. It ensures consistent error formatting across all routes and services, logs exceptions for debugging, and maps gateway-specific exceptions to appropriate HTTP status codes.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Middleware;
+using DotNetApiGateway.Exceptions;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container
+builder.Services.AddControllers();
+builder.Services.AddLogging(logging => logging.AddConsole());
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+// Add error handling middleware - should be registered early in the pipeline
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+
+// Example of handling gateway-specific exceptions
+try
+{
+    // Your gateway routing logic here
+}
+catch (RateLimitExceededException ex)
+{
+    // ErrorResponse properties available:
+    // - ErrorCode: "RATE_LIMIT_EXCEEDED"
+    // - Message: The rate limit error message
+    // - Timestamp: DateTime.UtcNow when error occurred
+    // - Details: Optional dictionary with additional error details
+    Console.WriteLine($"Rate limit error: {ex.Message} at {ex.Timestamp}");
+}
+catch (CircuitBreakerException ex)
+{
+    Console.WriteLine($"Circuit breaker error: {ex.Message} at {ex.Timestamp}");
+}
+catch (AuthenticationException ex)
+{
+    Console.WriteLine($"Authentication error: {ex.Message} at {ex.Timestamp}");
+}
+catch (RouteNotFoundException ex)
+{
+    Console.WriteLine($"Route not found: {ex.Message} at {ex.Timestamp}");
+}
+```
+
 ## CircuitBreakerExample
 
 The `CircuitBreakerExample` demonstrates the circuit breaker pattern implementation in the API gateway, showing how it protects against cascading failures by monitoring service health and temporarily blocking requests to failing services. This example illustrates state transitions (Closed → Open → Half-Open → Closed), configuration parameters, and realistic usage scenarios.
