@@ -499,6 +499,159 @@ Assert.NotNull(identity);
 Assert.Equal("user-123", identity.Id);
 ```
 
+## GatewayRoute
+
+The `GatewayRoute` class represents a route configuration in the API gateway. It defines how incoming requests are matched, processed, and forwarded to upstream services with support for rate limiting, circuit breaking, caching, authentication, request coalescing, aggregation, API versioning, and request/response transformations.
+
+Each route has a unique identifier, name, path pattern with support for wildcards and parameters, allowed HTTP methods, and one or more target endpoints. Routes can be configured with various policies for resilience, security, and performance optimization.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a gateway route for user management API
+var userRoute = new GatewayRoute
+{
+    Id = "user-management-route",
+    Name = "User Management API",
+    PathPattern = "/api/users/{id}",
+    AllowedMethods = ["GET", "PUT", "DELETE"],
+    Targets = [
+        new RouteTarget
+        {
+            Name = "user-service-primary",
+            BaseUrl = "https://user-service.internal:8080",
+            Weight = 70,
+            IsHealthy = true,
+            HealthCheckIntervalSeconds = 30
+        },
+        new RouteTarget
+        {
+            Name = "user-service-secondary",
+            BaseUrl = "https://user-service-backup.internal:8080",
+            Weight = 30,
+            IsHealthy = true,
+            HealthCheckIntervalSeconds = 60
+        }
+    ],
+    RateLimitPolicy = new RateLimitPolicy
+    {
+        Enabled = true,
+        RequestsPerMinute = 1000,
+        Strategy = RateLimitStrategy.SlidingWindow
+    },
+    CircuitBreakerPolicy = new CircuitBreakerPolicy
+    {
+        Enabled = true,
+        FailureThreshold = 5,
+        SuccessThreshold = 3,
+        TimeoutSeconds = 30,
+        FailureStatusCodes = [500, 502, 503, 504],
+        MaxRetries = 2,
+        RetryDelayMilliseconds = 100
+    },
+    CachePolicy = new CachePolicy
+    {
+        Enabled = true,
+        DurationSeconds = 300,
+        VaryByHeaders = ["Accept-Language"]
+    },
+    AuthenticationPolicy = new AuthenticationPolicy
+    {
+        Enabled = true,
+        Type = AuthenticationType.Bearer,
+        ValidateSignature = true,
+        ValidateExpiration = true,
+        JwtSecret = "your-secret-key",
+        JwtIssuer = "your-issuer",
+        JwtAudience = "your-audience"
+    },
+    RequestCoalescingPolicy = new RequestCoalescingPolicy
+    {
+        Enabled = true,
+        TimeoutMs = 5000,
+        MaxQueuedRequests = 100,
+        CoalescibleMethods = ["GET", "HEAD"],
+        IncludeQueryString = true
+    },
+    AggregationPolicy = new AggregationPolicy
+    {
+        Enabled = true,
+        Strategy = AggregationStrategy.Parallel,
+        Targets = [
+            new ConditionalAggregationTarget
+            {
+                Name = "primary-backend",
+                BaseUrl = "https://api.example.com",
+                Weight = 80,
+                Condition = "request.Headers.ContainsKey(\"X-Environment\") && request.Headers[\"X-Environment\"] == \"production\""
+            },
+            new ConditionalAggregationTarget
+            {
+                Name = "canary-backend",
+                BaseUrl = "https://canary.api.example.com",
+                Weight = 20,
+                Condition = "request.Headers.ContainsKey(\"X-Environment\") && request.Headers[\"X-Environment\"] == \"canary\""
+            }
+        ]
+    },
+    VersioningPolicy = new ApiVersioningPolicy
+    {
+        Enabled = true,
+        Strategies = [
+            VersioningStrategy.UrlPath,
+            VersioningStrategy.Header,
+            VersioningStrategy.QueryParameter
+        ],
+        SupportedVersions = ["1", "2"],
+        DefaultVersion = "1",
+        HeaderName = "X-API-Version"
+    },
+    TransformationRules = [
+        new TransformationRule
+        {
+            Id = "add-tenant-header",
+            Phase = TransformationPhase.Request,
+            Operation = TransformationOperation.AddHeader,
+            Key = "X-Tenant-Id",
+            Value = "acme-corp",
+            Order = 1,
+            IsEnabled = true
+        },
+        new TransformationRule
+        {
+            Id = "set-environment-param",
+            Phase = TransformationPhase.Request,
+            Operation = TransformationOperation.SetQueryParam,
+            Key = "env",
+            Value = "production",
+            Order = 2,
+            IsEnabled = true
+        }
+    ],
+    IsActive = true,
+    TimeoutSeconds = 60,
+    CustomHeaders = new Dictionary<string, string>
+    {
+        ["X-Gateway-Version"] = "2.0",
+        ["X-Built-At"] = DateTime.UtcNow.ToString("o")
+    },
+    CreatedAt = DateTime.UtcNow
+};
+
+// Validate the route configuration
+userRoute.Validate();
+
+// Check if the route matches a request path
+bool matchesPath = userRoute.MatchesPath("/api/users/123"); // Returns true
+bool matchesWildcard = userRoute.MatchesPath("/api/users/details"); // Returns true
+
+// Check if the route supports a specific HTTP method
+bool supportsGet = userRoute.SupportsMethod("GET"); // Returns true
+bool supportsPost = userRoute.SupportsMethod("POST"); // Returns false
+```
+
 ## RoutingServiceTests
 
 The `RoutingServiceTests` class provides a comprehensive test suite for the `RoutingService` class. It ensures the correctness of routing logic, target selection strategies, URL construction, and gateway operations. The tests cover route discovery, target selection algorithms, and CRUD operations on gateway routes.
