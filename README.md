@@ -716,6 +716,89 @@ context.QueryParameters["page"] = "1";
 context.CustomData["key"] = "value";
 ```
 
+## ApiVersioningServiceTests
+
+The `ApiVersioningServiceTests` class provides a comprehensive test suite for the `ApiVersioningService` class, covering various versioning strategies (URL-path, header, query-parameter, media-type), default version handling, required version validation, supported version filtering, policy disabling, path stripping, and strategy priority behavior. The tests verify that the API versioning service correctly resolves versions from different sources and handles edge cases according to the configured policy.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
+
+// Create the API versioning service
+var versioningService = new ApiVersioningService(NullLogger<ApiVersioningService>.Instance);
+
+// Configure a versioning policy with multiple strategies
+var policy = new ApiVersioningPolicy
+{
+    Enabled = true,
+    Strategies = [
+        VersioningStrategy.UrlPath,
+        VersioningStrategy.Header,
+        VersioningStrategy.QueryParameter,
+        VersioningStrategy.MediaType
+    ],
+    SupportedVersions = ["1", "2", "3"],
+    DefaultVersion = "1",
+    StripVersionFromPath = true,
+    HeaderName = "X-API-Version"
+};
+
+// Create a mock HTTP context
+var context = new DefaultHttpContext();
+
+// Example 1: Resolve version from URL path (e.g., /v2/users)
+context.Request.Path = "/v2/users";
+if (versioningService.TryResolveVersion(context, policy, out var version))
+{
+    Console.WriteLine($"Resolved version: {version}"); // Outputs: Resolved version: 2
+    Console.WriteLine($"Stripped path: {versioningService.StripVersionFromPath(context.Request.Path, policy)}"); // Outputs: Stripped path: /users
+}
+
+// Example 2: Resolve version from custom header
+context.Request.Path = "/api/data";
+context.Request.Headers["X-API-Version"] = "3";
+if (versioningService.TryResolveVersion(context, policy, out version))
+{
+    Console.WriteLine($"Resolved version from header: {version}"); // Outputs: Resolved version from header: 3
+}
+
+// Example 3: Resolve version from query parameter
+context.Request.Path = "/api/items";
+context.Request.QueryString = new QueryString("?api-version=2");
+if (versioningService.TryResolveVersion(context, policy, out version))
+{
+    Console.WriteLine($"Resolved version from query: {version}"); // Outputs: Resolved version from query: 2
+}
+
+// Example 4: Resolve version from Accept header (media type)
+context.Request.Path = "/api/catalog";
+context.Request.Headers.Accept = "application/vnd.myapi.v1+json";
+if (versioningService.TryResolveVersion(context, policy, out version))
+{
+    Console.WriteLine($"Resolved version from media type: {version}"); // Outputs: Resolved version from media type: 1
+}
+
+// Example 5: Use default version when no version is specified
+context.Request.Path = "/api/users";
+context.Request.Headers.Clear();
+context.Request.QueryString = QueryString.Empty;
+if (versioningService.TryResolveVersion(context, policy, out version))
+{
+    Console.WriteLine($"Using default version: {version}"); // Outputs: Using default version: 1
+}
+
+// Example 6: Check if a version is supported
+var supportedVersions = new[] { "1", "2", "3" };
+if (supportedVersions.Contains(version))
+{
+    Console.WriteLine("Version is supported");
+}
+```
+
 ## RateLimitingServiceTests
 
 The `RateLimitingServiceTests` class provides a comprehensive test suite for the `RateLimitingService` class, which handles rate limiting enforcement for API gateway clients. These tests cover various rate limiting scenarios including disabled policies, valid requests, exceeded limits, different rate limiting strategies (sliding window and token bucket), and cleanup operations. The test suite verifies that the rate limiting service correctly tracks request counts, calculates remaining capacity, and enforces policy limits across multiple clients.
