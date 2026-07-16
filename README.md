@@ -1079,6 +1079,54 @@ bool deleted = await routingService.DeleteRouteAsync(foundRoute.Id);
 Console.WriteLine($"Route deleted: {deleted}");
 ```
 
+## ConversionUtility
+
+The `ConversionUtility` class provides safe type conversion and casting operations for handling various data types in the API gateway. It offers methods to convert strings to common primitive types (int, long, decimal, double, bool, DateTime, Guid) with configurable default values and exception handling. The utility also includes base64 encoding/decoding methods and a generic `ConvertTo<T>` method for type-safe conversions.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+
+// Convert string to int with default value
+int userId = ConversionUtility.ToInt("42", defaultValue: 0);
+Console.WriteLine($"User ID: {userId}"); // Output: User ID: 42
+
+// Convert string to decimal with default value
+decimal price = ConversionUtility.ToDecimal("19.99", defaultValue: 0.00m);
+Console.WriteLine($"Price: {price:C}"); // Output: Price: $19.99
+
+// Convert string to bool with default value
+bool isActive = ConversionUtility.ToBoolean("yes", defaultValue: false);
+Console.WriteLine($"Is Active: {isActive}"); // Output: Is Active: True
+
+// Convert string to DateTime with default value
+DateTime createdAt = ConversionUtility.ToDateTime("2024-01-15T10:30:00Z", defaultValue: DateTime.MinValue);
+Console.WriteLine($"Created At: {createdAt:O}"); // Output: Created At: 2024-01-15T10:30:00.0000000Z
+
+// Convert string to Guid
+Guid userGuid = ConversionUtility.ToGuid("550e8400-e29b-41d4-a716-446655440000", defaultValue: Guid.Empty);
+Console.WriteLine($"User GUID: {userGuid}"); // Output: User GUID: 550e8400-e29b-41d4-a716-446655440000
+
+// Convert byte array to base64 string
+byte[] data = { 0x48, 0x65, 0x6C, 0x6C, 0x6F }; // "Hello" in ASCII
+string base64 = ConversionUtility.ToBase64(data);
+Console.WriteLine($"Base64: {base64}"); // Output: Base64: SGVsbG8=
+
+// Convert base64 string back to byte array
+byte[]? decodedData = ConversionUtility.FromBase64(base64);
+Console.WriteLine($"Decoded: {System.Text.Encoding.ASCII.GetString(decodedData!)}"); // Output: Decoded: Hello
+
+// Generic type conversion
+string numberString = "12345";
+int? convertedInt = ConversionUtility.ConvertTo<int>(numberString);
+Console.WriteLine($"Converted to int: {convertedInt}"); // Output: Converted to int: 12345
+
+// Handle invalid conversions gracefully
+int invalidInt = ConversionUtility.ToInt("not-a-number", defaultValue: -1);
+Console.WriteLine($"Invalid conversion result: {invalidInt}"); // Output: Invalid conversion result: -1
+```
+
 ## RateLimitingService
 
 The `RateLimitingService` class enforces rate limiting on API gateway requests using pluggable storage backends. It provides thread-safe rate limiting enforcement across different strategies (fixed window, sliding window, or token bucket) and allows inspection of current rate limit status. The service supports per-route rate limiting policies and can reset limits for specific keys or globally across all configured stores.
