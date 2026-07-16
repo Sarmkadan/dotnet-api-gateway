@@ -188,6 +188,47 @@ Console.WriteLine($"Serialized: {json}");
 Console.WriteLine($"Deserialized: {obj?.Name}, {obj?.Value}");
 ```
 
+## HttpClientFactory
+
+The `HttpClientFactory` class provides a factory for creating and managing pooled HTTP client instances. It reuses HTTP clients for better performance and proper connection pooling, reducing the overhead of creating new HTTP clients for each request. The factory is thread-safe and supports timeout configuration, client removal, and cleanup operations.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Integration;
+using Microsoft.Extensions.Logging;
+
+// Create a logger (replace with real logger in production)
+var logger = new LoggerFactory().CreateLogger<HttpClientFactory>();
+
+// Create the HTTP client factory
+var clientFactory = new HttpClientFactory(logger);
+
+// Get or create a pooled HTTP client for a specific base URL
+var client = clientFactory.GetClient("https://api.example.com");
+
+// Make requests using the pooled client
+var response = await client.GetAsync("/data");
+var content = await response.Content.ReadAsStringAsync();
+
+// Create a transient client for one-off requests (no pooling)
+var transientClient = clientFactory.CreateTransientClient();
+var transientResponse = await transientClient.GetAsync("https://api.example.com/temp");
+
+// Update client timeout configuration
+clientFactory.SetClientTimeout("https://api.example.com", TimeSpan.FromSeconds(60));
+
+// Get current client count
+int clientCount = clientFactory.GetClientCount();
+Console.WriteLine($"Active clients: {clientCount}");
+
+// Remove a specific client
+clientFactory.RemoveClient("https://api.example.com");
+
+// Clear all cached clients
+clientFactory.Clear();
+```
+
 ## ExternalApiClient
 
 The `ExternalApiClient` class provides a generic HTTP client wrapper for calling external APIs with built-in error handling, retry logic, and logging. It simplifies making HTTP requests to external services while providing resilience against transient failures.
