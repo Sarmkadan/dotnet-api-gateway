@@ -476,6 +476,200 @@ if (retryPolicy.IsEnabled)
 }
 ```
 
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddHttpClient();
+services.AddSingleton<RequestAggregationService>();
+
+var serviceProvider = services.BuildServiceProvider();
+var aggregationService = serviceProvider.GetRequiredService<RequestAggregationService>();
+
+// Create an aggregation policy for parallel request distribution
+var parallelPolicy = new AggregationPolicy
+{
+Id = "parallel-distribution-policy",
+Enabled = true,
+Strategy = AggregationStrategy.Parallel,
+Targets = [
+new ConditionalAggregationTarget
+{
+Id = "primary-backend",
+UpstreamUrl = "https://api.example.com/v1/users",
+Method = HttpMethod.Get,
+Headers = new Dictionary<string, string> { ["X-Environment"] = "production" },
+TimeoutSeconds = 30,
+Optional = false
+},
+new ConditionalAggregationTarget
+{
+Id = "secondary-backend",
+UpstreamUrl = "https://backup.api.example.com/v1/users",
+Method = HttpMethod.Get,
+Headers = new Dictionary<string, string> { ["X-Environment"] = "production" },
+TimeoutSeconds = 45,
+Optional = true // Failure won't fail the entire aggregation
+}
+]
+};
+
+// Create an aggregation policy for sequential fallback processing
+var sequentialPolicy = new AggregationPolicy
+{
+Id = "sequential-fallback-policy",
+Enabled = true,
+Strategy = AggregationStrategy.Sequential,
+Targets = [
+new ConditionalAggregationTarget
+{
+Id = "primary-service",
+UpstreamUrl = "https://primary.api.example.com/users",
+Method = HttpMethod.Get,
+TimeoutSeconds = 30
+},
+new ConditionalAggregationTarget
+{
+Id = "secondary-service",
+UpstreamUrl = "https://secondary.api.example.com/users",
+Method = HttpMethod.Get,
+TimeoutSeconds = 45
+},
+new ConditionalAggregationTarget
+{
+Id = "tertiary-service",
+UpstreamUrl = "https://backup.api.example.com/users",
+Method = HttpMethod.Get,
+TimeoutSeconds = 60
+}
+]
+};
+
+// Create an aggregation policy with conditional fan-out using JSONPath
+var conditionalPolicy = new AggregationPolicy
+{
+Id = "conditional-fanout-policy",
+Enabled = true,
+Strategy = AggregationStrategy.Parallel,
+Targets = [
+new ConditionalAggregationTarget
+{
+Id = "production-backend",
+UpstreamUrl = "https://api.example.com/production/users",
+Method = HttpMethod.Post,
+Headers = new Dictionary<string, string> { ["X-Environment"] = "production" },
+Body = "{\"source\": \"production\"}",
+TimeoutSeconds = 45,
+Optional = false
+},
+new ConditionalAggregationTarget
+{
+Id = "canary-backend",
+UpstreamUrl = "https://canary.api.example.com/users",
+Method = HttpMethod.Post,
+JsonPathCondition = "$.headers['X-Canary-User']", // Only selected users go to canary
+Headers = new Dictionary<string, string> { ["X-Environment"] = "canary" },
+TimeoutSeconds = 30,
+Optional = true
+}
+]
+};
+
+// Execute aggregation with a sample request body
+var requestBody = "{\"userId\": 123, \"headers\": {\"X-Canary-User\": \"true\"}}";
+var aggregatedResponse = await aggregationService.AggregateAsync(conditionalPolicy, requestBody);
+
+// Access aggregated results
+Console.WriteLine($"Total responses: {aggregatedResponse.Responses.Count}");
+Console.WriteLine($"Success count: {aggregatedResponse.SuccessCount}");
+Console.WriteLine($"Failure count: {aggregatedResponse.FailureCount}");
+Console.WriteLine($"Total duration: {aggregatedResponse.TotalDuration.TotalMilliseconds}ms");
+
+// Retrieve individual responses
+foreach (var response in aggregatedResponse.Responses)
+{
+Console.WriteLine($"Target: {response.Alias}");
+Console.WriteLine($"Status: {response.StatusCode}");
+Console.WriteLine($"Duration: {response.Duration.TotalMilliseconds}ms");
+if (response.Body != null)
+{
+Console.WriteLine($"Body: {response.Body}");
+}
+}
+```
+
+## RequestCoalescingService
+
+The `RequestCoalescingService` class coalesces duplicate concurrent requests so that only one upstream call is made per unique request key, with all concurrent callers receiving the same response. It's designed for singleton registration and is thread-safe, making it ideal for reducing load on upstream services when handling duplicate requests that arrive simultaneously.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Threading;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddSingleton<RequestCoalescingService>();
+
+var serviceProvider = services.BuildServiceProvider();
+var coalescingService = serviceProvider.GetRequiredService<RequestCoalescingService>();
+
+// Create a request coalescing policy
+var policy = new RequestCoalescingPolicy
+{
+Id = "user-profile-coalescing",
+Enabled = true,
+TimeoutMs = 5000, // Wait up to 5 seconds for a coalesced response
+MaxQueuedRequests = 100, // Allow up to 100 followers to queue
+CoalescibleMethods = ["GET", "HEAD"], // Only coalesce GET and HEAD requests
+IncludeQueryString = true // Include query parameters in coalescing key
+};
+
+// Validate the policy configuration
+policy.Validate();
+
+// Simulate concurrent requests arriving for the same user profile
+var userId = "123";
+var tasks = new List<Task<byte[]?>>();
+
+// Create 5 concurrent requests for the same user profile
+for (int i = 0; i < 5; i++)
+{
+var requestKey = $"/api/users/{userId}";
+
+tasks.Add(Task.Run(async () =>
+{
+// Each request will either get the coalesced response or execute independently
+var response = await coalescingService.GetOrCoalesceAsync(
+requestKey,
+async (ct) =>
+{
+// This function only executes once for all concurrent requests with the same key
+Console.WriteLine($"Executing upstream call for {requestKey}");
+await Task.Delay(100, ct); // Simulate upstream processing
+return new byte[] { 0x55, 0x73, 0x65, 0x72, 0x20, 0x50, 0x72, 0x6F, 0x66, 0x69, 0x6C, 0x65 };
+},
+policy
+));
+
+return response;
+}));
+}
+
+// Wait for all requests to complete
+var results = await Task.WhenAll(tasks);
+
+// All results should be identical since they coalesced to the same upstream call
+Console.WriteLine($"All {results.Length} requests completed with identical response: {results[0] != null}");
+
+// Dispose the service when done
+coalescingService.Dispose();
+```
+
 ## RequestCoalescingPolicy
 
 The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
