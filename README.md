@@ -1959,6 +1959,74 @@ Console.WriteLine($"Method: {request.Method}");
 Console.WriteLine($"Timeout: {request.TimeoutSeconds} seconds");
 ```
 
+## ConditionalAggregationTarget
+
+The `ConditionalAggregationTarget` class represents a target for request aggregation that can be conditionally selected based on JSONPath expressions or other conditions. It is used within `AggregationPolicy` configurations to implement canary deployments, blue-green deployments, A/B testing, or routing requests to different backend services based on request characteristics.
+
+Each conditional target defines an upstream URL, HTTP method, optional headers and body content, timeout configuration, and whether the target is optional (failure won't fail the entire aggregation).
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Constants;
+
+// Create a conditional aggregation target for production traffic
+var productionTarget = new ConditionalAggregationTarget
+{
+  Id = "production-backend",
+  UpstreamUrl = "https://api.example.com/production",
+  Method = HttpMethod.POST,
+  Headers = new Dictionary<string, string>
+  {
+    ["X-Environment"] = "production",
+    ["X-Version"] = "v2"
+  },
+  Body = "{\"source\": \"production\"}",
+  TimeoutSeconds = 45,
+  Optional = false
+};
+
+// Create a conditional aggregation target for canary deployment
+var canaryTarget = new ConditionalAggregationTarget
+{
+  Id = "canary-backend",
+  UpstreamUrl = "https://canary.api.example.com",
+  Method = HttpMethod.POST,
+  JsonPathCondition = "$.headers['X-Canary-User']", // Only selected users go to canary
+  Headers = new Dictionary<string, string>
+  {
+    ["X-Environment"] = "canary",
+    ["X-Version"] = "v2"
+  },
+  TimeoutSeconds = 30,
+  Optional = true // Failure won't fail the aggregation
+};
+
+// Create a conditional aggregation target with JSONPath condition for A/B testing
+var abTarget = new ConditionalAggregationTarget
+{
+  Id = "ab-test-group-b",
+  UpstreamUrl = "https://ab-test.api.example.com/group-b",
+  Method = HttpMethod.GET,
+  JsonPathCondition = "$.userId % 2 == 0", // Route even user IDs to group B
+  TimeoutSeconds = 25,
+  Optional = false
+};
+
+// Validate the target configuration
+productionTarget.Validate();
+canaryTarget.Validate();
+abTarget.Validate();
+
+// Access target properties
+Console.WriteLine($"Target ID: {productionTarget.Id}");
+Console.WriteLine($"Upstream URL: {productionTarget.UpstreamUrl}");
+Console.WriteLine($"HTTP Method: {productionTarget.Method}");
+Console.WriteLine($"Timeout: {productionTarget.TimeoutSeconds} seconds");
+Console.WriteLine($"Is Optional: {productionTarget.Optional}");
+```
+
 ## JsonUtilityTests
 
 The `JsonUtilityTests` class provides a comprehensive unit testing suite for the `JsonUtility` class, validating JSON serialization, deserialization, parsing, and merging operations. These tests ensure that JSON processing in the API gateway robustly handles various data structures, edge cases, and type conversions.
