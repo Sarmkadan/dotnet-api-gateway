@@ -232,6 +232,140 @@ await CircuitBreakerRepositoryExtensions.UpdateBatchAsync(circuitBreakerReposito
 await CircuitBreakerRepositoryExtensions.ResetAllToClosedAsync(circuitBreakerRepository);
 ```
 
+## RequestAggregationService
+
+The `RequestAggregationService` class aggregates responses from multiple backend requests based on an aggregation policy. It supports different aggregation strategies (sequential, parallel, or first-success) and conditional fan-out using JSONPath expressions to determine which backend targets should receive requests. This service is useful for implementing canary deployments, blue-green deployments, A/B testing, or consolidating responses from multiple backend services.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Net.Http;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddHttpClient();
+services.AddSingleton<RequestAggregationService>();
+
+var serviceProvider = services.BuildServiceProvider();
+var aggregationService = serviceProvider.GetRequiredService<RequestAggregationService>();
+
+// Create an aggregation policy for parallel request distribution
+var parallelPolicy = new AggregationPolicy
+{
+    Id = "parallel-distribution-policy",
+    Enabled = true,
+    Strategy = AggregationStrategy.Parallel,
+    Targets = [
+        new ConditionalAggregationTarget
+        {
+            Id = "primary-backend",
+            UpstreamUrl = "https://api.example.com/v1/users",
+            Method = HttpMethod.Get,
+            Headers = new Dictionary<string, string> { ["X-Environment"] = "production" },
+            TimeoutSeconds = 30,
+            Optional = false
+        },
+        new ConditionalAggregationTarget
+        {
+            Id = "secondary-backend",
+            UpstreamUrl = "https://backup.api.example.com/v1/users",
+            Method = HttpMethod.Get,
+            Headers = new Dictionary<string, string> { ["X-Environment"] = "production" },
+            TimeoutSeconds = 45,
+            Optional = true // Failure won't fail the entire aggregation
+        }
+    ]
+};
+
+// Create an aggregation policy for sequential fallback processing
+var sequentialPolicy = new AggregationPolicy
+{
+    Id = "sequential-fallback-policy",
+    Enabled = true,
+    Strategy = AggregationStrategy.Sequential,
+    Targets = [
+        new ConditionalAggregationTarget
+        {
+            Id = "primary-service",
+            UpstreamUrl = "https://primary.api.example.com/users",
+            Method = HttpMethod.Get,
+            TimeoutSeconds = 30
+        },
+        new ConditionalAggregationTarget
+        {
+            Id = "secondary-service",
+            UpstreamUrl = "https://secondary.api.example.com/users",
+            Method = HttpMethod.Get,
+            TimeoutSeconds = 45
+        },
+        new ConditionalAggregationTarget
+        {
+            Id = "tertiary-service",
+            UpstreamUrl = "https://backup.api.example.com/users",
+            Method = HttpMethod.Get,
+            TimeoutSeconds = 60
+        }
+    ]
+};
+
+// Create an aggregation policy with conditional fan-out using JSONPath
+var conditionalPolicy = new AggregationPolicy
+{
+    Id = "conditional-fanout-policy",
+    Enabled = true,
+    Strategy = AggregationStrategy.Parallel,
+    Targets = [
+        new ConditionalAggregationTarget
+        {
+            Id = "production-backend",
+            UpstreamUrl = "https://api.example.com/production/users",
+            Method = HttpMethod.Post,
+            Headers = new Dictionary<string, string> { ["X-Environment"] = "production" },
+            Body = "{\"source\": \"production\"}",
+            TimeoutSeconds = 45,
+            Optional = false
+        },
+        new ConditionalAggregationTarget
+        {
+            Id = "canary-backend",
+            UpstreamUrl = "https://canary.api.example.com/users",
+            Method = HttpMethod.Post,
+            JsonPathCondition = "$.headers['X-Canary-User']", // Only selected users go to canary
+            Headers = new Dictionary<string, string> { ["X-Environment"] = "canary" },
+            TimeoutSeconds = 30,
+            Optional = true
+        }
+    ]
+};
+
+// Execute aggregation with a sample request body
+var requestBody = "{\"userId\": 123, \"headers\": {\"X-Canary-User\": \"true\"}}";
+var aggregatedResponse = await aggregationService.AggregateAsync(conditionalPolicy, requestBody);
+
+// Access aggregated results
+Console.WriteLine($"Total responses: {aggregatedResponse.Responses.Count}");
+Console.WriteLine($"Success count: {aggregatedResponse.SuccessCount}");
+Console.WriteLine($"Failure count: {aggregatedResponse.FailureCount}");
+Console.WriteLine($"Total duration: {aggregatedResponse.TotalDuration.TotalMilliseconds}ms");
+
+// Retrieve individual responses
+foreach (var response in aggregatedResponse.Responses)
+{
+    Console.WriteLine($"Target: {response.Alias}");
+    Console.WriteLine($"Status: {response.StatusCode}");
+    Console.WriteLine($"Duration: {response.Duration.TotalMilliseconds}ms");
+    if (response.Body != null)
+    {
+        Console.WriteLine($"Body: {response.Body}");
+    }
+}
+```
+
 ## RetryPolicy
 
 The `RetryPolicy` class provides configurable retry behavior for transient operations, particularly useful for handling temporary failures in distributed systems. It supports both synchronous and asynchronous retry patterns with configurable retry counts, delays, and backoff strategies.
