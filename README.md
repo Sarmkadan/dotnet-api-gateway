@@ -1175,6 +1175,72 @@ await rateLimitingService.ResetAllLimitsAsync();
 Console.WriteLine("All rate limits reset globally");
 ```
 
+## ExtensionMethods
+
+The `ExtensionMethods` class provides extension methods for common types used throughout the API gateway. It offers a fluent API for string manipulation, collections, and object operations, including null-safe checks, transformations, and formatting utilities.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+
+// String extension methods
+string message = "Hello, World!";
+
+// Check if string is empty or whitespace
+bool isEmpty = message.IsEmpty(); // Returns false
+bool hasContent = message.HasContent(); // Returns true
+
+// Truncate string to maximum length
+string truncated = message.Truncate(8); // Returns "Hello..."
+
+// Remove specific characters from string
+string cleaned = message.Remove('!', ' '); // Returns "Hello,World"
+
+// Repeat string multiple times
+string repeated = message.Repeat(2); // Returns "Hello, World!Hello, World!"
+
+// Convert string to byte array
+byte[] bytes = message.ToBytes();
+
+// Convert byte array to hex string
+string hex = bytes.ToHexString(); // Returns "48656c6c6f2c20576f726c6421"
+
+// Collection extension methods
+List<string> items = new List<string> { "item1", "item2", "item3" };
+
+// Check if collection is empty
+bool isEmptyCollection = items.IsEmpty(); // Returns false
+bool hasElements = items.HasElements(); // Returns true
+
+// Safely get element at index
+string? item = items.GetOrDefault(5, "default"); // Returns "default"
+
+// Dictionary extension methods
+Dictionary<string, string> headers = new Dictionary<string, string>
+{
+    ["Content-Type"] = "application/json",
+    ["Authorization"] = "Bearer token123"
+};
+
+// Convert dictionary keys to lowercase
+auto lowerHeaders = headers.ToLowerKeyDictionary();
+
+// Merge two dictionaries
+auto merged = new Dictionary<string, string> { ["X-Custom"] = "value1" }
+    .Merge(headers);
+
+// Format milliseconds as human-readable time
+long durationMs = 1250;
+string formatted = durationMs.FormatMilliseconds(); // Returns "1.25s"
+
+// Check if string matches any pattern
+bool matches = "error".MatchesAny("success", "warning", "error"); // Returns true
+
+// Get approximate memory size of string
+long size = message.GetMemorySize(); // Returns size in bytes
+```
+
 ## RequestCoalescingPolicy
 
 The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
