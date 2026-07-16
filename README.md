@@ -38,6 +38,88 @@ bool isFailure = policy.IsFailureStatus(503); // Returns true
 bool isEnabled = policy.IsEnabled(); // Returns true
 ```
 
+## RequestContext
+
+The `RequestContext` class contains request-scoped metadata used throughout the API gateway's request processing pipeline. It holds information about the incoming request including identifiers, client identity, authentication tokens, headers, query parameters, custom data, matched routes, and timing information. This context object is passed through middleware and services to provide consistent access to request state.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a request context for an incoming HTTP request
+var context = new RequestContext
+{
+    RequestId = Guid.NewGuid().ToString(),
+    Path = "/api/users/123",
+    Method = "GET",
+    Headers = new Dictionary<string, string>
+    {
+        ["Authorization"] = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        ["X-Client-Version"] = "2.1",
+        ["Accept"] = "application/json"
+    },
+    QueryParameters = new Dictionary<string, string>
+    {
+        ["fields"] = "name,email,address",
+        ["include"] = "orders"
+    },
+    Body = "{\"userId\": 123}",
+    ClientIp = "192.168.1.100",
+    AuthToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    ReceivedAt = DateTime.UtcNow.AddSeconds(-0.150),
+    CustomData = new Dictionary<string, object>
+    {
+        ["userAgent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        ["requestId"] = "req_abc123"
+    },
+    MatchedRoute = new GatewayRoute
+    {
+        Name = "user-api-route",
+        PathPattern = "/api/users/{id}",
+        AllowedMethods = ["GET", "PUT", "DELETE"]
+    },
+    SelectedTarget = new RouteTarget
+    {
+        Name = "user-service-primary",
+        BaseUrl = "https://user-service.internal:8080"
+    },
+    ClientIdentity = new ClientIdentity
+    {
+        Id = "user-456",
+        Name = "John Doe",
+        Roles = ["user", "premium"]
+    }
+};
+
+// Access request context properties
+Console.WriteLine($"Request ID: {context.RequestId}");
+Console.WriteLine($"Path: {context.Path}");
+Console.WriteLine($"Method: {context.Method}");
+Console.WriteLine($"Client IP: {context.ClientIp}");
+Console.WriteLine($"Has auth token: {context.HasAuthToken()}");
+
+// Extract bearer token from authorization header
+string bearerToken = context.ExtractBearerToken();
+Console.WriteLine($"Bearer token: {bearerToken}");
+
+// Get client identifier (uses ClientIdentity.Id if available, otherwise ClientIp)
+string clientId = context.GetClientIdentifier();
+Console.WriteLine($"Client identifier: {clientId}");
+
+// Calculate elapsed time since request was received
+TimeSpan elapsed = context.ElapsedTime();
+Console.WriteLine($"Processing time: {elapsed.TotalMilliseconds}ms");
+
+// Access custom data for application-specific metadata
+if (context.CustomData.TryGetValue("userAgent", out object? userAgent))
+{
+    Console.WriteLine($"User agent: {userAgent}");
+}
+```
+
 ## RateLimitEntry
 
 The `RateLimitEntry` class represents the current state of a rate limit for a specific key. It tracks request counts, remaining time until window reset, available tokens (for token bucket strategies), and the timestamp of the last request. This type is used by the rate limiting service to provide real-time rate limit information to clients.
