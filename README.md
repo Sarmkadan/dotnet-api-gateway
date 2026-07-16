@@ -538,6 +538,63 @@ Assert.NotNull(identity);
 Assert.Equal("user-123", identity.Id);
 ```
 
+## RouteTarget
+
+The `RouteTarget` class represents a backend service target for a route. It defines the upstream service configuration including connection details, health monitoring, load balancing weight, and request transformation settings. Route targets are used within `GatewayRoute` configurations to specify where requests should be forwarded.
+
+Each target has a unique identifier, display name, base URL, optional port and timeout settings, health check configuration, header transformation rules, and load balancing weight. The `RouteTarget` class provides methods for URL construction, health status updates, and configuration validation.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a primary backend target with health monitoring
+var primaryTarget = new RouteTarget
+{
+    Id = "user-service-primary",
+    Name = "User Service - Primary",
+    BaseUrl = "https://user-service.internal",
+    Port = 8080,
+    Weight = 70,
+    IsHealthy = true,
+    HealthCheckPath = "/health",
+    HealthCheckIntervalSeconds = 30,
+    TimeoutSeconds = 30,
+    StripPathPrefix = true,
+    TransformHeaders = new Dictionary<string, string>
+    {
+        ["X-Service-Version"] = "v2",
+        ["X-Environment"] = "production"
+    }
+};
+
+// Create a secondary backup target with lower weight
+var backupTarget = new RouteTarget
+{
+    Id = "user-service-backup",
+    Name = "User Service - Backup",
+    BaseUrl = "https://backup-service.internal",
+    Port = 8080,
+    Weight = 30,
+    IsHealthy = true,
+    HealthCheckIntervalSeconds = 60,
+    TimeoutSeconds = 45
+};
+
+// Validate the target configuration
+primaryTarget.Validate();
+backupTarget.Validate();
+
+// Build the forward URL for a request
+string requestPath = "/api/v1/users/123";
+string forwardUrl = primaryTarget.GetForwardUrl(requestPath);
+// Returns: "https://user-service.internal:8080/api/v1/users/123"
+
+// Update health status based on health check results
+primaryTarget.UpdateHealthStatus(isHealthy: true, error: null);
+```
+
 ## GatewayRoute
 
 The `GatewayRoute` class represents a route configuration in the API gateway. It defines how incoming requests are matched, processed, and forwarded to upstream services with support for rate limiting, circuit breaking, caching, authentication, request coalescing, aggregation, API versioning, and request/response transformations.
