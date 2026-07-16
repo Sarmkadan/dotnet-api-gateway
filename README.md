@@ -38,6 +38,81 @@ bool isFailure = policy.IsFailureStatus(503); // Returns true
 bool isEnabled = policy.IsEnabled(); // Returns true
 ```
 
+## ConfigurationValidator
+
+The `ConfigurationValidator` class validates configuration settings for the API gateway.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Configuration;
+using DotNetApiGateway.Models;
+
+// Create a configuration validator
+var validator = new ConfigurationValidator();
+
+// Validate gateway configuration
+var gatewayResult = validator.ValidateGatewayConfig(new GatewayRoute
+{
+    Name = "user-api",
+    PathPattern = "/api/users/{id}",
+    AllowedMethods = ["GET", "PUT", "DELETE"]
+});
+
+// Validate a route configuration
+var routeResult = validator.ValidateRoute(new GatewayRoute
+{
+    Name = "user-api",
+    PathPattern = "/api/users/{id}",
+    AllowedMethods = ["GET"]
+});
+
+// Validate a route target
+var targetResult = validator.ValidateRouteTarget(new RouteTarget
+{
+    Name = "user-service-primary",
+    BaseUrl = "https://user-service.internal:8080"
+});
+
+// Validate rate limit policy
+var rateLimitResult = validator.ValidateRateLimitPolicy(new RateLimitPolicy
+{
+    Enabled = true,
+    RequestsPerMinute = 1000
+});
+
+// Validate circuit breaker policy
+var circuitBreakerResult = validator.ValidateCircuitBreakerPolicy(new CircuitBreakerPolicy
+{
+    Enabled = true,
+    FailureThreshold = 5,
+    SuccessThreshold = 3
+});
+
+// Validate cache policy
+var cacheResult = validator.ValidateCachePolicy(new CachePolicy
+{
+    Enabled = true,
+    DurationSeconds = 300
+});
+
+// Access validation errors
+if (!gatewayResult.IsValid)
+{
+    foreach (var error in validator.Errors)
+    {
+        Console.WriteLine($"Validation error: {error}");
+    }
+}
+
+// Get error summary
+string errorSummary = validator.GetErrorSummary();
+if (!string.IsNullOrEmpty(errorSummary))
+{
+    Console.WriteLine(errorSummary);
+}
+```
+
 ## CircuitBreakerStatus
 
 The `CircuitBreakerStatus` class tracks the runtime state and metrics of circuit breaker instances in the API gateway. It maintains counters for successes and failures, tracks state transitions, records timestamps of state changes, and provides methods to update the circuit breaker status. The status object is used by the circuit breaker service to make decisions about whether to allow requests through based on the current circuit state.
@@ -2684,6 +2759,81 @@ bool missingRequiredKey = ValidationUtility.HasRequiredKeys(
     "name", "email"
 );
 // Result: false
+```
+
+## ConfigurationValidator
+
+The `ConfigurationValidator` class validates configuration settings for the API gateway.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Configuration;
+using DotNetApiGateway.Models;
+
+// Create a configuration validator
+var validator = new ConfigurationValidator();
+
+// Validate gateway configuration
+var gatewayResult = validator.ValidateGatewayConfig(new GatewayRoute
+{
+    Name = "user-api",
+    PathPattern = "/api/users/{id}",
+    AllowedMethods = ["GET", "PUT", "DELETE"]
+});
+
+// Validate a route configuration
+var routeResult = validator.ValidateRoute(new GatewayRoute
+{
+    Name = "user-api",
+    PathPattern = "/api/users/{id}",
+    AllowedMethods = ["GET"]
+});
+
+// Validate a route target
+var targetResult = validator.ValidateRouteTarget(new RouteTarget
+{
+    Name = "user-service-primary",
+    BaseUrl = "https://user-service.internal:8080"
+});
+
+// Validate rate limit policy
+var rateLimitResult = validator.ValidateRateLimitPolicy(new RateLimitPolicy
+{
+    Enabled = true,
+    RequestsPerMinute = 1000
+});
+
+// Validate circuit breaker policy
+var circuitBreakerResult = validator.ValidateCircuitBreakerPolicy(new CircuitBreakerPolicy
+{
+    Enabled = true,
+    FailureThreshold = 5,
+    SuccessThreshold = 3
+});
+
+// Validate cache policy
+var cacheResult = validator.ValidateCachePolicy(new CachePolicy
+{
+    Enabled = true,
+    DurationSeconds = 300
+});
+
+// Access validation errors
+if (!gatewayResult.IsValid)
+{
+    foreach (var error in validator.Errors)
+    {
+        Console.WriteLine($"Validation error: {error}");
+    }
+}
+
+// Get error summary
+string errorSummary = validator.GetErrorSummary();
+if (!string.IsNullOrEmpty(errorSummary))
+{
+    Console.WriteLine(errorSummary);
+}
 ```
 
 ## CircuitBreakerStatusTests
