@@ -182,6 +182,45 @@ bool isEnabled = parallelPolicy.Enabled; // Returns true
 var strategy = parallelPolicy.Strategy; // Returns AggregationStrategy.Parallel
 ```
 
+## ApiVersioningPolicy
+
+The `ApiVersioningPolicy` class configures API versioning behavior for gateway routes. It supports multiple versioning strategies (URL path, header, query parameter, and media type) that can be combined, with the first match determining the version. The policy allows setting a default version, requiring version headers, specifying supported versions, and controlling whether version segments are stripped from the path before forwarding to backend services.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create an API versioning policy with URL path and header strategies
+var versioningPolicy = new ApiVersioningPolicy
+{
+  Enabled = true,
+  DefaultVersion = "1",
+  RequireVersion = false,
+  Strategies = [
+    VersioningStrategy.UrlPath,
+    VersioningStrategy.Header,
+    VersioningStrategy.QueryParameter
+  ],
+  SupportedVersions = ["1", "2", "3"],
+  HeaderName = "X-API-Version",
+  QueryParameterName = "api-version",
+  StripVersionFromPath = true
+};
+
+// Validate the versioning policy configuration
+versioningPolicy.Validate();
+
+// Check if versioning is enabled
+bool isEnabled = versioningPolicy.Enabled; // Returns true
+
+// Check if a specific version is supported
+bool isSupported = versioningPolicy.SupportedVersions.Contains("2"); // Returns true
+
+// Get the configured header name
+string headerName = versioningPolicy.HeaderName; // Returns "X-API-Version"
+```
+
 // Create a request coalescing policy with default settings
 var policy = new RequestCoalescingPolicy
 {
