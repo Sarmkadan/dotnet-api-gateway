@@ -38,6 +38,38 @@ bool isFailure = policy.IsFailureStatus(503); // Returns true
 bool isEnabled = policy.IsEnabled(); // Returns true
 ```
 
+## RateLimitEntry
+
+The `RateLimitEntry` class represents the current state of a rate limit for a specific key. It tracks request counts, remaining time until window reset, available tokens (for token bucket strategies), and the timestamp of the last request. This type is used by the rate limiting service to provide real-time rate limit information to clients.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a rate limit entry for a client
+var rateLimitEntry = new RateLimitEntry
+{
+  Key = "client-123", // Client identifier (IP, user ID, etc.)
+  Count = 42, // Current request count within the window
+  RemainingTimeSeconds = 35, // Seconds until rate limit resets
+  Tokens = 58.5, // Available tokens in token bucket
+  LastRequest = DateTime.UtcNow.AddSeconds(-10) // When last request occurred
+};
+
+// Access rate limit information
+Console.WriteLine($"Key: {rateLimitEntry.Key}");
+Console.WriteLine($"Requests: {rateLimitEntry.Count}/100");
+Console.WriteLine($"Remaining time: {rateLimitEntry.RemainingTimeSeconds}s");
+Console.WriteLine($"Tokens: {rateLimitEntry.Tokens}");
+Console.WriteLine($"Last request: {rateLimitEntry.LastRequest:O}");
+
+// Update the entry with current state
+rateLimitEntry.Count = 43;
+rateLimitEntry.Tokens = 57.2;
+rateLimitEntry.LastRequest = DateTime.UtcNow;
+```
+
 The following example demonstrates how to use these extensions:
 
 ```csharp
