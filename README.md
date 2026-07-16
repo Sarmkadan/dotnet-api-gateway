@@ -110,10 +110,77 @@ if (retryPolicy.IsEnabled)
 
 The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
 
+## AggregationPolicy
+
+The `AggregationPolicy` class defines how multiple upstream targets are aggregated when a request is processed. It supports different aggregation strategies (parallel, sequential, or conditional) and allows configuration of conditional targets that determine which upstream services receive the request based on conditions. Aggregation policies are useful for implementing canary deployments, blue-green deployments, A/B testing, or routing requests to different backend services based on request characteristics.
+
 Example usage:
 
 ```csharp
 using DotNetApiGateway.Models;
+
+// Create an aggregation policy for parallel request distribution
+var parallelPolicy = new AggregationPolicy
+{
+    Id = "parallel-distribution-policy",
+    Enabled = true,
+    Strategy = AggregationStrategy.Parallel,
+    Targets = [
+        new ConditionalAggregationTarget
+        {
+            Name = "primary-backend",
+            BaseUrl = "https://primary.api.example.com",
+            Weight = 70, // 70% of traffic
+            Condition = "request.Headers.ContainsKey(\"X-Environment\") && request.Headers[\"X-Environment\"] == \"production\""
+        },
+        new ConditionalAggregationTarget
+        {
+            Name = "canary-backend",
+            BaseUrl = "https://canary.api.example.com",
+            Weight = 30, // 30% of traffic
+            Condition = "request.Headers.ContainsKey(\"X-Environment\") && request.Headers[\"X-Environment\"] == \"canary\""
+        }
+    ]
+};
+
+// Create an aggregation policy for sequential request processing
+var sequentialPolicy = new AggregationPolicy
+{
+    Id = "sequential-fallback-policy",
+    Enabled = true,
+    Strategy = AggregationStrategy.Sequential,
+    Targets = [
+        new ConditionalAggregationTarget
+        {
+            Name = "primary-service",
+            BaseUrl = "https://primary.api.example.com",
+            TimeoutSeconds = 30
+        },
+        new ConditionalAggregationTarget
+        {
+            Name = "secondary-service",
+            BaseUrl = "https://secondary.api.example.com",
+            TimeoutSeconds = 45
+        },
+        new ConditionalAggregationTarget
+        {
+            Name = "tertiary-service",
+            BaseUrl = "https://backup.api.example.com",
+            TimeoutSeconds = 60
+        }
+    ]
+};
+
+// Validate the aggregation policy configuration
+parallelPolicy.Validate();
+sequentialPolicy.Validate();
+
+// Check if the policy is enabled
+bool isEnabled = parallelPolicy.Enabled; // Returns true
+
+// Get the aggregation strategy
+var strategy = parallelPolicy.Strategy; // Returns AggregationStrategy.Parallel
+```
 
 // Create a request coalescing policy with default settings
 var policy = new RequestCoalescingPolicy
