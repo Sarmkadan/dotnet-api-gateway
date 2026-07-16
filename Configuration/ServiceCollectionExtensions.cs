@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using DotNetApiGateway.Middleware;
+using DotNetApiGateway.Integration;
 
 /// <summary>
 /// Extension methods for configuring gateway services in dependency injection
@@ -37,6 +38,9 @@ public static class ServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        // Some consumers (e.g. AdminDashboardController) take the options object directly
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetApiGatewayOptions>>().Value);
+
         // Register repositories
         services.AddSingleton<GatewayRouteRepository>();
         services.AddSingleton<CircuitBreakerRepository>();
@@ -56,12 +60,25 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ApiVersioningService>();
         services.AddScoped<RequestAggregationService>();
 
-        // Register HTTP client
+        // Register integration layer
+        services.AddSingleton<WebhookRegistry>();
+
+        // Register HTTP clients
         services.AddHttpClient<RequestAggregationService>()
             .ConfigureHttpClient((sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<DotnetApiGatewayOptions>>().Value;
                 client.Timeout = TimeSpan.FromSeconds(options.DefaultTimeoutSeconds);
+            });
+
+        // ExternalApiClient does the actual forwarding in the fallback endpoint;
+        // per-request timeouts are handled there via CancellationTokenSource, so the
+        // HttpClient itself gets a generous ceiling instead of the default 100s only.
+        services.AddHttpClient<ExternalApiClient>()
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<DotnetApiGatewayOptions>>().Value;
+                client.Timeout = TimeSpan.FromSeconds(Math.Max(options.DefaultTimeoutSeconds * 2, 60));
             });
 
         return services;
