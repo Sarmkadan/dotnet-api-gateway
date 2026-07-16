@@ -716,6 +716,64 @@ context.QueryParameters["page"] = "1";
 context.CustomData["key"] = "value";
 ```
 
+## RateLimitingServiceTests
+
+The `RateLimitingServiceTests` class provides a comprehensive test suite for the `RateLimitingService` class, which handles rate limiting enforcement for API gateway clients. These tests cover various rate limiting scenarios including disabled policies, valid requests, exceeded limits, different rate limiting strategies (sliding window and token bucket), and cleanup operations. The test suite verifies that the rate limiting service correctly tracks request counts, calculates remaining capacity, and enforces policy limits across multiple clients.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
+
+// Create mock dependencies
+var mockFactory = new Mock<IRateLimitStoreFactory>();
+var mockStore = new Mock<IRateLimitStore>();
+var logger = new Mock<ILogger<RateLimitingService>>();
+
+// Setup the factory to return our mock store
+mockFactory.Setup(f => f.GetStore(It.IsAny<RateLimitPolicy>())).Returns(mockStore.Object);
+
+// Create the rate limiting service
+var rateLimitingService = new RateLimitingService(mockFactory.Object, logger.Object);
+
+// Define a rate limit policy (e.g., 100 requests per minute using sliding window)
+var policy = new RateLimitPolicy
+{
+    Enabled = true,
+    RequestsPerMinute = 100,
+    Strategy = RateLimitStrategy.SlidingWindow
+};
+
+// Test if a request is allowed (returns true if within limit)
+bool isAllowed = await rateLimitingService.IsAllowedAsync("client-123", policy);
+Console.WriteLine($"Request allowed: {isAllowed}");
+
+// Get rate limit information (remaining requests, reset time, etc.)
+var rateLimitInfo = await rateLimitingService.GetRateLimitInfoAsync("client-123", policy);
+Console.WriteLine($"Limit: {rateLimitInfo.Limit}, Remaining: {rateLimitInfo.Remaining}, Reset in: {rateLimitInfo.Reset} seconds");
+
+// Reset limits for a specific client
+await rateLimitingService.ResetKeyLimitsAsync("client-123");
+
+// Reset all limits across all clients
+await rateLimitingService.ResetAllLimitsAsync();
+
+// Test with token bucket strategy
+var tokenBucketPolicy = new RateLimitPolicy
+{
+    Enabled = true,
+    BurstSize = 50,
+    Strategy = RateLimitStrategy.TokenBucket
+};
+
+var tokenBucketInfo = await rateLimitingService.GetRateLimitInfoAsync("client-456", tokenBucketPolicy);
+Console.WriteLine($"Token bucket - Tokens: {tokenBucketInfo.Remaining}/{tokenBucketInfo.Limit}");
+```
+
 ## JsonUtilityTests
 
 The `JsonUtilityTests` class provides a comprehensive unit testing suite for the `JsonUtility` class, validating JSON serialization, deserialization, parsing, and merging operations. These tests ensure that JSON processing in the API gateway robustly handles various data structures, edge cases, and type conversions.
