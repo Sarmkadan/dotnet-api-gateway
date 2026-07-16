@@ -286,6 +286,70 @@ The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate co
 
 The `AggregationPolicy` class defines how multiple upstream targets are aggregated when a request is processed. It supports different aggregation strategies (parallel, sequential, or conditional) and allows configuration of conditional targets that determine which upstream services receive the request based on conditions. Aggregation policies are useful for implementing canary deployments, blue-green deployments, A/B testing, or routing requests to different backend services based on request characteristics.
 
+## AggregatedResponse
+
+The `AggregatedResponse` class represents the aggregated result of multiple HTTP requests processed in parallel or sequentially. It collects response data from multiple upstream services, tracks success/failure counts, calculates total duration, and provides methods to analyze the aggregated results. This type is particularly useful for implementing request aggregation patterns, consolidating responses from multiple backend services, and implementing fallback strategies.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using System;
+using System.Collections.Generic;
+
+// Create an aggregated response to collect results from multiple backend services
+var aggregatedResponse = new AggregatedResponse
+{
+    Id = "agg-12345",
+    AggregatedAt = DateTime.UtcNow
+};
+
+// Simulate adding responses from different services
+aggregatedResponse.AddResponse(
+    alias: "user-service-primary",
+    statusCode: 200,
+    body: "{\"userId\": 123, \"name\": \"John Doe\"}",
+    headers: new Dictionary<string, string> { ["X-Service"] = "primary" },
+    duration: TimeSpan.FromMilliseconds(125),
+    errorMessage: null
+);
+
+aggregatedResponse.AddResponse(
+    alias: "user-service-secondary",
+    statusCode: 200,
+    body: "{\"userId\": 123, \"name\": \"John Doe\", \"email\": \"john@example.com\"}",
+    headers: new Dictionary<string, string> { ["X-Service"] = "secondary" },
+    duration: TimeSpan.FromMilliseconds(180),
+    errorMessage: null
+);
+
+aggregatedResponse.AddResponse(
+    alias: "user-service-fallback",
+    statusCode: 503,
+    body: null,
+    headers: new Dictionary<string, string> { ["X-Service"] = "fallback" },
+    duration: TimeSpan.FromMilliseconds(50),
+    errorMessage: "Service temporarily unavailable"
+);
+
+// Access aggregated response statistics
+Console.WriteLine($"Total responses: {aggregatedResponse.Responses.Count}");
+Console.WriteLine($"Success count: {aggregatedResponse.SuccessCount}");
+Console.WriteLine($"Failure count: {aggregatedResponse.FailureCount}");
+Console.WriteLine($"Total duration: {aggregatedResponse.TotalDuration.TotalMilliseconds}ms");
+Console.WriteLine($"Average response time: {aggregatedResponse.GetAverageResponseTime()}ms");
+Console.WriteLine($"Is successful: {aggregatedResponse.IsSuccessful()}");
+
+// Retrieve individual responses
+var primaryResponse = aggregatedResponse.GetResponse("user-service-primary");
+if (primaryResponse != null)
+{
+    Console.WriteLine($"Primary service status: {primaryResponse.StatusCode}");
+    Console.WriteLine($"Primary service duration: {primaryResponse.Duration.TotalMilliseconds}ms");
+    Console.WriteLine($"Primary service body: {primaryResponse.Body}");
+}
+```
+
 Example usage:
 
 ```csharp
