@@ -1888,6 +1888,75 @@ subscription.DeliveryStats.LastDeliveryTime = DateTime.UtcNow.AddMinutes(-2);
 subscription.Validate();
 ```
 
+## JsonUtility
+
+The `JsonUtility` class provides utility methods for JSON serialization and deserialization operations with consistent formatting and error handling. It supports both compact and pretty-printed serialization, safe deserialization that returns null instead of throwing exceptions, and JSON validation. The class uses standardized JSON serialization options with camelCase property naming and proper null handling throughout the API gateway.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Utilities;
+
+// Create a sample user object
+var user = new User
+{
+    Id = 123,
+    Name = "John Doe",
+    Email = "john.doe@example.com",
+    IsActive = true,
+    CreatedAt = DateTime.UtcNow
+};
+
+// Serialize to compact JSON string
+string compactJson = JsonUtility.Serialize(user);
+Console.WriteLine(compactJson);
+// Output: {"id":123,"name":"John Doe","email":"john.doe@example.com","isActive":true,"createdAt":"2024-01-15T10:30:00Z"}
+
+// Serialize to pretty-printed JSON for logging/debugging
+string prettyJson = JsonUtility.SerializePretty(user);
+Console.WriteLine(prettyJson);
+/* Output:
+{
+  "id": 123,
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "isActive": true,
+  "createdAt": "2024-01-15T10:30:00Z"
+}
+*/
+
+// Deserialize JSON back to object
+string jsonData = "{\"id\":456,\"name\":\"Jane Smith\",\"email\":\"jane@example.com\"}";
+var deserializedUser = JsonUtility.Deserialize<User>(jsonData);
+if (deserializedUser != null)
+{
+    Console.WriteLine($"Deserialized: {deserializedUser.Name} ({deserializedUser.Email})");
+}
+
+// Safely deserialize with null return on failure (won't throw exception)
+string invalidJson = "{invalid json}";
+var safeDeserialized = JsonUtility.DeserializeSafe<User>(invalidJson);
+// Returns null instead of throwing JsonException
+
+// Validate JSON without throwing exceptions
+bool isValid = JsonUtility.IsValidJson(jsonData); // Returns true
+bool isInvalid = JsonUtility.IsValidJson("{invalid"); // Returns false
+
+// Parse JSON to dynamic JsonElement for unknown structures
+var dynamicJson = JsonUtility.ParseDynamic("{\"status\":\"ok\",\"data\":{\"count\":10}}");
+if (dynamicJson.HasValue)
+{
+    Console.WriteLine($"Status: {dynamicJson.Value.GetProperty("status").GetString()}");
+}
+
+// Merge two JSON documents (second overwrites first)
+string config1 = "{\"apiVersion\":\"1.0\",\"timeout\":30}";
+string config2 = "{\"timeout\":60,\"retries\":3}";
+string mergedConfig = JsonUtility.MergeJson(config1, config2);
+// Returns: {"apiVersion":"1.0","timeout":60,"retries":3}
+```
+
 ## JsonUtilityValidation
 
 The `JsonUtilityValidation` class provides static methods for validating JSON data against expected formats and structures. It includes methods for checking validity, parsing, deserialization, and merging JSON, with both validation result and boolean outcome variants. Methods like `Validate<T>`, `ValidateDeserialize`, and `IsValid<T>` help ensure JSON conforms to expected schemas or types.
