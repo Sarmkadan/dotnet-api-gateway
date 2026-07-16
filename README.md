@@ -853,6 +853,54 @@ bool deleted = await routingService.DeleteRouteAsync(foundRoute.Id);
 Console.WriteLine($"Route deleted: {deleted}");
 ```
 
+## RateLimitingService
+
+The `RateLimitingService` class enforces rate limiting on API gateway requests using pluggable storage backends. It provides thread-safe rate limiting enforcement across different strategies (fixed window, sliding window, or token bucket) and allows inspection of current rate limit status. The service supports per-route rate limiting policies and can reset limits for specific keys or globally across all configured stores.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection (typically done in Program.cs)
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddSingleton<IRateLimitStoreFactory, RateLimitStoreFactory>();
+services.AddSingleton<RateLimitingService>();
+
+var serviceProvider = services.BuildServiceProvider();
+var rateLimitingService = serviceProvider.GetRequiredService<RateLimitingService>();
+
+// Create a rate limit policy for a specific route
+var policy = new RateLimitPolicy
+{
+    Enabled = true,
+    RequestsPerMinute = 100, // Allow 100 requests per minute
+    Strategy = RateLimitStrategy.SlidingWindow // Use sliding window algorithm
+};
+
+// Check if a request is allowed (returns false when limit is exceeded)
+bool isAllowed = await rateLimitingService.IsAllowedAsync("client-123", policy);
+Console.WriteLine($"Request allowed: {isAllowed}"); // Returns true if within limit
+
+// Get current rate limit information for display to client
+var rateLimitInfo = await rateLimitingService.GetRateLimitInfoAsync("client-123", policy);
+Console.WriteLine($"Rate limit: {rateLimitInfo.Limit} requests per minute");
+Console.WriteLine($"Remaining: {rateLimitInfo.Remaining} requests");
+Console.WriteLine($"Reset in: {rateLimitInfo.Reset} seconds");
+
+// Reset rate limits for a specific client
+await rateLimitingService.ResetKeyLimitsAsync("client-123");
+Console.WriteLine("Rate limits reset for client-123");
+
+// Reset all rate limits globally
+await rateLimitingService.ResetAllLimitsAsync();
+Console.WriteLine("All rate limits reset globally");
+```
+
 ## RequestCoalescingPolicy
 
 The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
