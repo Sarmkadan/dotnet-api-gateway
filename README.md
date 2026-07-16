@@ -6,9 +6,37 @@ An ASP.NET Core API gateway: route matching, load-balanced forwarding, per-route
 
 How the pieces fit together - middleware order, the fallback forwarding endpoint, design decisions and their trade-offs - is documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## CircuitBreakerRepositoryExtensions
+## CircuitBreakerPolicy
 
-The `CircuitBreakerRepositoryExtensions` class provides a set of extension methods for working with circuit breaker repositories. These extensions enable you to retrieve circuit breaker statuses by service name, state, or other criteria, as well as update and reset circuit breakers.
+The `CircuitBreakerPolicy` class defines fault-tolerance rules for the API gateway's circuit breaker pattern implementation. It configures thresholds for failure/success detection, timeout behavior, retry logic, and HTTP status codes that trigger circuit breaking. The policy can be enabled/disabled per route or service and is validated before use to ensure configuration integrity.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a circuit breaker policy with default settings
+var policy = new CircuitBreakerPolicy
+{
+    Id = "user-service-policy",
+    FailureThreshold = 3,      // Trip circuit after 3 failures
+    SuccessThreshold = 2,      // Reset circuit after 2 consecutive successes
+    TimeoutSeconds = 30,        // Consider request timed out after 30 seconds
+    FailureStatusCodes = [500, 502, 503, 504], // Codes that count as failures
+    Enabled = true,             // Enable circuit breaker for this route
+    MaxRetries = 2,            // Retry failed requests up to 2 times
+    RetryDelayMilliseconds = 200 // Wait 200ms between retries
+};
+
+// Validate the policy configuration
+policy.Validate();
+
+// Check if a specific HTTP status code should trip the circuit
+bool isFailure = policy.IsFailureStatus(503); // Returns true
+
+// Check if the circuit breaker is enabled
+bool isEnabled = policy.IsEnabled(); // Returns true
+```
 
 The following example demonstrates how to use these extensions:
 
