@@ -38,6 +38,64 @@ bool isFailure = policy.IsFailureStatus(503); // Returns true
 bool isEnabled = policy.IsEnabled(); // Returns true
 ```
 
+## CircuitBreakerStatus
+
+The `CircuitBreakerStatus` class tracks the runtime state and metrics of circuit breaker instances in the API gateway. It maintains counters for successes and failures, tracks state transitions, records timestamps of state changes, and provides methods to update the circuit breaker status. The status object is used by the circuit breaker service to make decisions about whether to allow requests through based on the current circuit state.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using System;
+
+// Create a circuit breaker status for a service
+var status = new CircuitBreakerStatus
+{
+    Id = "user-service-circuit-breaker",
+    ServiceName = "user-service",
+    State = CircuitBreakerState.Closed,
+    FailureCount = 0,
+    SuccessCount = 0,
+    LastStateChangeAt = DateTime.UtcNow,
+    LastFailureAt = null,
+    LastSuccessAt = null,
+    TotalFailures = 0,
+    TotalSuccesses = 0,
+    TotalRequests = 0,
+    LastError = null
+};
+
+// Record a successful operation
+status.RecordSuccess();
+Console.WriteLine($"Success count: {status.SuccessCount}, Total successes: {status.TotalSuccesses}");
+
+// Record a failure with error details
+status.RecordFailure("Connection timeout to user-service");
+Console.WriteLine($"Failure count: {status.FailureCount}, Last error: {status.LastError}");
+
+// Calculate success and failure rates
+double successRate = status.GetSuccessRate();
+double failureRate = status.GetFailureRate();
+Console.WriteLine($"Success rate: {successRate:P}, Failure rate: {failureRate:P}");
+
+// Change circuit state (e.g., trip the circuit after too many failures)
+status.ChangeState(CircuitBreakerState.Open);
+Console.WriteLine($"Circuit state changed to: {status.State}");
+
+// Reset circuit breaker to initial state
+status.Reset();
+Console.WriteLine($"Circuit reset - State: {status.State}, Failure count: {status.FailureCount}");
+
+// Access status properties
+Console.WriteLine($"Service: {status.ServiceName}");
+Console.WriteLine($"Current state: {status.State}");
+Console.WriteLine($"Last state change: {status.LastStateChangeAt:O}");
+if (status.LastFailureAt.HasValue)
+{
+    Console.WriteLine($"Last failure at: {status.LastFailureAt.Value:O}");
+}
+```
+
 ## RequestContext
 
 The `RequestContext` class contains request-scoped metadata used throughout the API gateway's request processing pipeline. It holds information about the incoming request including identifiers, client identity, authentication tokens, headers, query parameters, custom data, matched routes, and timing information. This context object is passed through middleware and services to provide consistent access to request state.
