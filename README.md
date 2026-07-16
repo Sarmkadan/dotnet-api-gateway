@@ -286,6 +286,41 @@ var orderSubscriptions = registry.GetSubscriptionsForEvent("order.created");
 registry.Unregister("sub_001");
 ```
 
+## WebhookSubscription
+
+The `WebhookSubscription` class represents a webhook subscription configuration that defines where and how webhook events should be delivered. It includes the callback URL, event types to subscribe to, authentication secret, activation status, and delivery retry policy configuration.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a webhook subscription for order events
+var subscription = new WebhookSubscription
+{
+  Id = "order-events-sub",
+  CallbackUrl = "https://webhook-handler.example.com/api/webhooks/order",
+  EventTypes = new[] { "order.created", "order.updated", "order.cancelled" },
+  Secret = "your-webhook-secret-key",
+  Active = true,
+  RetryPolicy = new WebhookRetryPolicy
+  {
+    MaxRetries = 5,
+    InitialDelayMs = 1000,
+    MaxDelayMs = 30000
+  }
+};
+
+// Access delivery statistics
+subscription.DeliveryStats.TotalDeliveries = 150;
+subscription.DeliveryStats.SuccessfulDeliveries = 145;
+subscription.DeliveryStats.FailedDeliveries = 5;
+subscription.DeliveryStats.LastDeliveryTime = DateTime.UtcNow.AddMinutes(-2);
+
+// Validate the subscription configuration
+subscription.Validate();
+```
+
 ## JsonUtilityValidation
 
 The `JsonUtilityValidation` class provides static methods for validating JSON data against expected formats and structures. It includes methods for checking validity, parsing, deserialization, and merging JSON, with both validation result and boolean outcome variants. Methods like `Validate<T>`, `ValidateDeserialize`, and `IsValid<T>` help ensure JSON conforms to expected schemas or types.
