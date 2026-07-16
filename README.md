@@ -178,6 +178,70 @@ if (context.CustomData.TryGetValue("userAgent", out object? userAgent))
 }
 ```
 
+## RequestInterceptor
+
+The `RequestInterceptor` class provides request interception and transformation capabilities for the API gateway. It allows for modifying HTTP requests before they are forwarded to upstream services by adding/removing headers, transforming request bodies using templates, and managing query parameter mappings. Request interceptors are registered per route and can be enabled/disabled dynamically.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Net.Http;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddSingleton<RequestInterceptor>();
+
+var serviceProvider = services.BuildServiceProvider();
+var interceptor = serviceProvider.GetRequiredService<RequestInterceptor>();
+
+// Create a request transformer configuration
+var transformer = new RequestTransformer
+{
+    Enabled = true,
+    HeadersToAdd = new Dictionary<string, string>
+    {
+        ["X-Request-Id"] = Guid.NewGuid().ToString(),
+        ["X-Correlation-Id"] = "corr-123",
+        ["X-Tenant-Id"] = "acme-corp"
+    },
+    HeadersToRemove = new List<string> { "X-Old-Header", "User-Agent" },
+    BodyTemplate = "{ \"timestamp\": \"{timestamp}\", \"requestId\": \"{requestId}\", \"originalBody\": {body} }",
+    QueryParamMappings = new Dictionary<string, string>
+    {
+        ["userId"] = "id",
+        ["fields"] = "projection"
+    }
+};
+
+// Register the transformer for a specific route
+interceptor.RegisterTransformer("user-api-route", transformer);
+
+// Intercept a request
+var request = new HttpRequestMessage(HttpMethod.Post, "https://backend/api/users");
+request.Content = new StringContent("{\"name\": \"John Doe\", \"email\": \"john@example.com\"}", Encoding.UTF8, "application/json");
+
+var context = new RequestContext
+{
+    RequestId = Guid.NewGuid().ToString(),
+    Path = "/api/users",
+    Method = "POST"
+};
+
+var interceptedRequest = await interceptor.InterceptAsync("user-api-route", request, context);
+
+// Verify transformations were applied
+interceptedRequest.Headers.Contains("X-Request-Id").Should().BeTrue();
+interceptedRequest.Headers.Contains("X-Old-Header").Should().BeFalse();
+var bodyContent = await interceptedRequest.Content.ReadAsStringAsync();
+bodyContent.Should().Contain("timestamp");
+bodyContent.Should().Contain("requestId");
+```
+
 ## RateLimitEntry
 
 The `RateLimitEntry` class represents the current state of a rate limit for a specific key. It tracks request counts, remaining time until window reset, available tokens (for token bucket strategies), and the timestamp of the last request. This type is used by the rate limiting service to provide real-time rate limit information to clients.
