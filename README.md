@@ -186,6 +186,84 @@ repository.ClearAll();
 Console.WriteLine("All circuit breakers cleared");
 ```
 
+## GatewayRouteRepository
+
+The `GatewayRouteRepository` class provides data access and persistence operations for gateway route configurations in the API gateway. It implements a thread-safe repository pattern using `ReaderWriterLockSlim` for concurrent access, storing route configurations in memory. The repository supports CRUD operations for managing gateway routes, querying routes by ID, name, path, or status, and bulk operations like clearing all routes.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Repositories;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+// Create the gateway route repository
+var repository = new GatewayRouteRepository();
+
+// Create a new gateway route
+var newRoute = new GatewayRoute
+{
+  Id = "user-api-route",
+  Name = "User API Route",
+  PathPattern = "/api/users/{id}",
+  AllowedMethods = ["GET", "PUT", "DELETE"],
+  IsActive = true,
+  TimeoutSeconds = 30
+};
+await repository.AddAsync(newRoute);
+Console.WriteLine($"Added route: {newRoute.Name} ({newRoute.Id})");
+
+// Get a route by ID
+var retrievedRoute = await repository.GetByIdAsync("user-api-route");
+if (retrievedRoute != null)
+{
+  Console.WriteLine($"Retrieved route - Name: {retrievedRoute.Name}, Path: {retrievedRoute.PathPattern}");
+}
+
+// Get all routes
+var allRoutes = await repository.GetAllAsync();
+Console.WriteLine($"Total routes: {allRoutes.Count()}");
+
+// Get all active routes
+var activeRoutes = await repository.GetActiveRoutesAsync();
+Console.WriteLine($"Active routes: {activeRoutes.Count()}");
+
+// Find a route by path and method
+var foundRoute = await repository.FindRouteByPathAsync("/api/users/123", "GET");
+if (foundRoute != null)
+{
+  Console.WriteLine($"Found route matching path /api/users/123 with GET method");
+}
+
+// Get routes by name (partial match)
+var userRoutes = await repository.GetRoutesByNameAsync("user");
+Console.WriteLine($"Routes containing 'user' in name: {userRoutes.Count()}");
+
+// Update a route
+retrievedRoute!.Name = "User API Route - Updated";
+retrievedRoute.PathPattern = "/api/users/{userId}";
+var updatedRoute = await repository.UpdateAsync(retrievedRoute);
+Console.WriteLine($"Updated route: {updatedRoute.Name}");
+
+// Check if route exists
+bool exists = await repository.ExistsAsync("user-api-route");
+Console.WriteLine($"Route exists: {exists}");
+
+// Get route count
+int routeCount = await repository.GetCountAsync();
+Console.WriteLine($"Total routes in repository: {routeCount}");
+
+// Delete a route
+bool deleted = await repository.DeleteAsync("user-api-route");
+Console.WriteLine($"Route deleted: {deleted}");
+
+// Clear all routes
+repository.ClearAll();
+Console.WriteLine("All routes cleared");
+```
+
 ## CircuitBreakerStatus
 
 The `CircuitBreakerStatus` class tracks the runtime state and metrics of circuit breaker instances in the API gateway. It maintains counters for successes and failures, tracks state transitions, records timestamps of state changes, and provides methods to update the circuit breaker status. The status object is used by the circuit breaker service to make decisions about whether to allow requests through based on the current circuit state.
