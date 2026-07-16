@@ -1545,6 +1545,71 @@ if (supportedVersions.Contains(version))
 }
 ```
 
+## RateLimitPolicy
+
+The `RateLimitPolicy` class defines rate limiting configuration for API gateway routes. It configures request limits per time window, burst handling, storage backends, and authentication bypass rules. The policy supports multiple rate limiting strategies (sliding window, fixed window, and token bucket), Redis-backed distributed rate limiting, and conditional bypass for authenticated users.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a rate limit policy for public API endpoints
+var publicApiPolicy = new RateLimitPolicy
+{
+    Id = "public-api-limit",
+    Enabled = true,
+    RequestsPerMinute = 100,
+    RequestsPerHour = 1000,
+    Strategy = RateLimitStrategy.SlidingWindow,
+    KeyGenerator = "client-ip",
+    BypassForAuthenticatedUsers = false,
+    BurstSize = 20,
+    StorageType = RateLimitStorageType.Memory,
+    RedisConnectionString = null // Use memory storage
+};
+
+// Create a rate limit policy for authenticated API endpoints with higher limits
+var authApiPolicy = new RateLimitPolicy
+{
+    Id = "authenticated-api-limit",
+    Enabled = true,
+    RequestsPerMinute = 1000,
+    RequestsPerHour = 10000,
+    Strategy = RateLimitStrategy.TokenBucket,
+    KeyGenerator = "user-id",
+    BypassForAuthenticatedUsers = true,
+    BurstSize = 100,
+    StorageType = RateLimitStorageType.Redis,
+    RedisConnectionString = "localhost:6379"
+};
+
+// Create a rate limit policy for bursty workloads
+var burstyPolicy = new RateLimitPolicy
+{
+    Id = "bursty-service-limit",
+    Enabled = true,
+    RequestsPerMinute = 500,
+    RequestsPerHour = 5000,
+    Strategy = RateLimitStrategy.TokenBucket,
+    KeyGenerator = "service-name",
+    BypassForAuthenticatedUsers = false,
+    BurstSize = 200,
+    StorageType = RateLimitStorageType.Memory
+};
+
+// Validate the policy configuration
+publicApiPolicy.Validate();
+authApiPolicy.Validate();
+
+// Get limit information for the current window
+int limitPerMinute = publicApiPolicy.GetLimitForWindow(RateLimitWindow.Minute);
+int limitPerHour = publicApiPolicy.GetLimitForWindow(RateLimitWindow.Hour);
+
+// Check if the policy is enabled
+bool isEnabled = publicApiPolicy.IsEnabled();
+```
+
 ## RateLimitingServiceTests
 
 The `RateLimitingServiceTests` class provides a comprehensive test suite for the `RateLimitingService` class, which handles rate limiting enforcement for API gateway clients. These tests cover various rate limiting scenarios including disabled policies, valid requests, exceeded limits, different rate limiting strategies (sliding window and token bucket), and cleanup operations. The test suite verifies that the rate limiting service correctly tracks request counts, calculates remaining capacity, and enforces policy limits across multiple clients.
