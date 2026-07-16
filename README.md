@@ -1520,6 +1520,65 @@ await rateLimitStore.ResetAllAsync();
 Console.WriteLine("All rate limits reset globally");
 ```
 
+## RedisRateLimitStore
+
+The `RedisRateLimitStore` class provides a distributed Redis-backed implementation of the rate limiting storage interface (`IRateLimitStore`) for the API gateway. It supports all three rate limiting strategies (fixed window, sliding window, and token bucket) using Redis data structures for distributed coordination across multiple gateway instances.
+
+This store is ideal for cloud-native deployments and microservices architectures where multiple API gateway instances need to share rate limiting state. It uses Redis sorted sets for sliding window tracking, strings for fixed window counting, and Redis hashes for token bucket state management, ensuring accurate rate limit enforcement across distributed systems.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Repositories;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection (typically done in Program.cs)
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddSingleton<RedisRateLimitStore>(provider =>
+    new RedisRateLimitStore(
+        "localhost:6379,abortConnect=false",
+        provider.GetRequiredService<ILogger<RedisRateLimitStore>>()
+    )
+);
+
+var serviceProvider = services.BuildServiceProvider();
+var redisRateLimitStore = serviceProvider.GetRequiredService<RedisRateLimitStore>();
+
+// Create a rate limit policy for API clients
+var policy = new RateLimitPolicy
+{
+    Id = "api-client-rate-limit",
+    Enabled = true,
+    RequestsPerMinute = 1000, // Allow 1000 requests per minute
+    Strategy = RateLimitStrategy.SlidingWindow, // Use sliding window algorithm for better accuracy
+    BurstSize = 2000 // Allow bursts up to 2000 requests
+};
+
+// Check if a request is allowed (returns false when limit is exceeded)
+bool isAllowed = await redisRateLimitStore.IsRequestAllowedAsync("client-123", policy);
+Console.WriteLine($"Request allowed: {isAllowed}");
+
+// Get current rate limit information for display to client
+var rateLimitEntry = await redisRateLimitStore.GetEntryAsync("client-123", policy);
+Console.WriteLine($"Rate limit: {policy.RequestsPerMinute} requests per minute");
+Console.WriteLine($"Current count: {rateLimitEntry.Count}");
+Console.WriteLine($"Remaining time: {rateLimitEntry.RemainingTimeSeconds} seconds until reset");
+
+// Reset rate limits for a specific client
+await redisRateLimitStore.ResetKeyAsync("client-123");
+Console.WriteLine("Rate limits reset for client-123");
+
+// Reset all rate limits globally
+await redisRateLimitStore.ResetAllAsync();
+Console.WriteLine("All rate limits reset globally");
+
+// Dispose the Redis connection when done
+redisRateLimitStore.Dispose();
+```
+
 ## ErrorHandlingMiddleware
 
 The `ErrorHandlingMiddleware` class provides global error handling for the API gateway, catching all unhandled exceptions and converting them to standardized HTTP error responses. It ensures consistent error formatting across all routes and services, logs exceptions for debugging, and maps gateway-specific exceptions to appropriate HTTP status codes.
