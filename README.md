@@ -1,3 +1,11 @@
+# DotNetApiGateway
+
+An ASP.NET Core API gateway: route matching, load-balanced forwarding, per-route rate limiting, circuit breaking, request/response transformation and aggregation.
+
+## Architecture
+
+How the pieces fit together - middleware order, the fallback forwarding endpoint, design decisions and their trade-offs - is documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## CircuitBreakerRepositoryExtensions
 
 The `CircuitBreakerRepositoryExtensions` class provides a set of extension methods for working with circuit breaker repositories. These extensions enable you to retrieve circuit breaker statuses by service name, state, or other criteria, as well as update and reset circuit breakers.
