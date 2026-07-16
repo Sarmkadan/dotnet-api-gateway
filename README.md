@@ -929,6 +929,79 @@ foreach (var route in slowestRoutes)
 }
 ```
 
+## MetricsService
+
+The `MetricsService` class collects and reports comprehensive metrics about API gateway operations, including request volumes, response times, success/failure rates, and per-route statistics. It tracks total requests, status code distribution, and maintains performance metrics for individual routes to help monitor system health and identify performance bottlenecks.
+
+The service provides both synchronous and asynchronous methods for recording metrics and retrieving aggregated statistics, making it suitable for real-time monitoring and historical analysis.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection (typically done in Program.cs)
+var services = new ServiceCollection();
+services.AddLogging(logging => logging.AddConsole());
+services.AddSingleton<MetricsService>();
+
+var serviceProvider = services.BuildServiceProvider();
+var metricsService = serviceProvider.GetRequiredService<MetricsService>();
+
+// Record a completed request's metrics
+metricsService.RecordRequest(
+    routeId: "user-api-route",
+    statusCode: 200,
+    duration: TimeSpan.FromMilliseconds(150)
+);
+
+// Record an async request (useful when route ID isn't available yet)
+await metricsService.RecordRequestAsync(
+    method: "GET",
+    path: "/api/users/123",
+    statusCode: 200,
+    responseTimeMs: 150,
+    timestamp: DateTime.UtcNow
+);
+
+// Get comprehensive gateway metrics
+var gatewayMetrics = metricsService.GetMetrics();
+Console.WriteLine($"Total Requests: {gatewayMetrics.TotalRequests}");
+Console.WriteLine($"Success Rate: {gatewayMetrics.SuccessRate:F2}%");
+Console.WriteLine($"Average Response Time: {gatewayMetrics.AverageResponseTimeMs:F2}ms");
+Console.WriteLine($"Uptime: {gatewayMetrics.Uptime.TotalHours:F2} hours");
+Console.WriteLine($"Requests Per Second: {gatewayMetrics.GetRequestsPerSecond():F2}");
+
+// Get status code distribution
+foreach (var kvp in gatewayMetrics.StatusCodeDistribution)
+{
+    Console.WriteLine($"Status {kvp.Key}: {kvp.Value} requests");
+}
+
+// Get metrics for a specific route
+var routeMetrics = metricsService.GetRouteMetrics("user-api-route");
+if (routeMetrics != null)
+{
+    Console.WriteLine($"Route: {routeMetrics.RouteId}");
+    Console.WriteLine($"Total Requests: {routeMetrics.TotalRequests}");
+    Console.WriteLine($"Success Rate: {(double)routeMetrics.SuccessfulRequests / routeMetrics.TotalRequests * 100:F2}%");
+    Console.WriteLine($"Avg Response Time: {routeMetrics.AverageResponseTimeMs:F2}ms");
+    Console.WriteLine($"Min/Max Response Time: {routeMetrics.MinResponseTimeMs:F2}/{routeMetrics.MaxResponseTimeMs:F2}ms");
+    Console.WriteLine($"Requests Per Minute: {routeMetrics.GetRequestsPerMinute():F2}");
+}
+
+// Get aggregated counts
+var totalRequests = await metricsService.GetTotalRequestCountAsync();
+var successfulRequests = await metricsService.GetSuccessfulRequestCountAsync();
+var failedRequests = await metricsService.GetFailedRequestCountAsync();
+var avgResponseTime = await metricsService.GetAverageResponseTimeAsync();
+
+// Reset all metrics (useful for testing or daily rollover)
+metricsService.Reset();
+```
+
 ## ExternalApiClient
 
 The `ExternalApiClient` class provides a generic HTTP client wrapper for calling external APIs with built-in error handling, retry logic, and logging. It simplifies making HTTP requests to external services while providing resilience against transient failures.
