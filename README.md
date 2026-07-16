@@ -106,6 +106,42 @@ if (retryPolicy.IsEnabled)
 }
 ```
 
+## RequestCoalescingPolicy
+
+The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a request coalescing policy with default settings
+var policy = new RequestCoalescingPolicy
+{
+    Id = "user-profile-policy",
+    Enabled = true,
+    TimeoutMs = 5000, // Wait up to 5 seconds for a coalesced response
+    MaxQueuedRequests = 200, // Allow up to 200 followers to queue
+    CoalescibleMethods = ["GET", "HEAD"], // Only coalesce GET and HEAD requests
+    IncludeQueryString = true // Include query parameters in coalescing key
+};
+
+// Validate the policy configuration
+policy.Validate();
+
+// Check if a specific HTTP method can be coalesced
+bool canCoalesce = policy.IsCoalescible("GET"); // Returns true
+
+// Generate a coalescing key for a request
+var queryParams = new Dictionary<string, string> { ["userId"] = "123", ["fields"] = "name,email" };
+string coalescingKey = policy.GenerateCoalescingKey(
+    "/api/users/123",
+    "GET",
+    queryParams
+);
+// Returns: "GET:/api/users/123?fields=name,email&userId=123"
+```
+
 ## WebhookRegistry
 
 The `WebhookRegistry` class manages webhook subscriptions and provides functionality to asynchronously publish domain events to subscribed endpoints. It allows for registering and unregistering subscriptions, filtering by event type, and configuring delivery retry policies with exponential backoff.
