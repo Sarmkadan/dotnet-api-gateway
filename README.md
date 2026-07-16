@@ -536,6 +536,78 @@ bool hasParam = UrlUtility.HasQueryParameter("https://api.example.com/data?page=
 // Result: true
 ```
 
+## TransformationRule
+
+The `TransformationRule` class defines transformation operations that can be applied to HTTP requests and responses during the request processing pipeline. It supports various transformation operations such as adding/setting headers, managing query parameters, rewriting paths, and modifying request/response content. Each rule can be configured with a specific phase (request or response), operation type, target key/value, execution order, and enabled/disabled state.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a transformation rule for adding a custom header to requests
+var addHeaderRule = new TransformationRule
+{
+    Id = "add-tenant-header",
+    Description = "Add tenant identifier to all requests",
+    Phase = TransformationPhase.Request,
+    Operation = TransformationOperation.AddHeader,
+    Key = "X-Tenant-Id",
+    Value = "acme-corp",
+    Order = 1,
+    IsEnabled = true
+};
+
+// Create a transformation rule for setting a query parameter
+var setQueryParamRule = new TransformationRule
+{
+    Id = "set-environment-param",
+    Description = "Set environment parameter for backend routing",
+    Phase = TransformationPhase.Request,
+    Operation = TransformationOperation.SetQueryParam,
+    Key = "env",
+    Value = "production",
+    Order = 2,
+    IsEnabled = true
+};
+
+// Create a transformation rule for rewriting path prefixes
+var rewritePathRule = new TransformationRule
+{
+    Id = "rewrite-path-prefix",
+    Description = "Rewrite API version prefix in path",
+    Phase = TransformationPhase.Request,
+    Operation = TransformationOperation.RewritePathPrefix,
+    Key = "/v1",
+    Value = "/api/v1",
+    Order = 3,
+    IsEnabled = true
+};
+
+// Create a transformation rule for response header manipulation
+var responseHeaderRule = new TransformationRule
+{
+    Id = "add-gateway-version",
+    Description = "Add gateway version header to responses",
+    Phase = TransformationPhase.Response,
+    Operation = TransformationOperation.SetHeader,
+    Key = "X-Gateway-Version",
+    Value = "2.0",
+    Order = 1,
+    IsEnabled = true
+};
+
+// Validate the rule configuration
+addHeaderRule.Validate();
+setQueryParamRule.Validate();
+
+// Check if a rule is enabled
+bool isEnabled = addHeaderRule.IsEnabled; // Returns true
+
+// Get rule priority/order
+int executionOrder = addHeaderRule.Order; // Returns 1
+```
+
 ## RequestTransformationServiceTests
 
 The `RequestTransformationServiceTests` class provides a comprehensive test suite for the `RequestTransformationService` class. It tests the request and response transformation rules that can be applied to HTTP requests and responses, including header manipulation, query parameter management, path rewriting, and rule validation. The tests cover both request-phase and response-phase operations, ensuring that transformations are applied correctly according to the specified rules.
