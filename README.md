@@ -24,6 +24,44 @@ await CircuitBreakerRepositoryExtensions.UpdateBatchAsync(circuitBreakerReposito
 await CircuitBreakerRepositoryExtensions.ResetAllToClosedAsync(circuitBreakerRepository);
 ```
 
+## WebhookRegistry
+
+The `WebhookRegistry` class manages webhook subscriptions and provides functionality to asynchronously publish domain events to subscribed endpoints. It allows for registering and unregistering subscriptions, filtering by event type, and configuring delivery retry policies with exponential backoff.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Integration;
+using Microsoft.Extensions.Logging;
+
+// Create a logger and instantiate the registry
+var logger = new LoggerFactory().CreateLogger<WebhookRegistry>();
+var registry = new WebhookRegistry(logger);
+
+// Register a webhook subscription
+var subscription = new WebhookSubscription
+{
+    Id = "sub_001",
+    CallbackUrl = "https://hooks.example.com/receive",
+    EventTypes = new[] { "order.created" },
+    RetryPolicy = new WebhookRetryPolicy { MaxRetries = 3, InitialDelayMs = 500, MaxDelayMs = 5000 }
+};
+registry.Register(subscription);
+
+// Publish an event to subscribers
+var webhookEvent = new WebhookEvent
+{
+    EventType = "order.created",
+    Data = new { OrderId = 12345, Status = "Created" }
+};
+await registry.PublishEventAsync(webhookEvent);
+
+// Retrieve and manage subscriptions
+var allSubscriptions = registry.GetAllSubscriptions();
+var orderSubscriptions = registry.GetSubscriptionsForEvent("order.created");
+registry.Unregister("sub_001");
+```
+
 ## JsonUtilityValidation
 
 The `JsonUtilityValidation` class provides static methods for validating JSON data against expected formats and structures. It includes methods for checking validity, parsing, deserialization, and merging JSON, with both validation result and boolean outcome variants. Methods like `Validate<T>`, `ValidateDeserialize`, and `IsValid<T>` help ensure JSON conforms to expected schemas or types.
