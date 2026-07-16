@@ -1080,6 +1080,57 @@ bool isSupported = versioningPolicy.SupportedVersions.Contains("2"); // Returns 
 string headerName = versioningPolicy.HeaderName; // Returns "X-API-Version"
 ```
 
+## DotnetApiGatewayOptions
+
+The `DotnetApiGatewayOptions` class defines the configuration settings for the API gateway. It controls core gateway behavior including request handling limits, timeout configurations, CORS settings, compression, logging, metrics collection, health checks, JWT validation, and route management. This configuration is typically loaded from application settings and provides centralized control over gateway behavior.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+
+// Configure gateway options in Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Bind configuration to DotnetApiGatewayOptions
+builder.Services.Configure<DotnetApiGatewayOptions>(builder.Configuration.GetSection(DotnetApiGatewayOptions.SectionName));
+
+// Access configured options
+var gatewayOptions = builder.Services.BuildServiceProvider()
+    .GetRequiredService<IOptions<DotnetApiGatewayOptions>>().Value;
+
+// Use the configuration
+Console.WriteLine($"Gateway Application: {gatewayOptions.ApplicationName}");
+Console.WriteLine($"Gateway Version: {gatewayOptions.Version}");
+Console.WriteLine($"Max Request Body Size: {gatewayOptions.MaxRequestBodySize} bytes");
+Console.WriteLine($"Default Timeout: {gatewayOptions.DefaultTimeoutSeconds} seconds");
+Console.WriteLine($"Max Concurrent Requests: {gatewayOptions.MaxConcurrentRequests}");
+Console.WriteLine($"CORS Enabled: {gatewayOptions.EnableCors}");
+Console.WriteLine($"Compression Enabled: {gatewayOptions.EnableCompression}");
+Console.WriteLine($"Logging Enabled: {gatewayOptions.EnableLogging}");
+Console.WriteLine($"Metrics Enabled: {gatewayOptions.EnableMetrics}");
+Console.WriteLine($"Health Check Enabled: {gatewayOptions.EnableHealthCheck}");
+Console.WriteLine($"Health Check Path: {gatewayOptions.HealthCheckPath}");
+Console.WriteLine($"Log Level: {gatewayOptions.LogLevel}");
+
+// Configure JWT validation
+if (gatewayOptions.JwtValidation.Enabled)
+{
+    Console.WriteLine($"JWT Issuer: {gatewayOptions.JwtValidation.Issuer}");
+    Console.WriteLine($"JWT Audience: {gatewayOptions.JwtValidation.Audience}");
+}
+
+// Access configured routes
+gatewayOptions.Routes.ForEach(route => 
+{
+    Console.WriteLine($"Route: {route.Name} ({route.PathPattern})");
+    Console.WriteLine($"  Methods: {string.Join(", ", route.AllowedMethods)}");
+    Console.WriteLine($"  Timeout: {route.TimeoutSeconds}s");
+});
+```
+
 ## CachePolicy
 
 The `CachePolicy` class defines caching behavior for API gateway routes, enabling response caching to improve performance and reduce load on upstream services. It supports configurable cache duration, cacheable HTTP methods and status codes, cache key variation by query strings and headers, and limits on cache size. The policy can be enabled/disabled per route and provides validation to ensure configuration integrity.
