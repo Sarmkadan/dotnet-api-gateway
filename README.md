@@ -113,6 +113,79 @@ if (!string.IsNullOrEmpty(errorSummary))
 }
 ```
 
+## CircuitBreakerRepository
+
+The `CircuitBreakerRepository` class provides data access and persistence operations for circuit breaker statuses in the API gateway. It implements a thread-safe repository pattern using `ReaderWriterLockSlim` for concurrent access, storing circuit breaker states in memory. The repository supports CRUD operations for managing circuit breaker statuses, querying by service name or state, and bulk operations like resetting all circuits or clearing the repository.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Repositories;
+using System;
+using System.Threading.Tasks;
+
+// Create the circuit breaker repository
+var repository = new CircuitBreakerRepository();
+
+// Add a new circuit breaker status for a service
+var newStatus = new CircuitBreakerStatus
+{
+    Id = "user-service-circuit-breaker",
+    ServiceName = "user-service",
+    State = CircuitBreakerState.Closed,
+    FailureCount = 0,
+    SuccessCount = 0,
+    LastStateChangeAt = DateTime.UtcNow
+};
+await repository.AddAsync(newStatus);
+Console.WriteLine($"Added circuit breaker for service: {newStatus.ServiceName}");
+
+// Get circuit breaker status by ID
+var retrievedStatus = await repository.GetByIdAsync("user-service-circuit-breaker");
+if (retrievedStatus != null)
+{
+    Console.WriteLine($"Retrieved status - Service: {retrievedStatus.ServiceName}, State: {retrievedStatus.State}");
+}
+
+// Get circuit breaker status by service name
+var statusByService = await repository.GetByServiceNameAsync("user-service");
+if (statusByService != null)
+{
+    Console.WriteLine($"Found status for service: {statusByService.ServiceName}");
+}
+
+// Get all circuit breaker statuses
+var allStatuses = await repository.GetAllAsync();
+Console.WriteLine($"Total circuit breakers: {allStatuses.Count()}");
+
+// Get all open circuits
+var openCircuits = await repository.GetOpenCircuitsAsync();
+Console.WriteLine($"Open circuits: {openCircuits.Count()}");
+
+// Update a circuit breaker status
+retrievedStatus!.State = CircuitBreakerState.HalfOpen;
+retrievedStatus.FailureCount = 2;
+var updatedStatus = await repository.UpdateAsync(retrievedStatus);
+Console.WriteLine($"Updated status - New state: {updatedStatus.State}");
+
+// Check if circuit breaker exists
+bool exists = await repository.ExistsAsync("user-service-circuit-breaker");
+Console.WriteLine($"Circuit breaker exists: {exists}");
+
+// Reset all circuits to Closed state
+await repository.ResetAllAsync();
+Console.WriteLine("All circuits reset to Closed state");
+
+// Delete a circuit breaker
+bool deleted = await repository.DeleteAsync("user-service-circuit-breaker");
+Console.WriteLine($"Circuit breaker deleted: {deleted}");
+
+// Clear all circuit breakers
+repository.ClearAll();
+Console.WriteLine("All circuit breakers cleared");
+```
+
 ## CircuitBreakerStatus
 
 The `CircuitBreakerStatus` class tracks the runtime state and metrics of circuit breaker instances in the API gateway. It maintains counters for successes and failures, tracks state transitions, records timestamps of state changes, and provides methods to update the circuit breaker status. The status object is used by the circuit breaker service to make decisions about whether to allow requests through based on the current circuit state.
