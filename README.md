@@ -979,6 +979,92 @@ string cacheKey = cachePolicy.GenerateCacheKey(
 // Returns: "GET:/api/users/123?lang=en-US&fields=name,email|Accept-Language:en-US"
 ```
 
+## CacheService
+
+The `CacheService` class provides an in-memory response caching mechanism for the API gateway. It manages cached responses with configurable expiration times, supports cache invalidation by key or prefix, and provides statistics about cache usage. The service is thread-safe using `ReaderWriterLockSlim` for concurrent access and includes automatic cleanup of expired entries via a background timer.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Services;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+// Create the cache service (typically registered as a singleton in DI)
+var cacheService = new CacheService();
+
+// Cache a response with custom headers and expiration
+var cacheKey = "user-profile:123";
+var responseHeaders = new Dictionary<string, string>
+{
+    ["Content-Type"] = "application/json",
+    ["X-Cache-Status"] = "HIT"
+};
+
+cacheService.SetCachedResponse(
+    cacheKey,
+    statusCode: 200,
+    responseBody: "{\"id\": 123, \"name\": \"John Doe\", \"email\": \"john@example.com\"}",
+    headers: responseHeaders,
+    durationSeconds: 300 // 5 minutes TTL
+);
+
+// Try to retrieve a cached response
+if (cacheService.TryGetCachedResponse(cacheKey, out var cachedEntry) && cachedEntry != null)
+{
+    Console.WriteLine($"Cache HIT - Status: {cachedEntry.StatusCode}");
+    Console.WriteLine($"Body: {cachedEntry.ResponseBody}");
+    Console.WriteLine($"Headers: {string.Join(", ", cachedEntry.Headers.Select(h => $"{h.Key}={h.Value}")}");
+    Console.WriteLine($"Cached at: {cachedEntry.CachedAt:O}");
+    Console.WriteLine($"Expires at: {cachedEntry.ExpiresAt:O}");
+    Console.WriteLine($"Hits: {cachedEntry.HitCount}");
+    Console.WriteLine($"Last accessed: {cachedEntry.LastAccessAt:O}");
+}
+else
+{
+    Console.WriteLine("Cache MISS - Response not found or expired");
+}
+
+// Store and retrieve strongly-typed objects
+var userData = new UserProfile { Id = 123, Name = "John Doe", Email = "john@example.com" };
+await cacheService.SetAsync(
+    "user-profile:123",
+    userData,
+    TimeSpan.FromMinutes(5)
+);
+
+var cachedUser = await cacheService.GetAsync<UserProfile>("user-profile:123");
+if (cachedUser != null)
+{
+    Console.WriteLine($"Retrieved user: {cachedUser.Name} ({cachedUser.Email})");
+}
+
+// Invalidate cache by key or prefix
+cacheService.InvalidateCache("user-profile:123");
+
+// Invalidate all cache entries matching a prefix
+cacheService.InvalidateCacheByPrefix("user-profile:");
+
+// Get cache statistics
+var stats = cacheService.GetStatistics();
+Console.WriteLine($"Cache entries: {stats.EntriesCount}");
+Console.WriteLine($"Total hits: {stats.TotalHits}");
+Console.WriteLine($"Total size: {stats.TotalSizeBytes} bytes");
+Console.WriteLine($"Hit rate: {stats.GetHitRate():P}");
+Console.WriteLine($"Average size per entry: {stats.GetAverageSizePerEntryBytes():N0} bytes");
+
+// Remove expired entries (can also be called via background timer)
+int removedCount = await cacheService.RemoveExpiredEntriesAsync();
+Console.WriteLine($"Removed {removedCount} expired entries");
+
+// Clear all cache entries
+cacheService.ClearAll();
+
+// Dispose the service when done (stops the cleanup timer)
+cacheService.Dispose();
+```
+
 ## ErrorHandlingMiddleware
 
 The `ErrorHandlingMiddleware` class provides global error handling for the API gateway, catching all unhandled exceptions and converting them to standardized HTTP error responses. It ensures consistent error formatting across all routes and services, logs exceptions for debugging, and maps gateway-specific exceptions to appropriate HTTP status codes.
