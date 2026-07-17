@@ -45,20 +45,15 @@ public static class RequestContextJsonExtensions
     /// Deserializes a JSON string into a <see cref="RequestContext"/> instance
     /// </summary>
     /// <param name="json">The JSON string to deserialize</param>
-    /// <returns>The deserialized request context, or null if the JSON is invalid</returns>
+    /// <returns>The deserialized request context</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null</exception>
-    public static RequestContext? FromJson(string json)
+    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized</exception>
+    public static RequestContext FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        try
-        {
-            return JsonSerializer.Deserialize<RequestContext>(json, _jsonOptions);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        return JsonSerializer.Deserialize<RequestContext>(json, _jsonOptions)
+            ?? throw new JsonException("Deserialized JSON resulted in null");
     }
 
     /// <summary>
