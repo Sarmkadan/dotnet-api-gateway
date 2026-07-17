@@ -261,6 +261,57 @@ bool isFailure = policy.IsFailureStatus(503); // Returns true
 bool isEnabled = policy.IsEnabled(); // Returns true
 ```
 
+## JsonResponseFormatter
+
+The `JsonResponseFormatter` class provides standardized JSON response formatting utilities for consistent API responses across the gateway. It supports success responses with data, error responses with error codes, validation error responses with field-specific details, and paginated responses with metadata. The formatter uses camelCase property naming and handles null values gracefully.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Formatters;
+using System;
+using System.Collections.Generic;
+
+// Format a successful response with data
+var user = new { Id = 123, Name = "John Doe", Email = "john@example.com" };
+string successResponse = JsonResponseFormatter.FormatSuccess(user, "User retrieved successfully");
+Console.WriteLine(successResponse);
+
+// Format a success response with only a message (no data)
+string messageResponse = JsonResponseFormatter.FormatSuccess("Operation completed successfully");
+Console.WriteLine(messageResponse);
+
+// Format an error response with error code and message
+string errorResponse = JsonResponseFormatter.FormatError(
+    "AUTH_ERROR",
+    "Authentication failed: invalid credentials",
+    statusCode: 401
+);
+Console.WriteLine(errorResponse);
+
+// Format a validation error response with field-specific errors
+var validationErrors = new Dictionary<string, string>
+{
+    ["email"] = "Email is required",
+    ["password"] = "Password must be at least 8 characters"
+};
+string validationResponse = JsonResponseFormatter.FormatValidationError(validationErrors);
+Console.WriteLine(validationResponse);
+
+// Format a paginated response with data and pagination metadata
+var users = new List<object>
+{
+    new { Id = 1, Name = "User 1" },
+    new { Id = 2, Name = "User 2" }
+};
+string paginatedResponse = JsonResponseFormatter.FormatPaginated(users, 1, 2, 100);
+Console.WriteLine(paginatedResponse);
+
+// Format raw JSON bytes response
+byte[] jsonBytes = JsonResponseFormatter.FormatBytes(user);
+Console.WriteLine(System.Text.Encoding.UTF8.GetString(jsonBytes));
+```
+
 ## XmlFormatter
 
 The `XmlFormatter` class provides XML serialization and deserialization utilities for the API gateway. It supports converting objects to XML strings or byte arrays, and parsing XML back into objects. The formatter includes XML escaping utilities for safely embedding text in XML documents and handles null values gracefully.
