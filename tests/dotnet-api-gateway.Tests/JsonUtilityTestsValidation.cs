@@ -7,7 +7,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace DotNetApiGateway.Tests;
 
@@ -21,14 +20,14 @@ public static class JsonUtilityTestsValidation
     /// </summary>
     /// <param name="value">The instance to validate.</param>
     /// <returns>A read-only list of validation problems; empty if valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this JsonUtilityTests value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
         var problems = new List<string>();
 
-        // Validate Name
+        // Validate Name - must not be null or whitespace
         if (string.IsNullOrWhiteSpace(value.Name))
         {
             problems.Add("Name is null or whitespace.");
@@ -40,8 +39,8 @@ public static class JsonUtilityTestsValidation
             problems.Add("Age must be a positive integer.");
         }
 
-        // Validate OptionalField (if present, should not be whitespace)
-        if (!string.IsNullOrEmpty(value.OptionalField) && string.IsNullOrWhiteSpace(value.OptionalField))
+        // Validate OptionalField - if not null, must not be whitespace-only
+        if (value.OptionalField is not null && string.IsNullOrWhiteSpace(value.OptionalField))
         {
             problems.Add("OptionalField contains only whitespace.");
         }
@@ -60,8 +59,11 @@ public static class JsonUtilityTestsValidation
     /// Ensures that the specified <see cref="JsonUtilityTests"/> instance is valid.
     /// </summary>
     /// <param name="value">The instance to validate.</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is not valid, containing a list of problems.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown if <paramref name="value"/> is not valid, containing a list of problems.
+    /// The exception message includes all validation problems.
+    /// </exception>
     public static void EnsureValid(this JsonUtilityTests value)
     {
         ArgumentNullException.ThrowIfNull(value);
