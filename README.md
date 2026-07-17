@@ -1292,6 +1292,77 @@ foreach (var header in customHeaders)
 }
 ```
 
+## DateTimeUtility
+
+The `DateTimeUtility` class provides utility methods for date and time operations in the API gateway. It offers functionality for working with Unix timestamps, formatting dates, calculating relative time strings, and determining date boundaries (start/end of day, week, month). The utility handles UTC time conversions and provides helper methods for common date calculations.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+using System;
+
+// Get current UTC time in ISO 8601 format
+string currentUtcTime = DateTimeUtility.GetCurrentUtcIso8601();
+Console.WriteLine($"Current UTC time: {currentUtcTime}");
+
+// Get Unix timestamp for current time
+long currentUnixTimestamp = DateTimeUtility.GetCurrentUnixTimestamp();
+Console.WriteLine($"Current Unix timestamp: {currentUnixTimestamp}");
+
+// Convert DateTime to Unix timestamp
+DateTime now = DateTime.UtcNow;
+long unixTimestamp = DateTimeUtility.ToUnixTimestamp(now);
+Console.WriteLine($"Unix timestamp for {now:O}: {unixTimestamp}");
+
+// Convert Unix timestamp back to DateTime
+DateTime dateTimeFromTimestamp = DateTimeUtility.FromUnixTimestamp(unixTimestamp);
+Console.WriteLine($"DateTime from timestamp: {dateTimeFromTimestamp:O}");
+
+// Format DateTime as human-readable string
+DateTime exampleDate = new DateTime(2024, 6, 15, 14, 30, 0);
+string formattedDate = DateTimeUtility.FormatDateTime(exampleDate);
+Console.WriteLine($"Formatted date: {formattedDate}");
+
+// Get relative time string
+string relativeTime = DateTimeUtility.GetRelativeTime(exampleDate);
+Console.WriteLine($"Relative time: {relativeTime}");
+
+// Check if datetime is in the past or future
+bool isPast = DateTimeUtility.IsPast(exampleDate);
+bool isFuture = DateTimeUtility.IsFuture(exampleDate.AddDays(1));
+Console.WriteLine($"Is past: {isPast}, Is future: {isFuture}");
+
+// Get start and end of day
+DateTime startOfDay = DateTimeUtility.GetStartOfDay(exampleDate);
+DateTime endOfDay = DateTimeUtility.GetEndOfDay(exampleDate);
+Console.WriteLine($"Start of day: {startOfDay:O}");
+Console.WriteLine($"End of day: {endOfDay:O}");
+
+// Get start and end of week
+DateTime startOfWeek = DateTimeUtility.GetStartOfWeek(exampleDate);
+DateTime endOfWeek = DateTimeUtility.GetEndOfWeek(exampleDate);
+Console.WriteLine($"Start of week: {startOfWeek:yyyy-MM-dd}");
+Console.WriteLine($"End of week: {endOfWeek:yyyy-MM-dd}");
+
+// Get start and end of month
+DateTime startOfMonth = DateTimeUtility.GetStartOfMonth(exampleDate);
+DateTime endOfMonth = DateTimeUtility.GetEndOfMonth(exampleDate);
+Console.WriteLine($"Start of month: {startOfMonth:yyyy-MM-dd}");
+Console.WriteLine($"End of month: {endOfMonth:yyyy-MM-dd}");
+
+// Check if two datetimes are on the same day
+bool isSameDay = DateTimeUtility.IsSameDay(startOfDay, endOfDay);
+Console.WriteLine($"Is same day: {isSameDay}");
+
+// Calculate business days between two dates
+int businessDays = DateTimeUtility.GetBusinessDaysBetween(
+    new DateTime(2024, 6, 10),
+    new DateTime(2024, 6, 20)
+);
+Console.WriteLine($"Business days between 2024-06-10 and 2024-06-20: {businessDays}");
+```
+
 ## CryptoUtility
 
 The `CryptoUtility` class provides cryptographic operations including SHA256 hashing and HMAC-SHA256 signature generation for data integrity verification and webhook signature validation. It offers secure methods for generating cryptographic hashes, creating message authentication codes, and verifying signatures using constant-time comparison to prevent timing attacks.
