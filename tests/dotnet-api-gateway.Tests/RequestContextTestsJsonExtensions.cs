@@ -5,6 +5,7 @@
 // =====================================================================
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DotNetApiGateway.Models;
 
 namespace DotNetApiGateway.Tests;
@@ -18,16 +19,17 @@ public static class RequestContextTestsJsonExtensions
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
     };
 
     /// <summary>
     /// Serializes a RequestContext instance to a JSON string
     /// </summary>
     /// <param name="value">The RequestContext instance to serialize</param>
-    /// <param name="indented">Whether to format the JSON with indentation</param>
+    /// <param name="indented">Whether to format the JSON with indentation for readability</param>
     /// <returns>A JSON string representation of the RequestContext</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
     public static string ToJson(this RequestContext value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -40,28 +42,35 @@ public static class RequestContextTestsJsonExtensions
     }
 
     /// <summary>
-    /// Deserializes a JSON string to a RequestContext instance
+    /// Deserializes a JSON string into a RequestContext instance
     /// </summary>
     /// <param name="json">The JSON string to deserialize</param>
-    /// <returns>A RequestContext instance, or null if the JSON is invalid</returns>
-    /// <exception cref="ArgumentException">Thrown when json is null or empty</exception>
+    /// <returns>The deserialized request context, or null if the JSON is invalid</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null</exception>
     public static RequestContext? FromJson(string json)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        ArgumentNullException.ThrowIfNull(json);
 
-        return JsonSerializer.Deserialize<RequestContext>(json, _jsonOptions);
+        try
+        {
+            return JsonSerializer.Deserialize<RequestContext>(json, _jsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     /// <summary>
-    /// Attempts to deserialize a JSON string to a RequestContext instance
+    /// Attempts to deserialize a JSON string into a RequestContext instance
     /// </summary>
     /// <param name="json">The JSON string to deserialize</param>
-    /// <param name="value">Receives the deserialized RequestContext, or null on failure</param>
-    /// <returns>True if deserialization succeeded; false otherwise</returns>
-    /// <exception cref="ArgumentException">Thrown when json is null or empty</exception>
+    /// <param name="value">Receives the deserialized request context, or null if deserialization fails</param>
+    /// <returns>True if deserialization succeeded; otherwise, false</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null</exception>
     public static bool TryFromJson(string json, out RequestContext? value)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        ArgumentNullException.ThrowIfNull(json);
 
         try
         {
