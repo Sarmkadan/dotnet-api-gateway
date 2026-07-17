@@ -2135,6 +2135,69 @@ var publicRoute = new GatewayRoute
 };
 ```
 
+## JsonResponseFormatterJsonExtensions
+
+The `JsonResponseFormatterJsonExtensions` class provides extension methods for serializing and deserializing response types (`SuccessResponse<T>`, `ErrorResponse`, and `PaginatedResponse<T>`) to and from JSON strings. These methods complement the `JsonResponseFormatter` class by offering a fluent API for JSON serialization with camelCase property naming and null value handling.
+
+The extensions support both formatted (indented) and compact JSON output, and provide safe deserialization methods that return null instead of throwing exceptions on parsing failures.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Formatters;
+using System;
+
+// Create a success response with data
+var successResponse = new SuccessResponse<User>(
+    data: new User { Id = 123, Name = "John Doe", Email = "john@example.com" },
+    message: "User retrieved successfully"
+);
+
+// Serialize to JSON string
+string json = successResponse.ToJson(); // Compact JSON
+string prettyJson = successResponse.ToJson(indented: true); // Pretty-printed JSON
+
+Console.WriteLine(json);
+
+// Deserialize from JSON
+SuccessResponse<User>? deserialized = json.FromJson<User>();
+if (deserialized != null)
+{
+    Console.WriteLine($"Deserialized: {deserialized.Data?.Name}");
+}
+
+// Try deserialization with error handling
+if (json.TryFromJson(out SuccessResponse<User>? result))
+{
+    Console.WriteLine($"Successfully deserialized: {result?.Data?.Email}");
+}
+
+// Serialize an error response
+var errorResponse = new ErrorResponse(
+    errorCode: "AUTH_ERROR",
+    message: "Authentication failed: invalid credentials",
+    statusCode: 401
+);
+
+string errorJson = errorResponse.ToJson();
+ErrorResponse? errorDeserialized = errorJson.FromJson();
+
+// Serialize a paginated response
+var paginatedResponse = new PaginatedResponse<User>(
+    data: new List<User>
+    {
+        new User { Id = 1, Name = "User 1" },
+        new User { Id = 2, Name = "User 2" }
+    },
+    page: 1,
+    pageSize: 2,
+    totalCount: 100
+);
+
+string paginatedJson = paginatedResponse.ToJson();
+PaginatedResponse<User>? paginatedDeserialized = paginatedJson.FromJson<User>();
+```
+
 ## RequestCoalescingPolicy
 
 The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
