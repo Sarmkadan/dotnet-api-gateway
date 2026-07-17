@@ -264,6 +264,62 @@ repository.ClearAll();
 Console.WriteLine("All routes cleared");
 ```
 
+## UrlUtility
+
+The `UrlUtility` class provides utility methods for URL manipulation and parsing operations in the API gateway. It offers functionality for combining URLs, parsing and building query strings, extracting URL components, validating URLs, and sanitizing URLs by removing sensitive parameters. These utilities ensure safe and consistent URL handling throughout the gateway's request processing pipeline.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+
+// Combine base URL with path, handling trailing slashes correctly
+string baseUrl = "https://api.example.com";
+string path = "/users/123";
+string combinedUrl = UrlUtility.CombineUrl(baseUrl, path);
+Console.WriteLine(combinedUrl); // Output: https://api.example.com/users/123
+
+// Parse query string into dictionary
+string queryString = "?name=John&age=30&city=New+York";
+var parameters = UrlUtility.ParseQueryString(queryString);
+Console.WriteLine($"Name: {parameters["name"]}, Age: {parameters["age"]}, City: {parameters["city"]}");
+
+// Build query string from dictionary
+var queryParams = new Dictionary<string, string>
+{
+    ["userId"] = "123",
+    ["fields"] = "name,email,address",
+    ["sort"] = "name"
+};
+string builtQuery = UrlUtility.BuildQueryString(queryParams);
+Console.WriteLine(builtQuery); // Output: ?userId=123&fields=name%2Cemail%2Caddress&sort=name
+
+// Extract hostname from URL
+string hostname = UrlUtility.GetHostname("https://api.example.com:8080/users");
+Console.WriteLine(hostname); // Output: api.example.com
+
+// Get port number from URL
+int port = UrlUtility.GetPort("https://api.example.com:8443/users");
+Console.WriteLine(port); // Output: 8443
+
+// Check if URL is valid
+bool isValid = UrlUtility.IsValidUrl("https://api.example.com/users");
+Console.WriteLine(isValid); // Output: True
+
+// Sanitize URL by removing sensitive parameters
+string sensitiveUrl = "https://api.example.com/login?username=admin&password=secret123&token=xyz";
+string sanitized = UrlUtility.SanitizeUrl(sensitiveUrl);
+Console.WriteLine(sanitized); // Output: https://api.example.com/login?username=admin&password=***&token=***
+
+// Extract path from URL
+string pathOnly = UrlUtility.GetPath("https://api.example.com/v1/users/123?include=profile");
+Console.WriteLine(pathOnly); // Output: /v1/users/123
+
+// Check if URL has a specific query parameter
+bool hasParam = UrlUtility.HasQueryParameter("https://api.example.com/search?q=dotnet&page=1", "q");
+Console.WriteLine(hasParam); // Output: True
+```
+
 ## CircuitBreakerStatus
 
 The `CircuitBreakerStatus` class tracks the runtime state and metrics of circuit breaker instances in the API gateway. It maintains counters for successes and failures, tracks state transitions, records timestamps of state changes, and provides methods to update the circuit breaker status. The status object is used by the circuit breaker service to make decisions about whether to allow requests through based on the current circuit state.
