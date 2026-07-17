@@ -77,7 +77,7 @@ public static class GatewayRouteTestsValidation
             }
         }
 
-        if (value.TimeoutSeconds < 1 || value.TimeoutSeconds > 300)
+        if (value.TimeoutSeconds is < 1 or > 300)
         {
             problems.Add("TimeoutSeconds must be between 1 and 300 inclusive");
         }
@@ -101,10 +101,7 @@ public static class GatewayRouteTestsValidation
     /// <param name="value">The GatewayRoute instance to check</param>
     /// <returns>true if the instance is valid; otherwise, false</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
-    public static bool IsValid(this GatewayRoute value)
-    {
-        return Validate(value).Count == 0;
-    }
+    public static bool IsValid(this GatewayRoute value) => Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="GatewayRoute"/> instance is valid.
