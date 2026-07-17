@@ -35,8 +35,8 @@ public static class AggregationPolicyValidation
             errors.Add("Id cannot exceed 100 characters.");
         }
 
-        // Validate Enabled
-        // No validation needed for boolean - always valid
+        // Validate Enabled - boolean values are always valid
+        // Note: Logic around Enabled with empty targets is validated below
 
         // Validate Strategy
         if (!Enum.IsDefined(typeof(AggregationStrategy), value.Strategy))
@@ -84,6 +84,7 @@ public static class AggregationPolicyValidation
     /// </summary>
     /// <param name="value">The aggregation policy to check.</param>
     /// <returns>True if the policy is valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this AggregationPolicy? value)
     {
         return value is not null && Validate(value).Count == 0;
