@@ -32,11 +32,9 @@ public static class RoutingMiddlewareJsonExtensions
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var options = indented
+        return JsonSerializer.Serialize(value, indented
             ? new JsonSerializerOptions(_jsonSerializerOptions) { WriteIndented = true }
-            : _jsonSerializerOptions;
-
-        return JsonSerializer.Serialize(value, options);
+            : _jsonSerializerOptions);
     }
 
     /// <summary>
@@ -50,12 +48,9 @@ public static class RoutingMiddlewareJsonExtensions
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        return JsonSerializer.Deserialize<RoutingMiddleware>(json, _jsonSerializerOptions);
+        return string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<RoutingMiddleware>(json, _jsonSerializerOptions);
     }
 
     /// <summary>
