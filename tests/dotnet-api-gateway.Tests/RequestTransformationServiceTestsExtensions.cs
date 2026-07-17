@@ -39,9 +39,7 @@ namespace DotNetApiGateway.Tests
         /// if none of them throws an exception.
         /// </summary>
         /// <param name="tests">The test class instance.</param>
-        /// <returns>
-        /// <c>true</c> when all validation tests complete without throwing; otherwise <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> when all validation tests complete without throwing; otherwise <c>false</c>.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> is <c>null</c>.</exception>
         public static bool VerifyTransformationRuleValidation(this RequestTransformationServiceTests tests)
         {
@@ -54,7 +52,7 @@ namespace DotNetApiGateway.Tests
                 tests.TransformationRule_Validate_DoesNotThrowForRemove();
                 return true;
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }
@@ -64,25 +62,20 @@ namespace DotNetApiGateway.Tests
         /// Retrieves the names of all public test methods defined on <see cref="RequestTransformationServiceTests"/>.
         /// </summary>
         /// <param name="tests">The test class instance.</param>
-        /// <returns>
-        /// An <see cref="IReadOnlyList{T}"/> containing the method names.
-        /// </returns>
+        /// <returns>An <see cref="IReadOnlyList{T}"/> containing the method names.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> is <c>null</c>.</exception>
         public static IReadOnlyList<string> GetTestMethodNames(this RequestTransformationServiceTests tests)
         {
             ArgumentNullException.ThrowIfNull(tests);
 
-            var methodNames = typeof(RequestTransformationServiceTests)
+            return typeof(RequestTransformationServiceTests)
                 .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Select(m => m.Name)
-                .Where(name =>
-                    name.StartsWith("ApplyRequestRules_", StringComparison.Ordinal) ||
-                    name.StartsWith("ApplyResponseRules_", StringComparison.Ordinal) ||
-                    name.StartsWith("TransformationRule_Validate_", StringComparison.Ordinal))
-                .OrderBy(name => name)
+                .Where(name => name.StartsWith("ApplyRequestRules_", StringComparison.Ordinal) ||
+                              name.StartsWith("ApplyResponseRules_", StringComparison.Ordinal) ||
+                              name.StartsWith("TransformationRule_Validate_", StringComparison.Ordinal))
+                .Order(StringComparer.Ordinal)
                 .ToArray();
-
-            return methodNames;
         }
     }
 }
