@@ -44,26 +44,23 @@ public static class GatewayRouteJsonExtensions
     /// <summary>
     /// Deserializes a JSON string to a <see cref="GatewayRoute"/> instance.
     /// </summary>
-    /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized gateway route, or null if the JSON is null or empty.</returns>
+    /// <param name="json">The JSON string to deserialize. Must not be null or empty/whitespace.</param>
+    /// <returns>The deserialized gateway route, or null if the JSON is empty or whitespace.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static GatewayRoute? FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        return JsonSerializer.Deserialize<GatewayRoute>(json, _jsonOptions);
+        return string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<GatewayRoute>(json, _jsonOptions);
     }
 
     /// <summary>
     /// Attempts to deserialize a JSON string to a <see cref="GatewayRoute"/> instance.
     /// </summary>
-    /// <param name="json">The JSON string to deserialize.</param>
+    /// <param name="json">The JSON string to deserialize. Must not be null or empty/whitespace.</param>
     /// <param name="value">Receives the deserialized gateway route if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
