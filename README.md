@@ -3110,6 +3110,81 @@ Assert.Contains("Authorization", transformedHeaders);
 Assert.Contains("X-Gateway-Version", transformedHeaders);
 ```
 
+## ValidationUtility
+
+The `ValidationUtility` class provides utility methods for validating common data formats and types in the API gateway. It offers validation for email addresses, URLs, IP addresses, UUIDs, strings, collections, and type checking operations. These utilities ensure consistent validation logic across the gateway's request processing pipeline.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+using System;
+using System.Collections.Generic;
+
+// Validate email address format
+bool isValidEmail = ValidationUtility.IsValidEmail("user@example.com");
+Console.WriteLine($"Is valid email: {isValidEmail}"); // Output: Is valid email: True
+
+// Validate URL format
+bool isValidUrl = ValidationUtility.IsValidUrl("https://api.example.com/users/123");
+Console.WriteLine($"Is valid URL: {isValidUrl}"); // Output: Is valid URL: True
+
+// Validate IPv4 address format
+bool isValidIp = ValidationUtility.IsValidIpAddress("192.168.1.100");
+Console.WriteLine($"Is valid IP address: {isValidIp}"); // Output: Is valid IP address: True
+
+// Validate UUID/GUID format
+bool isValidUuid = ValidationUtility.IsValidUuid("550e8400-e29b-41d4-a716-446655440000");
+Console.WriteLine($"Is valid UUID: {isValidUuid}"); // Output: Is valid UUID: True
+
+// Check if string is null or empty
+bool isNullOrEmpty = ValidationUtility.IsNullOrEmpty("   ");
+Console.WriteLine($"Is null or empty: {isNullOrEmpty}"); // Output: Is null or empty: True
+
+// Validate string length
+bool isValidLength = ValidationUtility.IsValidLength("hello", 3, 10);
+Console.WriteLine($"Is valid length: {isValidLength}"); // Output: Is valid length: True
+
+// Check if string is alphanumeric
+bool isAlphanumeric = ValidationUtility.IsAlphanumeric("abc123");
+Console.WriteLine($"Is alphanumeric: {isAlphanumeric}"); // Output: Is alphanumeric: True
+
+// Check if string contains only ASCII characters
+bool isAsciiOnly = ValidationUtility.IsAsciiOnly("Hello World!");
+Console.WriteLine($"Is ASCII only: {isAsciiOnly}"); // Output: Is ASCII only: True
+
+// Validate port number
+bool isValidPort = ValidationUtility.IsValidPort(8080);
+Console.WriteLine($"Is valid port: {isValidPort}"); // Output: Is valid port: True
+
+// Validate HTTP method
+bool isValidHttpMethod = ValidationUtility.IsValidHttpMethod("GET");
+Console.WriteLine($"Is valid HTTP method: {isValidHttpMethod}"); // Output: Is valid HTTP method: True
+
+// Validate HTTP status code
+bool isValidStatusCode = ValidationUtility.IsValidHttpStatusCode(200);
+Console.WriteLine($"Is valid HTTP status code: {isValidStatusCode}"); // Output: Is valid HTTP status code: True
+
+// Check if object is null
+bool isNull = ValidationUtility.IsNull(null);
+Console.WriteLine($"Is null: {isNull}"); // Output: Is null: True
+
+// Validate object type
+bool isValidType = ValidationUtility.IsValidType<string>("hello");
+Console.WriteLine($"Is valid type: {isValidType}"); // Output: Is valid type: True
+
+// Check if collection is null or empty
+bool isCollectionEmpty = ValidationUtility.IsNullOrEmpty(new List<string>());
+Console.WriteLine($"Is collection empty: {isCollectionEmpty}"); // Output: Is collection empty: True
+
+// Validate dictionary contains required keys
+bool hasRequiredKeys = ValidationUtility.HasRequiredKeys(
+    new Dictionary<string, string> { ["id"] = "123", ["name"] = "John" },
+    "id", "name"
+);
+Console.WriteLine($"Has required keys: {hasRequiredKeys}"); // Output: Has required keys: True
+```
+
 ## DateTimeUtilityTests
 
 The `DateTimeUtilityTests` class provides a comprehensive test suite for the `DateTimeUtility` static class, which offers various date and time manipulation utilities. These utilities include Unix timestamp conversion, date formatting, relative time formatting, and business day calculations. The class is useful for API responses, logging, scheduling, and any time-sensitive operations within the gateway.
