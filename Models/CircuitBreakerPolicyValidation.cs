@@ -68,6 +68,7 @@ public static class CircuitBreakerPolicyValidation
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null</exception>
     public static bool IsPolicyValid(this CircuitBreakerPolicy? policy)
     {
+        ArgumentNullException.ThrowIfNull(policy);
         return policy.ValidatePolicy().Count == 0;
     }
 
