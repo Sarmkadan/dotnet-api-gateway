@@ -89,6 +89,146 @@ var deleteResponse = await client.DeleteAsync($"/api/WebhookManagement/subscript
 deleteResponse.EnsureSuccessStatusCode();
 ```
 
+## GatewayManagementController
+
+The `GatewayManagementController` provides operational endpoints for managing and monitoring the API gateway's routes, policies, and overall health. It serves as the central management interface for gateway configuration, allowing administrators to create, retrieve, update, and delete routes, as well as monitor circuit breaker states, rate limits, and gateway metrics.
+
+This controller is essential for gateway operations, providing endpoints for route management (CRUD operations), metrics collection, circuit breaker monitoring and reset, and rate limit inspection and management. It integrates with the `RoutingService`, `CircuitBreakerService`, `RateLimitingService`, `MetricsService`, and `GatewayRouteRepository` to provide comprehensive gateway management capabilities.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Controllers;
+using DotNetApiGateway.Models;
+using Microsoft.AspNetCore.Mvc.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
+
+// Create a test server with required services
+var hostBuilder = new WebHostBuilder()
+    .ConfigureServices(services =>
+    {
+        services.AddLogging();
+        services.AddSingleton<RoutingService>();
+        services.AddSingleton<CircuitBreakerService>();
+        services.AddSingleton<RateLimitingService>();
+        services.AddSingleton<MetricsService>();
+        services.AddSingleton<GatewayRouteRepository>();
+        services.AddControllers();
+    });
+
+var server = new TestServer(hostBuilder);
+var client = server.CreateClient();
+
+// Create a new gateway route
+var newRoute = new GatewayRoute
+{
+    Id = "user-api-route",
+    Name = "User API Route",
+    PathPattern = "/api/users/{id}",
+    AllowedMethods = new[] { "GET", "PUT", "DELETE" },
+    IsActive = true,
+    TimeoutSeconds = 30,
+    Targets = new List<RouteTarget>
+    {
+        new RouteTarget
+        {
+            Name = "user-service-primary",
+            BaseUrl = "https://user-service.internal:8080",
+            Weight = 70,
+            IsHealthy = true
+        },
+        new RouteTarget
+        {
+            Name = "user-service-backup",
+            BaseUrl = "https://user-service-backup.internal:8080",
+            Weight = 30,
+            IsHealthy = true
+        }
+    }
+};
+
+var createResponse = await client.PostAsJsonAsync("/api/GatewayManagement/routes", newRoute);
+createResponse.EnsureSuccessStatusCode();
+
+var createdRoute = await createResponse.Content.ReadFromJsonAsync<GatewayRoute>();
+Console.WriteLine($"Created route: {createdRoute.Id}");
+
+// Get all routes with their metrics
+var getAllResponse = await client.GetAsync("/api/GatewayManagement/routes");
+getAllResponse.EnsureSuccessStatusCode();
+
+var allRoutesWithMetrics = await getAllResponse.Content.ReadFromJsonAsync<List<object>>();
+Console.WriteLine($"Total routes: {allRoutesWithMetrics.Count}");
+
+// Get a specific route with metrics
+var getResponse = await client.GetAsync($"/api/GatewayManagement/routes/{createdRoute.Id}");
+getResponse.EnsureSuccessStatusCode();
+
+var routeWithMetrics = await getResponse.Content.ReadFromJsonAsync<object>();
+Console.WriteLine($"Retrieved route with metrics");
+
+// Update a route
+var updatedRoute = new GatewayRoute
+{
+    Name = "User API Route - Updated",
+    PathPattern = "/api/users/{userId}",
+    AllowedMethods = new[] { "GET", "PUT", "DELETE", "PATCH" },
+    IsActive = true,
+    TimeoutSeconds = 45
+};
+
+var updateResponse = await client.PutAsJsonAsync($"/api/GatewayManagement/routes/{createdRoute.Id}", updatedRoute);
+updateResponse.EnsureSuccessStatusCode();
+
+// Get route-specific metrics
+var metricsResponse = await client.GetAsync($"/api/GatewayManagement/metrics/routes/{createdRoute.Id}");
+metricsResponse.EnsureSuccessStatusCode();
+
+var routeMetrics = await metricsResponse.Content.ReadAsStringAsync();
+Console.WriteLine($"Retrieved metrics for route");
+
+// Get circuit breaker statuses
+var circuitBreakersResponse = await client.GetAsync("/api/GatewayManagement/circuit-breakers");
+circuitBreakersResponse.EnsureSuccessStatusCode();
+
+var circuitBreakerStatuses = await circuitBreakersResponse.Content.ReadFromJsonAsync<List<object>>();
+Console.WriteLine($"Circuit breakers: {circuitBreakerStatuses.Count}");
+
+// Reset a circuit breaker
+var resetCircuitResponse = await client.PostAsync("/api/GatewayManagement/circuit-breakers/user-service-primary/reset", null);
+resetCircuitResponse.EnsureSuccessStatusCode();
+
+// Get rate limit status for a client
+var rateLimitResponse = await client.GetAsync("/api/GatewayManagement/rate-limits/client-123");
+rateLimitResponse.EnsureSuccessStatusCode();
+
+var rateLimitInfo = await rateLimitResponse.Content.ReadAsStringAsync();
+Console.WriteLine($"Retrieved rate limit info");
+
+// Reset rate limits for a specific key
+var resetRateLimitResponse = await client.PostAsync("/api/GatewayManagement/rate-limits/client-123/reset", null);
+resetRateLimitResponse.EnsureSuccessStatusCode();
+
+// Reset all rate limits
+var resetAllResponse = await client.PostAsync("/api/GatewayManagement/rate-limits/reset-all", null);
+resetAllResponse.EnsureSuccessStatusCode();
+
+// Get global gateway metrics
+var globalMetricsResponse = await client.GetAsync("/api/GatewayManagement/metrics/global");
+globalMetricsResponse.EnsureSuccessStatusCode();
+
+var globalMetrics = await globalMetricsResponse.Content.ReadAsStringAsync();
+Console.WriteLine($"Retrieved global metrics");
+
+// Delete a route
+var deleteResponse = await client.DeleteAsync($"/api/GatewayManagement/routes/{createdRoute.Id}");
+deleteResponse.EnsureSuccessStatusCode();
+```
+
 ## CircuitBreakerPolicy
 
 The `CircuitBreakerPolicy` class defines fault-tolerance rules for the API gateway's circuit breaker pattern implementation. It configures thresholds for failure/success detection, timeout behavior, retry logic, and HTTP status codes that trigger circuit breaking. The policy can be enabled/disabled per route or service and is validated before use to ensure configuration integrity.
