@@ -3,10 +3,10 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
+using System;
 using DotNetApiGateway.Utilities;
-using System.Globalization;
 
 namespace DotNetApiGateway.Tests;
 
@@ -23,11 +23,18 @@ public static class UrlUtilityTestsValidation
     /// <param name="path">The path to validate.</param>
     /// <param name="queryString">The query string to validate.</param>
     /// <returns>An immutable list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="baseUrl"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> ValidateCombineUrl(
         string? baseUrl,
         string? path,
         string? queryString)
     {
+        ArgumentNullException.ThrowIfNull(baseUrl);
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(queryString);
+
         var problems = new List<string>();
 
         if (string.IsNullOrWhiteSpace(baseUrl))
@@ -58,8 +65,11 @@ public static class UrlUtilityTestsValidation
     /// <param name="url">The URL to validate.</param>
     /// <param name="expectedIsValid">Expected result of <see cref="UrlUtility.IsValidUrl"/>.</param>
     /// <returns>An immutable list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="url"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> ValidateIsValidUrl(string? url, bool expectedIsValid)
     {
+        ArgumentNullException.ThrowIfNull(url);
+
         var problems = new List<string>();
 
         if (string.IsNullOrWhiteSpace(url))
@@ -82,8 +92,11 @@ public static class UrlUtilityTestsValidation
     /// <param name="url">The URL to validate.</param>
     /// <param name="expectedHostname">Expected hostname result.</param>
     /// <returns>An immutable list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="url"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> ValidateGetHostname(string? url, string? expectedHostname)
     {
+        ArgumentNullException.ThrowIfNull(url);
+
         var problems = new List<string>();
 
         if (string.IsNullOrWhiteSpace(url))
@@ -112,8 +125,11 @@ public static class UrlUtilityTestsValidation
     /// <param name="url">The URL to validate.</param>
     /// <param name="expectedPort">Expected port result.</param>
     /// <returns>An immutable list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="url"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> ValidateGetPort(string? url, int expectedPort)
     {
+        ArgumentNullException.ThrowIfNull(url);
+
         var problems = new List<string>();
 
         if (string.IsNullOrWhiteSpace(url))
@@ -140,11 +156,16 @@ public static class UrlUtilityTestsValidation
     /// <param name="paramName">The parameter name to check.</param>
     /// <param name="expectedHasParam">Expected result of <see cref="UrlUtility.HasQueryParameter"/>.</param>
     /// <returns>An immutable list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="url"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="paramName"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> ValidateHasQueryParameter(
         string? url,
         string? paramName,
         bool expectedHasParam)
     {
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(paramName);
+
         var problems = new List<string>();
 
         if (string.IsNullOrWhiteSpace(url))
@@ -175,8 +196,13 @@ public static class UrlUtilityTestsValidation
     /// <param name="url">The URL to validate.</param>
     /// <param name="expectedSanitized">Expected sanitized URL.</param>
     /// <returns>An immutable list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="url"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="expectedSanitized"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> ValidateSanitizeUrl(string? url, string? expectedSanitized)
     {
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(expectedSanitized);
+
         var problems = new List<string>();
 
         if (string.IsNullOrWhiteSpace(url))
@@ -207,18 +233,21 @@ public static class UrlUtilityTestsValidation
     /// <param name="path">The path to combine.</param>
     /// <param name="expectedCombined">Expected combined URL result.</param>
     /// <returns>An immutable list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="baseUrl"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="expectedCombined"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> ValidateCombineUrlResult(
         string? baseUrl,
         string? path,
         string? expectedCombined)
     {
+        ArgumentNullException.ThrowIfNull(baseUrl);
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(expectedCombined);
+
         var problems = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(expectedCombined))
-        {
-            problems.Add("Expected combined URL is null, empty, or whitespace");
-        }
-        else if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(path))
+        if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(path))
         {
             // One of the inputs is invalid, so we can't validate the output
             // The test itself should handle this case
@@ -242,10 +271,15 @@ public static class UrlUtilityTestsValidation
     /// <param name="queryString">The query string to parse.</param>
     /// <param name="expectedParameters">Expected parsed parameters.</param>
     /// <returns>An immutable list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="expectedParameters"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> ValidateParseQueryString(
         string? queryString,
         IReadOnlyDictionary<string, string> expectedParameters)
     {
+        ArgumentNullException.ThrowIfNull(queryString);
+        ArgumentNullException.ThrowIfNull(expectedParameters);
+
         var problems = new List<string>();
 
         if (string.IsNullOrWhiteSpace(queryString) && expectedParameters.Count > 0)
@@ -286,10 +320,13 @@ public static class UrlUtilityTestsValidation
     /// <param name="parameters">The parameters to build.</param>
     /// <param name="expectedQueryString">Expected built query string.</param>
     /// <returns>An immutable list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expectedQueryString"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> ValidateBuildQueryString(
         IReadOnlyDictionary<string, string>? parameters,
         string? expectedQueryString)
     {
+        ArgumentNullException.ThrowIfNull(expectedQueryString);
+
         var problems = new List<string>();
 
         if (parameters is null || parameters.Count == 0)
@@ -322,10 +359,8 @@ public static class UrlUtilityTestsValidation
     public static bool IsValidCombineUrl(
         string? baseUrl,
         string? path,
-        string? queryString)
-    {
-        return ValidateCombineUrl(baseUrl, path, queryString).Count == 0;
-    }
+        string? queryString) =>
+        ValidateCombineUrl(baseUrl, path, queryString).Count == 0;
 
     /// <summary>
     /// Determines whether the specified URL test data is valid.
@@ -333,10 +368,8 @@ public static class UrlUtilityTestsValidation
     /// <param name="url">The URL.</param>
     /// <param name="expectedIsValid">Expected validity.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-    public static bool IsValidIsValidUrl(string? url, bool expectedIsValid)
-    {
-        return ValidateIsValidUrl(url, expectedIsValid).Count == 0;
-    }
+    public static bool IsValidIsValidUrl(string? url, bool expectedIsValid) =>
+        ValidateIsValidUrl(url, expectedIsValid).Count == 0;
 
     /// <summary>
     /// Determines whether the specified hostname extraction test data is valid.
@@ -344,10 +377,8 @@ public static class UrlUtilityTestsValidation
     /// <param name="url">The URL.</param>
     /// <param name="expectedHostname">Expected hostname.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-    public static bool IsValidGetHostname(string? url, string? expectedHostname)
-    {
-        return ValidateGetHostname(url, expectedHostname).Count == 0;
-    }
+    public static bool IsValidGetHostname(string? url, string? expectedHostname) =>
+        ValidateGetHostname(url, expectedHostname).Count == 0;
 
     /// <summary>
     /// Determines whether the specified port extraction test data is valid.
@@ -355,10 +386,8 @@ public static class UrlUtilityTestsValidation
     /// <param name="url">The URL.</param>
     /// <param name="expectedPort">Expected port.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-    public static bool IsValidGetPort(string? url, int expectedPort)
-    {
-        return ValidateGetPort(url, expectedPort).Count == 0;
-    }
+    public static bool IsValidGetPort(string? url, int expectedPort) =>
+        ValidateGetPort(url, expectedPort).Count == 0;
 
     /// <summary>
     /// Determines whether the specified query parameter test data is valid.
@@ -370,10 +399,8 @@ public static class UrlUtilityTestsValidation
     public static bool IsValidHasQueryParameter(
         string? url,
         string? paramName,
-        bool expectedHasParam)
-    {
-        return ValidateHasQueryParameter(url, paramName, expectedHasParam).Count == 0;
-    }
+        bool expectedHasParam) =>
+        ValidateHasQueryParameter(url, paramName, expectedHasParam).Count == 0;
 
     /// <summary>
     /// Determines whether the specified URL sanitization test data is valid.
@@ -381,10 +408,8 @@ public static class UrlUtilityTestsValidation
     /// <param name="url">The URL.</param>
     /// <param name="expectedSanitized">Expected sanitized URL.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-    public static bool IsValidSanitizeUrl(string? url, string? expectedSanitized)
-    {
-        return ValidateSanitizeUrl(url, expectedSanitized).Count == 0;
-    }
+    public static bool IsValidSanitizeUrl(string? url, string? expectedSanitized) =>
+        ValidateSanitizeUrl(url, expectedSanitized).Count == 0;
 
     /// <summary>
     /// Determines whether the specified URL combination test data is valid.
@@ -396,10 +421,8 @@ public static class UrlUtilityTestsValidation
     public static bool IsValidCombineUrlResult(
         string? baseUrl,
         string? path,
-        string? expectedCombined)
-    {
-        return ValidateCombineUrlResult(baseUrl, path, expectedCombined).Count == 0;
-    }
+        string? expectedCombined) =>
+        ValidateCombineUrlResult(baseUrl, path, expectedCombined).Count == 0;
 
     /// <summary>
     /// Determines whether the specified query string parsing test data is valid.
@@ -409,10 +432,8 @@ public static class UrlUtilityTestsValidation
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
     public static bool IsValidParseQueryString(
         string? queryString,
-        IReadOnlyDictionary<string, string> expectedParameters)
-    {
-        return ValidateParseQueryString(queryString, expectedParameters).Count == 0;
-    }
+        IReadOnlyDictionary<string, string> expectedParameters) =>
+        ValidateParseQueryString(queryString, expectedParameters).Count == 0;
 
     /// <summary>
     /// Determines whether the specified query string building test data is valid.
@@ -422,10 +443,8 @@ public static class UrlUtilityTestsValidation
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
     public static bool IsValidBuildQueryString(
         IReadOnlyDictionary<string, string>? parameters,
-        string? expectedQueryString)
-    {
-        return ValidateBuildQueryString(parameters, expectedQueryString).Count == 0;
-    }
+        string? expectedQueryString) =>
+        ValidateBuildQueryString(parameters, expectedQueryString).Count == 0;
 
     /// <summary>
     /// Ensures that the specified URL test data is valid.
