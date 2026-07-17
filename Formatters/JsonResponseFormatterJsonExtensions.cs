@@ -23,14 +23,8 @@ public static class JsonResponseFormatterJsonExtensions
         Converters = { new JsonStringEnumConverter() }
     };
 
-    private static JsonSerializerOptions GetOptions(bool indented)
-    {
-        var options = new JsonSerializerOptions(Options)
-        {
-            WriteIndented = indented
-        };
-        return options;
-    }
+    private static JsonSerializerOptions GetOptions(bool indented) =>
+        new JsonSerializerOptions(Options) { WriteIndented = indented };
 
     /// <summary>
     /// Serializes a <see cref="SuccessResponse{T}"/> instance to a JSON string.
@@ -81,7 +75,9 @@ public static class JsonResponseFormatterJsonExtensions
     /// </summary>
     /// <typeparam name="T">The type of data in the response.</typeparam>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized response instance, or null if the JSON is invalid.</returns>
+    /// <returns>The deserialized response instance, or null if the JSON is invalid or deserialization fails.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is malformed or cannot be deserialized.</exception>
     public static SuccessResponse<T>? FromJson<T>(string json) where T : class
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -100,7 +96,9 @@ public static class JsonResponseFormatterJsonExtensions
     /// Deserializes a JSON string into an <see cref="ErrorResponse"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized error response instance, or null if the JSON is invalid.</returns>
+    /// <returns>The deserialized error response instance, or null if the JSON is invalid or deserialization fails.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is malformed or cannot be deserialized.</exception>
     public static ErrorResponse? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -115,7 +113,6 @@ public static class JsonResponseFormatterJsonExtensions
         }
     }
 
-
     /// <summary>
     /// Attempts to deserialize a JSON string into a <see cref="SuccessResponse{T}"/> instance.
     /// </summary>
@@ -123,6 +120,7 @@ public static class JsonResponseFormatterJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized response instance, or null if deserialization failed.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson<T>(string json, out SuccessResponse<T>? value) where T : class
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -145,6 +143,7 @@ public static class JsonResponseFormatterJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized error response instance, or null if deserialization failed.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson(string json, out ErrorResponse? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -168,6 +167,7 @@ public static class JsonResponseFormatterJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized paginated response instance, or null if deserialization failed.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson<T>(string json, out PaginatedResponse<T>? value) where T : class
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
