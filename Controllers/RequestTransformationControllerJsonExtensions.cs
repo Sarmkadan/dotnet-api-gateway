@@ -42,6 +42,8 @@ public static class RequestTransformationControllerJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized controller instance, or null if JSON is empty or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static RequestTransformationController? FromJson(string json)
     {
@@ -61,7 +63,9 @@ public static class RequestTransformationControllerJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized controller instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
-    public static bool TryFromJson(string json, out RequestTransformationController? value)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
+    public static bool TryFromJson(string json, [System.Diagnostics.CodeAnalysis.NotNull] out RequestTransformationController? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
@@ -70,7 +74,7 @@ public static class RequestTransformationControllerJsonExtensions
         try
         {
             value = JsonSerializer.Deserialize<RequestTransformationController>(json, _jsonOptions);
-            return true;
+            return value is not null;
         }
         catch (JsonException)
         {
