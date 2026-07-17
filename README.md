@@ -4200,3 +4200,39 @@ tests.OptionalField = "OptionalValue";
 
 
 ```
+
+## RequestTransformationController
+
+The `RequestTransformationController` provides endpoints for developers to test and validate header, body, and query parameter transformation rules before applying them to live API routes. It allows simulating how requests will be transformed by providing sample input data alongside the intended transformation configuration, aiding in the debugging and validation of transformation pipelines.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// This illustrates how the request models used by RequestTransformationController 
+// are constructed for testing transformation logic.
+
+// Example for HeaderTransformationRequest
+var headerRequest = new HeaderTransformationRequest
+{
+    InputHeaders = new Dictionary<string, string> { { "X-API-Key", "secret-123" } },
+    HeadersToAdd = new Dictionary<string, string> { { "X-Custom-Header", "value" } },
+    HeadersToRemove = new List<string> { "X-Unwanted-Header" }
+};
+
+// Example for BodyTransformationRequest
+var bodyRequest = new BodyTransformationRequest
+{
+    InputBody = "{\"key\": \"value\"}",
+    TransformationRules = new Dictionary<string, object> { { "key", "newValue" } }
+};
+
+// Example for QueryParamTransformationRequest
+var queryRequest = new QueryParamTransformationRequest
+{
+    InputParams = new Dictionary<string, string> { { "userId", "123" } },
+    ParamMapping = new Dictionary<string, string> { { "userId", "id" } },
+    ParamsToRemove = new List<string> { "unusedParam" }
+};
+```
