@@ -7,6 +7,7 @@
 
 namespace DotNetApiGateway.Controllers;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -29,22 +30,15 @@ public static class GatewayManagementControllerJsonExtensions
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the controller.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-    public static string ToJson(this GatewayManagementController value, bool indented = false)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
-    }
+    public static string ToJson(this GatewayManagementController value, bool indented = false) =>
+        JsonSerializer.Serialize(value, indented ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true } : _jsonOptions);
 
     /// <summary>
     /// Deserializes a JSON string to a <see cref="GatewayManagementController"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized <see cref="GatewayManagementController"/> instance, or null if the JSON is invalid.</returns>
+    /// <returns>The deserialized <see cref="GatewayManagementController"/> instance, or null if the JSON is invalid or <paramref name="json"/> is null or empty.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static GatewayManagementController? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -65,14 +59,15 @@ public static class GatewayManagementControllerJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized <see cref="GatewayManagementController"/> instance, or null if deserialization fails.</param>
     /// <returns>True if deserialization succeeds; otherwise, false.</returns>
-    public static bool TryFromJson(string json, out GatewayManagementController? value)
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    public static bool TryFromJson(string json, [NotNullWhen(true)] out GatewayManagementController? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
         try
         {
             value = JsonSerializer.Deserialize<GatewayManagementController>(json, _jsonOptions);
-            return true;
+            return value is not null;
         }
         catch (JsonException)
         {
