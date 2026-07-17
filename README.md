@@ -2079,6 +2079,62 @@ Console.WriteLine($"Removed {removedCount} old entries");
 metrics.Clear();
 ```
 
+## RateLimitPolicyExtensions
+
+The `RateLimitPolicyExtensions` class provides extension methods for the `RateLimitPolicy` type, enabling fluent-style operations to create modified copies of rate limit policies. These methods allow you to conveniently adjust rate limiting configuration without mutating the original policy object, making it easier to compose different rate limit strategies for different routes or clients.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+
+// Create a base rate limit policy with default settings
+var basePolicy = new RateLimitPolicy
+{
+    Id = "default-rate-limit",
+    RequestsPerMinute = 100,
+    Strategy = RateLimitStrategy.FixedWindow,
+    Enabled = true,
+    StorageType = RateLimitStorageType.Memory
+};
+
+// Create a more restrictive policy for sensitive endpoints by chaining extensions
+var sensitivePolicy = basePolicy
+    .WithRequestsPerMinute(10)  // Only 10 requests per minute
+    .WithStrategy(RateLimitStrategy.TokenBucket)  // Use token bucket for smoother limiting
+    .WithStorage(RateLimitStorageType.Redis, "localhost:6379")  // Use distributed Redis storage
+    .WithDisabled();  // Explicitly disable (overriding base policy)
+
+// Create a policy for authenticated users with higher limits
+var authenticatedPolicy = basePolicy
+    .WithRequestsPerHour(1000)  // 1000 requests per hour
+    .WithEnabled();  // Ensure enabled
+
+// Create a policy for public APIs with burst capability
+var publicApiPolicy = basePolicy
+    .WithRequestsPerMinute(200)
+    .WithBurstSize(50);  // Allow bursts of 50 requests
+
+// Use the configured policies in your gateway routes
+var userRoute = new GatewayRoute
+{
+    Id = "user-api",
+    Name = "User API",
+    PathPattern = "/api/users/{id}",
+    RateLimitPolicyId = sensitivePolicy.Id,  // Apply sensitive policy to user endpoints
+    AllowedMethods = ["GET", "PUT", "DELETE"]
+};
+
+var publicRoute = new GatewayRoute
+{
+    Id = "public-api",
+    Name = "Public API",
+    PathPattern = "/api/public/{resource}",
+    RateLimitPolicyId = publicApiPolicy.Id,  // Apply public policy to public endpoints
+    AllowedMethods = ["GET"]
+};
+```
+
 ## RequestCoalescingPolicy
 
 The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
