@@ -1212,6 +1212,95 @@ foreach (var response in aggregatedResponse.Responses)
 }
 ```
 
+## ExternalApiClientValidation
+
+The `ExternalApiClientValidation` class provides validation utilities for `ExternalApiClient` instances and their HTTP request parameters. It offers methods to validate client instances, endpoints, HTTP methods, request data, content, headers, and cancellation tokens, returning detailed error lists or boolean results. The validation methods follow a consistent pattern with `Validate()`, `IsValid()`, and `EnsureValid()` variants for each validation target.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Integration;
+using System.Net.Http;
+using System.Threading;
+
+// Create an ExternalApiClient instance
+var apiClient = new ExternalApiClient
+{
+    BaseUrl = "https://api.example.com",
+    Timeout = TimeSpan.FromSeconds(30),
+    RetryPolicy = new RetryPolicy { MaxAttempts = 3 }
+};
+
+// Validate the client instance
+var clientProblems = ExternalApiClientValidation.Validate(apiClient);
+if (clientProblems.Count > 0)
+{
+    Console.WriteLine("Client validation errors:");
+    foreach (var problem in clientProblems)
+    {
+        Console.WriteLine($" - {problem}");
+    }
+}
+
+// Validate an endpoint URL
+var endpoint = "https://api.example.com/users";
+var endpointProblems = ExternalApiClientValidation.ValidateEndpoint(endpoint);
+if (!ExternalApiClientValidation.IsValidEndpoint(endpoint))
+{
+    Console.WriteLine("Endpoint is not valid");
+}
+ExternalApiClientValidation.EnsureValidEndpoint(endpoint);
+
+// Validate HTTP method
+var method = HttpMethod.Get;
+var methodProblems = ExternalApiClientValidation.ValidateHttpMethod(method);
+if (ExternalApiClientValidation.IsValidHttpMethod(method))
+{
+    Console.WriteLine("HTTP method is valid");
+}
+ExternalApiClientValidation.EnsureValidHttpMethod(method);
+
+// Validate request data (generic type)
+var requestData = new { UserId = 123, Name = "John Doe" };
+var dataProblems = ExternalApiClientValidation.ValidateRequestData(requestData);
+if (ExternalApiClientValidation.IsValidRequestData(requestData))
+{
+    Console.WriteLine("Request data is valid");
+}
+ExternalApiClientValidation.EnsureValidRequestData(requestData);
+
+// Validate request content
+var content = "{\"name\": \"John Doe\"}";
+var contentProblems = ExternalApiClientValidation.ValidateRequestContent(content, "application/json");
+if (ExternalApiClientValidation.IsValidRequestContent(content))
+{
+    Console.WriteLine("Request content is valid");
+}
+ExternalApiClientValidation.EnsureValidRequestContent(content, "application/json");
+
+// Validate request headers
+dynamic headers = new Dictionary<string, string>
+{
+    ["Authorization"] = "Bearer token123",
+    ["Content-Type"] = "application/json"
+};
+var headerProblems = ExternalApiClientValidation.ValidateRequestHeaders(headers);
+if (ExternalApiClientValidation.IsValidRequestHeaders(headers))
+{
+    Console.WriteLine("Headers are valid");
+}
+ExternalApiClientValidation.EnsureValidRequestHeaders(headers);
+
+// Validate cancellation token
+var cts = new CancellationTokenSource();
+var tokenProblems = ExternalApiClientValidation.ValidateCancellationToken(cts.Token);
+if (ExternalApiClientValidation.IsValidCancellationToken(cts.Token))
+{
+    Console.WriteLine("Cancellation token is valid");
+}
+ExternalApiClientValidation.EnsureValidCancellationToken(cts.Token);
+```
+
 ## RetryPolicy
 
 The `RetryPolicy` class provides configurable retry behavior for transient operations, particularly useful for handling temporary failures in distributed systems. It supports both synchronous and asynchronous retry patterns with configurable retry counts, delays, and backoff strategies.
