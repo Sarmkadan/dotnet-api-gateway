@@ -26,19 +26,11 @@ public static class GatewayMiddlewareJsonExtensions
     /// <param name="indented">Whether to format the JSON with indentation.</param>
     /// <returns>A JSON string representation of the middleware.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-    public static string ToJson(this GatewayMiddleware value, bool indented = false)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-
-        var options = indented
-            ? new System.Text.Json.JsonSerializerOptions(_jsonOptions)
-            {
-                WriteIndented = true
-            }
-            : _jsonOptions;
-
-        return System.Text.Json.JsonSerializer.Serialize(value, options);
-    }
+    public static string ToJson(this GatewayMiddleware value, bool indented = false) =>
+        System.Text.Json.JsonSerializer.Serialize(value, indented ? new System.Text.Json.JsonSerializerOptions(_jsonOptions)
+        {
+            WriteIndented = true
+        } : _jsonOptions);
 
     /// <summary>
     /// Deserializes a JSON string to a <see cref="GatewayMiddleware"/> instance.
@@ -47,6 +39,7 @@ public static class GatewayMiddlewareJsonExtensions
     /// <returns>The deserialized middleware instance, or null if the JSON is invalid.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
+    /// <exception cref="System.Text.Json.JsonException">Thrown when the JSON is malformed or cannot be deserialized.</exception>
     public static GatewayMiddleware? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
