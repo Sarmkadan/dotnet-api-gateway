@@ -632,6 +632,109 @@ bool hasParam = UrlUtility.HasQueryParameter("https://api.example.com/search?q=d
 Console.WriteLine(hasParam); // Output: True
 ```
 
+## UrlUtilityTestsValidation
+
+The `UrlUtilityTestsValidation` class provides validation helpers for URL utility test data to ensure test values meet expected constraints. It contains comprehensive validation methods that verify test data against the actual behavior of `UrlUtility` methods, helping maintain data integrity for URL-related tests.
+
+This utility class validates test inputs for URL combination, URL validation, hostname extraction, port extraction, query parameter presence, URL sanitization, query string parsing, and query string building operations. It returns detailed validation problems or boolean results indicating whether test data is valid.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Tests;
+using DotNetApiGateway.Utilities;
+
+// Validate URL combination test data
+bool isValidCombine = UrlUtilityTestsValidation.IsValidCombineUrl(
+    baseUrl: "https://api.example.com",
+    path: "/users/123",
+    queryString: "?name=John"
+);
+Console.WriteLine($"Combine URL test data is valid: {isValidCombine}");
+
+// Validate URL validation test data
+bool isValidUrl = UrlUtilityTestsValidation.IsValidIsValidUrl(
+    url: "https://api.example.com/users",
+    expectedIsValid: true
+);
+Console.WriteLine($"URL validation test data is valid: {isValidUrl}");
+
+// Validate hostname extraction test data
+bool isValidHostname = UrlUtilityTestsValidation.IsValidGetHostname(
+    url: "https://api.example.com:8080/users",
+    expectedHostname: "api.example.com"
+);
+Console.WriteLine($"Hostname extraction test data is valid: {isValidHostname}");
+
+// Validate port extraction test data
+bool isValidPort = UrlUtilityTestsValidation.IsValidGetPort(
+    url: "https://api.example.com:8443/users",
+    expectedPort: 8443
+);
+Console.WriteLine($"Port extraction test data is valid: {isValidPort}");
+
+// Validate query parameter test data
+bool isValidParam = UrlUtilityTestsValidation.IsValidHasQueryParameter(
+    url: "https://api.example.com/search?q=dotnet&page=1",
+    paramName: "q",
+    expectedHasParam: true
+);
+Console.WriteLine($"Query parameter test data is valid: {isValidParam}");
+
+// Validate URL sanitization test data
+bool isValidSanitize = UrlUtilityTestsValidation.IsValidSanitizeUrl(
+    url: "https://api.example.com/login?username=admin&password=secret",
+    expectedSanitized: "https://api.example.com/login?username=admin&password=***"
+);
+Console.WriteLine($"URL sanitization test data is valid: {isValidSanitize}");
+
+// Validate query string parsing test data
+bool isValidParse = UrlUtilityTestsValidation.IsValidParseQueryString(
+    queryString: "?name=John&age=30&city=New+York",
+    expectedParameters: new Dictionary<string, string>
+    {
+        ["name"] = "John",
+        ["age"] = "30",
+        ["city"] = "New York"
+    }
+);
+Console.WriteLine($"Query string parsing test data is valid: {isValidParse}");
+
+// Validate query string building test data
+bool isValidBuild = UrlUtilityTestsValidation.IsValidBuildQueryString(
+    parameters: new Dictionary<string, string>
+    {
+        ["userId"] = "123",
+        ["fields"] = "name,email"
+    },
+    expectedQueryString: "?userId=123&fields=name%2Cemail"
+);
+Console.WriteLine($"Query string building test data is valid: {isValidBuild}");
+
+// Get detailed validation problems for URL combination
+var combineProblems = UrlUtilityTestsValidation.ValidateCombineUrl(
+    baseUrl: "https://api.example.com",
+    path: "/users/123",
+    queryString: "?name=John"
+);
+if (combineProblems.Count > 0)
+{
+    Console.WriteLine("Combine URL validation problems:");
+    foreach (var problem in combineProblems)
+    {
+        Console.WriteLine($"  - {problem}");
+    }
+}
+
+// Ensure URL combination test data is valid (throws if invalid)
+UrlUtilityTestsValidation.EnsureValidCombineUrl(
+    baseUrl: "https://api.example.com",
+    path: "/users/123",
+    queryString: "?name=John"
+);
+Console.WriteLine("URL combination test data is valid and passed validation");
+```
+
 ## CircuitBreakerStatus
 
 The `CircuitBreakerStatus` class tracks the runtime state and metrics of circuit breaker instances in the API gateway. It maintains counters for successes and failures, tracks state transitions, records timestamps of state changes, and provides methods to update the circuit breaker status. The status object is used by the circuit breaker service to make decisions about whether to allow requests through based on the current circuit state.
