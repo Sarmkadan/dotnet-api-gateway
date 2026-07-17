@@ -1713,6 +1713,59 @@ byte[] randomBytes = CryptoUtility.GenerateRandomBytes(32);
 Console.WriteLine($"Generated {randomBytes.Length} random bytes");
 ```
 
+## EventBusExtensions
+
+The `EventBusExtensions` class provides extension methods for the `EventBus` that enable monitoring and management of event subscribers. These methods allow you to inspect subscriber counts, check for active subscriptions, and publish multiple events as a batch operation.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Events;
+using System;
+using System.Threading.Tasks;
+
+// Create an event bus instance (typically injected via DI)
+var eventBus = new EventBus();
+
+// Publish some events
+await eventBus.PublishAsync(new UserCreatedEvent { UserId = 123, Username = "john_doe" });
+await eventBus.PublishAsync(new OrderPlacedEvent { OrderId = 456, Amount = 99.99m });
+
+// Check if there are subscribers for a specific event type
+bool hasUserSubscribers = eventBus.HasSubscribers<UserCreatedEvent>();
+Console.WriteLine($"Has UserCreatedEvent subscribers: {hasUserSubscribers}");
+
+// Get all event types that currently have subscribers
+var eventTypesWithSubscribers = eventBus.GetEventTypesWithSubscribers();
+Console.WriteLine("Event types with subscribers:");
+foreach (var eventType in eventTypesWithSubscribers)
+{
+    Console.WriteLine($" - {eventType}");
+}
+
+// Get subscriber counts for all event types
+var allSubscriberCounts = eventBus.GetAllSubscriberCounts();
+Console.WriteLine("Subscriber counts:");
+foreach (var kvp in allSubscriberCounts)
+{
+    Console.WriteLine($" - {kvp.Key}: {kvp.Value} subscribers");
+}
+
+// Get total subscriber count across all event types
+int totalSubscribers = eventBus.GetTotalSubscriberCount();
+Console.WriteLine($"Total subscribers: {totalSubscribers}");
+
+// Publish multiple events as a batch
+var eventsToPublish = new object[]
+{
+    new UserUpdatedEvent { UserId = 123, Email = "john@example.com" },
+    new UserDeletedEvent { UserId = 789 },
+    new OrderCancelledEvent { OrderId = 101, Reason = "Customer request" }
+};
+
+await eventBus.PublishBatchAsync(eventsToPublish);
+```
+
 ## ExtensionMethods
 
 The `ExtensionMethods` class provides extension methods for common types used throughout the API gateway. It offers a fluent API for string manipulation, collections, and object operations, including null-safe checks, transformations, and formatting utilities.
