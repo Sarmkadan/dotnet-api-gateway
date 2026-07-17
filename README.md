@@ -1231,6 +1231,67 @@ await rateLimitingService.ResetAllLimitsAsync();
 Console.WriteLine("All rate limits reset globally");
 ```
 
+## HeaderUtility
+
+The `HeaderUtility` class provides utility methods for HTTP header manipulation and parsing operations in the API gateway. It offers safe, case-insensitive operations for getting, setting, adding, removing headers, and specialized methods for authentication header parsing. The utility ensures consistent header handling across the request/response pipeline with proper null safety and error handling.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+using Microsoft.AspNetCore.Http;
+
+// Create a mock header dictionary for demonstration
+var headers = new HeaderDictionary(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+{
+    ["Authorization"] = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0IiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+    ["X-Custom-Header"] = "custom-value",
+    ["Content-Type"] = "application/json",
+    ["Accept"] = "application/json"
+});
+
+// Get a header value (case-insensitive)
+string? customHeader = HeaderUtility.GetHeader(headers, "x-custom-header");
+Console.WriteLine($"Custom header: {customHeader}"); // Output: Custom header: custom-value
+
+// Set a header value
+HeaderUtility.SetHeader(headers, "X-Request-Id", Guid.NewGuid().ToString());
+
+// Add a header (preserves multiple values)
+HeaderUtility.AddHeader(headers, "X-Forwarded-For", "192.168.1.100");
+
+// Check if a header exists
+bool hasAuth = HeaderUtility.HasHeader(headers, "Authorization");
+Console.WriteLine($"Has Authorization: {hasAuth}"); // Output: Has Authorization: True
+
+// Remove a header
+HeaderUtility.RemoveHeader(headers, "Accept");
+
+// Extract bearer token from Authorization header
+string? bearerToken = HeaderUtility.ExtractBearerToken(headers);
+Console.WriteLine($"Bearer token length: {bearerToken?.Length}"); // Output: Bearer token length: 110
+
+// Parse authentication challenge from WWW-Authenticate header
+var challengeHeaders = new HeaderDictionary();
+challengeHeaders.Append("WWW-Authenticate", "Bearer realm=\"api.example.com\", error=\"invalid_token\"");
+var challenge = HeaderUtility.ParseAuthenticationChallenge(challengeHeaders);
+Console.WriteLine($"Challenge scheme: {challenge[\"scheme\"]}"); // Output: Challenge scheme: Bearer
+Console.WriteLine($"Realm: {challenge[\"realm\"]}"); // Output: Realm: api.example.com
+
+// Copy headers from source to destination
+var request = new HttpRequestMessage(HttpMethod.Get, "https://api.example.com/data");
+HeaderUtility.CopyHeaders(headers, request);
+Console.WriteLine($"Copied {request.Headers.Count()} headers to request");
+
+// Get custom headers (excluding standard HTTP headers)
+var customHeaders = HeaderUtility.GetCustomHeaders(headers);
+Console.WriteLine($"Custom headers count: {customHeaders.Count}");
+foreach (var header in customHeaders)
+{
+    Console.WriteLine($" {header.Key}: {header.Value}");
+}
+```
+
 ## ExtensionMethods
 
 The `ExtensionMethods` class provides extension methods for common types used throughout the API gateway. It offers a fluent API for string manipulation, collections, and object operations, including null-safe checks, transformations, and formatting utilities.
