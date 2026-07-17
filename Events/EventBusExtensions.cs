@@ -20,7 +20,6 @@ public static class EventBusExtensions
 
         var result = new Dictionary<string, int>(StringComparer.Ordinal);
 
-        // Use reflection to get all event types that implement IGatewayEvent
         var eventTypes = typeof(IGatewayEvent).Assembly.GetTypes()
             .Where(t => typeof(IGatewayEvent).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
             .ToList();
