@@ -261,6 +261,44 @@ bool isFailure = policy.IsFailureStatus(503); // Returns true
 bool isEnabled = policy.IsEnabled(); // Returns true
 ```
 
+## XmlFormatter
+
+The `XmlFormatter` class provides XML serialization and deserialization utilities for the API gateway. It supports converting objects to XML strings or byte arrays, and parsing XML back into objects. The formatter includes XML escaping utilities for safely embedding text in XML documents and handles null values gracefully.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Formatters;
+using System;
+
+// Serialize an object to XML string
+var user = new User { Id = 123, Name = "John Doe", Email = "john@example.com" };
+string xmlString = XmlFormatter.Serialize(user);
+Console.WriteLine(xmlString);
+
+// Serialize an object to XML bytes
+byte[] xmlBytes = XmlFormatter.SerializeToBytes(user);
+Console.WriteLine($"Serialized to {xmlBytes.Length} bytes");
+
+// Deserialize XML string back to object
+string xmlData = "<User><Id>456</Id><Name>Jane Smith</Name><Email>jane@example.com</Email></User>";
+User? deserializedUser = XmlFormatter.Deserialize<User>(xmlData);
+if (deserializedUser != null)
+{
+    Console.WriteLine($"Deserialized: {deserializedUser.Name} ({deserializedUser.Email})");
+}
+
+// Escape XML special characters
+string unsafeText = "<script>alert('XSS')</script>& more text";
+string escaped = XmlFormatter.EscapeXml(unsafeText);
+Console.WriteLine(escaped); // Output: &lt;script&gt;alert(&apos;XSS&apos;)&lt;/script&gt;&amp; more text
+
+// Unescape XML entities
+string escapedText = "&lt;user&gt;John&amp;Jane&lt;/user&gt;";
+string unescaped = XmlFormatter.UnescapeXml(escapedText);
+Console.WriteLine(unescaped); // Output: <user>John&Jane</user>
+```
+
 ## ConfigurationValidator
 
 The `ConfigurationValidator` class validates configuration settings for the API gateway.
