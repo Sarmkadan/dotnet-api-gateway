@@ -11,7 +11,7 @@ using System.Text.Json.Serialization;
 namespace DotNetApiGateway.Services;
 
 /// <summary>
-/// Provides System.Text.Json serialization extensions for HealthCheckService
+/// Provides System.Text.Json serialization extensions for <see cref="HealthCheckService"/> instances.
 /// </summary>
 public static class HealthCheckServiceJsonExtensions
 {
@@ -33,12 +33,12 @@ public static class HealthCheckServiceJsonExtensions
     };
 
     /// <summary>
-    /// Serializes a HealthCheckService instance to a JSON string
+    /// Serializes a <see cref="HealthCheckService"/> instance to a JSON string.
     /// </summary>
-    /// <param name="value">The HealthCheckService instance to serialize</param>
-    /// <param name="indented">Whether to format the JSON with indentation</param>
-    /// <returns>A JSON string representation of the HealthCheckService</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
+    /// <param name="value">The <see cref="HealthCheckService"/> instance to serialize.</param>
+    /// <param name="indented">Whether to format the JSON with indentation.</param>
+    /// <returns>A JSON string representation of the <see cref="HealthCheckService"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static string ToJson(this HealthCheckService value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -49,11 +49,12 @@ public static class HealthCheckServiceJsonExtensions
     }
 
     /// <summary>
-    /// Deserializes a JSON string to a HealthCheckService instance
+    /// Deserializes a JSON string to a <see cref="HealthCheckService"/> instance.
     /// </summary>
-    /// <param name="json">The JSON string to deserialize</param>
-    /// <returns>A HealthCheckService instance, or null if deserialization fails</returns>
-    /// <exception cref="ArgumentException">Thrown when json is null or empty</exception>
+    /// <param name="json">The JSON string to deserialize.</param>
+    /// <returns>A <see cref="HealthCheckService"/> instance, or <see langword="null"/> if deserialization fails.</returns>
+    /// <exception cref="ArgumentException"><paramref name="json"/> is <see langword="null"/> or empty.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is malformed and cannot be deserialized.</exception>
     public static HealthCheckService? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -69,12 +70,13 @@ public static class HealthCheckServiceJsonExtensions
     }
 
     /// <summary>
-    /// Attempts to deserialize a JSON string to a HealthCheckService instance
+    /// Attempts to deserialize a JSON string to a <see cref="HealthCheckService"/> instance.
     /// </summary>
-    /// <param name="json">The JSON string to deserialize</param>
-    /// <param name="value">Receives the deserialized HealthCheckService instance if successful</param>
-    /// <returns>True if deserialization succeeds; otherwise, false</returns>
-    /// <exception cref="ArgumentException">Thrown when json is null or empty</exception>
+    /// <param name="json">The JSON string to deserialize.</param>
+    /// <param name="value">Receives the deserialized <see cref="HealthCheckService"/> instance if successful.</param>
+    /// <returns><see langword="true"/> if deserialization succeeds; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentException"><paramref name="json"/> is <see langword="null"/> or empty.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is malformed and cannot be deserialized.</exception>
     public static bool TryFromJson(string json, out HealthCheckService? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
