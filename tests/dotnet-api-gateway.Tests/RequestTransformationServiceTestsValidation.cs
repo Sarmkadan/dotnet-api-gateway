@@ -5,6 +5,7 @@
 // =====================================================================
 
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DotNetApiGateway.Tests;
 
@@ -13,24 +14,24 @@ namespace DotNetApiGateway.Tests;
 /// </summary>
 public static class RequestTransformationServiceTestsValidation
 {
-    private static readonly string[] ExpectedMethodNames =
-    [
-        "ApplyRequestRules_AddHeader_AppendsHeaderWhenMissing",
-        "ApplyRequestRules_AddHeader_DoesNotOverwriteExistingHeader",
-        "ApplyRequestRules_SetHeader_ReplacesExistingHeader",
-        "ApplyRequestRules_RemoveHeader_DeletesHeader",
-        "ApplyRequestRules_SetQueryParam_AppendsParamToUri",
-        "ApplyRequestRules_RemoveQueryParam_DropsParamFromUri",
-        "ApplyRequestRules_RewritePathPrefix_ReplacesMatchingPrefix",
-        "ApplyRequestRules_DisabledRule_IsSkipped",
-        "ApplyRequestRules_ResponsePhaseRule_IsNotAppliedToRequest",
-        "ApplyResponseRules_SetHeader_InjectsHeaderIntoResponse",
-        "ApplyResponseRules_RemoveHeader_DeletesHeaderFromResponse",
-        "ApplyRequestRules_OrderedRules_AreAppliedInOrder",
-        "TransformationRule_Validate_ThrowsWhenKeyEmpty",
-        "TransformationRule_Validate_ThrowsWhenValueMissingForAdd",
-        "TransformationRule_Validate_DoesNotThrowForRemove"
-    ];
+    private static readonly IReadOnlyList<string> ExpectedMethodNames = new List<string>
+    {
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_AddHeader_AppendsHeaderWhenMissing),
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_AddHeader_DoesNotOverwriteExistingHeader),
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_SetHeader_ReplacesExistingHeader),
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_RemoveHeader_DeletesHeader),
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_SetQueryParam_AppendsParamToUri),
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_RemoveQueryParam_DropsParamFromUri),
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_RewritePathPrefix_ReplacesMatchingPrefix),
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_DisabledRule_IsSkipped),
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_ResponsePhaseRule_IsNotAppliedToRequest),
+        nameof(RequestTransformationServiceTests.ApplyResponseRules_SetHeader_InjectsHeaderIntoResponse),
+        nameof(RequestTransformationServiceTests.ApplyResponseRules_RemoveHeader_DeletesHeaderFromResponse),
+        nameof(RequestTransformationServiceTests.ApplyRequestRules_OrderedRules_AreAppliedInOrder),
+        nameof(RequestTransformationServiceTests.TransformationRule_Validate_ThrowsWhenKeyEmpty),
+        nameof(RequestTransformationServiceTests.TransformationRule_Validate_ThrowsWhenValueMissingForAdd),
+        nameof(RequestTransformationServiceTests.TransformationRule_Validate_DoesNotThrowForRemove)
+    };
 
     /// <summary>
     /// Validates that a <see cref="RequestTransformationServiceTests"/> instance is well-formed.
@@ -51,7 +52,7 @@ public static class RequestTransformationServiceTestsValidation
         foreach (var methodName in ExpectedMethodNames)
         {
             var method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-            if (method == null)
+            if (method is null)
             {
                 problems.Add($"Missing method: {methodName}");
             }
@@ -65,8 +66,10 @@ public static class RequestTransformationServiceTestsValidation
     /// </summary>
     /// <param name="value">The instance to check.</param>
     /// <returns>True if the instance is valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this RequestTransformationServiceTests? value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return Validate(value).Count == 0;
     }
 
