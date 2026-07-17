@@ -1297,6 +1297,61 @@ bool matches = "error".MatchesAny("success", "warning", "error"); // Returns tru
 long size = message.GetMemorySize(); // Returns size in bytes
 ```
 
+## RateLimitMetrics
+
+The `RateLimitMetrics` class provides tracking and analysis capabilities for rate limit usage patterns and violations in the API gateway. It maintains statistics for individual clients and overall system metrics, enabling monitoring of rate limit compliance, identifying problematic clients, and analyzing usage patterns over time.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+
+// Create rate limit metrics tracker
+var metrics = new RateLimitMetrics();
+
+// Record requests from different clients
+metrics.RecordRequest("client-123");
+metrics.RecordRequest("client-123");
+metrics.RecordRequest("client-456", limited: true); // Limited request
+metrics.RecordRequest("client-789");
+metrics.RecordRequest("client-123", limited: true);
+metrics.RecordRequest("client-456", limited: true);
+
+// Get statistics for a specific client
+var clientStats = metrics.GetClientStats("client-123");
+if (clientStats != null)
+{
+    Console.WriteLine($"Client: {clientStats.ClientId}");
+    Console.WriteLine($"Total requests: {clientStats.TotalRequests}");
+    Console.WriteLine($"Limited requests: {clientStats.LimitedRequests}");
+    Console.WriteLine($"Violation rate: {clientStats.ViolationRate:P}");
+    Console.WriteLine($"Active duration: {clientStats.ActiveDuration.TotalMinutes:F1} minutes");
+}
+
+// Get top 10 clients by request count
+var topClients = metrics.GetTopClients(10);
+Console.WriteLine($"Top clients: {string.Join(", ", topClients.Select(c => c.ClientId))}");
+
+// Get clients with highest violation rates
+var violatingClients = metrics.GetViolatingClients(5);
+Console.WriteLine($"Clients with violations: {violatingClients.Count}");
+
+// Get overall system metrics
+var overallMetrics = metrics.GetOverallMetrics();
+Console.WriteLine($"Total clients: {overallMetrics.TotalClients}");
+Console.WriteLine($"Total requests: {overallMetrics.TotalRequests}");
+Console.WriteLine($"Total limited: {overallMetrics.TotalLimitedRequests}");
+Console.WriteLine($"Avg requests/client: {overallMetrics.AverageRequestsPerClient:F1}");
+Console.WriteLine($"Overall violation rate: {overallMetrics.OverallViolationRate:P}");
+
+// Remove old entries (older than 1 hour)
+int removedCount = metrics.RemoveOldEntries(TimeSpan.FromHours(1));
+Console.WriteLine($"Removed {removedCount} old entries");
+
+// Clear all statistics
+metrics.Clear();
+```
+
 ## RequestCoalescingPolicy
 
 The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
