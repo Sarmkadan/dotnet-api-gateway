@@ -28,15 +28,13 @@ public static class RateLimitStoreFactoryJsonExtensions
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var options = _jsonOptions;
-        if (indented)
-        {
-            options = new JsonSerializerOptions(_jsonOptions)
+        var options = indented
+            ? new JsonSerializerOptions(_jsonOptions)
             {
                 PropertyNamingPolicy = _jsonOptions.PropertyNamingPolicy,
                 WriteIndented = true
-            };
-        }
+            }
+            : _jsonOptions;
 
         return JsonSerializer.Serialize(value, options);
     }
@@ -47,18 +45,12 @@ public static class RateLimitStoreFactoryJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized factory instance, or null if the JSON is invalid.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is malformed or cannot be deserialized to a <see cref="RateLimitStoreFactory"/>.</exception>
     public static RateLimitStoreFactory? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
-        try
-        {
-            return JsonSerializer.Deserialize<RateLimitStoreFactory>(json, _jsonOptions);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        return JsonSerializer.Deserialize<RateLimitStoreFactory>(json, _jsonOptions);
     }
 
     /// <summary>
@@ -68,6 +60,7 @@ public static class RateLimitStoreFactoryJsonExtensions
     /// <param name="value">Receives the deserialized factory instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out RateLimitStoreFactory? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
