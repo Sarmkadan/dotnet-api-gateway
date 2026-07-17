@@ -2,11 +2,12 @@
 
 namespace DotNetApiGateway.Models;
 
-using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Provides validation helpers for <see cref="WebhookSubscription"/> instances.
 /// </summary>
+[SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", Justification = "No static fields to initialize")]
 public static class WebhookSubscriptionValidation
 {
     /// <summary>
@@ -15,11 +16,11 @@ public static class WebhookSubscriptionValidation
     /// <param name="value">The webhook subscription to validate.</param>
     /// <returns>An immutable list of validation problems; empty if the subscription is valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static IReadOnlyList<string> Validate(this WebhookSubscription? value)
+    public static IReadOnlyList<string> Validate([NotNull] this WebhookSubscription? value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var problems = new List<string>();
+        var problems = new List<string>(capacity: 16);
 
         // Validate Id
         if (string.IsNullOrWhiteSpace(value.Id))
@@ -37,13 +38,13 @@ public static class WebhookSubscriptionValidation
             problems.Add("CallbackUrl must be a non-empty string.");
         }
         else if (!Uri.TryCreate(value.CallbackUrl, UriKind.Absolute, out var uri) ||
-                 (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
             problems.Add("CallbackUrl must be a valid absolute HTTP or HTTPS URL.");
         }
 
         // Validate EventTypes
-        if (value.EventTypes == null)
+        if (value.EventTypes is null)
         {
             problems.Add("EventTypes collection must not be null.");
         }
@@ -69,7 +70,7 @@ public static class WebhookSubscriptionValidation
         }
 
         // Validate RetryPolicy
-        if (value.RetryPolicy == null)
+        if (value.RetryPolicy is null)
         {
             problems.Add("RetryPolicy must not be null.");
         }
@@ -97,7 +98,7 @@ public static class WebhookSubscriptionValidation
         }
 
         // Validate DeliveryStats
-        if (value.DeliveryStats == null)
+        if (value.DeliveryStats is null)
         {
             problems.Add("DeliveryStats must not be null.");
         }
