@@ -6,6 +6,89 @@ An ASP.NET Core API gateway: route matching, load-balanced forwarding, per-route
 
 How the pieces fit together - middleware order, the fallback forwarding endpoint, design decisions and their trade-offs - is documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## WebhookManagementController
+
+The `WebhookManagementController` manages webhook subscriptions and delivery configuration for the API gateway. It handles the creation, retrieval, updating, and deletion of webhook subscriptions, allowing external systems to register callback URLs for specific event types. The controller also provides a test endpoint to validate webhook delivery and verify that callback endpoints are reachable and responding correctly.
+
+Webhook subscriptions include configurable retry policies with exponential backoff, enabling reliable event delivery even when downstream systems experience temporary failures. This controller integrates with the `WebhookRegistry` to register subscriptions for event routing.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Controllers;
+using DotNetApiGateway.Integration;
+using Microsoft.AspNetCore.Mvc.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+// Create a test server with required services
+var hostBuilder = new WebHostBuilder()
+    .ConfigureServices(services =>
+    {
+        services.AddLogging();
+        services.AddSingleton<WebhookRegistry>();
+        services.AddControllers();
+    });
+
+var server = new TestServer(hostBuilder);
+var client = server.CreateClient();
+
+// Create a new webhook subscription
+var createRequest = new
+{
+    CallbackUrl = "https://webhook-handler.example.com/api/events",
+    EventTypes = new[] { "user.created", "user.updated", "order.placed" },
+    MaxRetries = 5,
+    InitialDelayMs = 1000,
+    MaxDelayMs = 60000
+};
+
+var createResponse = await client.PostAsJsonAsync("/api/WebhookManagement/subscriptions", createRequest);
+createResponse.EnsureSuccessStatusCode();
+
+var createdSubscription = await createResponse.Content.ReadFromJsonAsync<WebhookSubscription>();
+Console.WriteLine($"Created subscription: {createdSubscription.Id}");
+
+// Get all webhook subscriptions
+var getAllResponse = await client.GetAsync("/api/WebhookManagement/subscriptions");
+getAllResponse.EnsureSuccessStatusCode();
+
+var allSubscriptions = await getAllResponse.Content.ReadFromJsonAsync<List<WebhookSubscription>>();
+Console.WriteLine($"Total subscriptions: {allSubscriptions.Count}");
+
+// Get a specific webhook subscription
+var getResponse = await client.GetAsync($"/api/WebhookManagement/subscriptions/{createdSubscription.Id}");
+getResponse.EnsureSuccessStatusCode();
+
+var subscription = await getResponse.Content.ReadFromJsonAsync<WebhookSubscription>();
+Console.WriteLine($"Subscription callback: {subscription.CallbackUrl}");
+
+// Update a webhook subscription
+var updateRequest = new
+{
+    CallbackUrl = "https://webhook-handler.example.com/api/events/v2",
+    EventTypes = new[] { "user.*" },
+    MaxRetries = 3
+};
+
+var updateResponse = await client.PutAsJsonAsync($"/api/WebhookManagement/subscriptions/{createdSubscription.Id}", updateRequest);
+updateResponse.EnsureSuccessStatusCode();
+
+// Test webhook delivery
+var testResponse = await client.PostAsync($"/api/WebhookManagement/subscriptions/{createdSubscription.Id}/test", null);
+testResponse.EnsureSuccessStatusCode();
+
+var testResult = await testResponse.Content.ReadFromJsonAsync<dynamic>();
+Console.WriteLine($"Test delivery successful: {testResult.success}");
+
+// Delete a webhook subscription
+var deleteResponse = await client.DeleteAsync($"/api/WebhookManagement/subscriptions/{createdSubscription.Id}");
+deleteResponse.EnsureSuccessStatusCode();
+```
+
 ## CircuitBreakerPolicy
 
 The `CircuitBreakerPolicy` class defines fault-tolerance rules for the API gateway's circuit breaker pattern implementation. It configures thresholds for failure/success detection, timeout behavior, retry logic, and HTTP status codes that trigger circuit breaking. The policy can be enabled/disabled per route or service and is validated before use to ensure configuration integrity.
