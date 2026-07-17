@@ -1999,6 +1999,42 @@ The `RedisRateLimitStore` class provides a distributed Redis-backed implementati
 
 This store is ideal for cloud-native deployments and microservices architectures where multiple API gateway instances need to share rate limiting state. It uses Redis sorted sets for sliding window tracking, strings for fixed window counting, and Redis hashes for token bucket state management, ensuring accurate rate limit enforcement across distributed systems.
 
+## PerformanceAnalyzer
+
+The `PerformanceAnalyzer` class provides a robust mechanism for tracking and aggregating performance metrics over time. It allows developers to record individual measurements and retrieve statistical summaries, including averages, percentiles, and min/max values, to facilitate performance monitoring and optimization.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+using System;
+
+// Create a performance analyzer
+var analyzer = new PerformanceAnalyzer();
+
+// Record measurements in milliseconds
+analyzer.RecordMeasurement(150);
+analyzer.RecordMeasurement(200);
+analyzer.RecordMeasurement(250);
+
+// Get specific statistics
+double avg = analyzer.GetAverage();
+long min = analyzer.GetMinimum();
+long max = analyzer.GetMaximum();
+long median = analyzer.GetMedian();
+long p95 = analyzer.GetPercentile95();
+int count = analyzer.GetCount();
+
+Console.WriteLine($"Average: {avg:F2}ms, Count: {count}");
+
+// Get a summary object
+var summary = analyzer.GetSummary();
+Console.WriteLine(summary.ToString());
+
+// Clear measurements for reuse
+analyzer.Clear();
+```
+
 Example usage:
 
 ```csharp
