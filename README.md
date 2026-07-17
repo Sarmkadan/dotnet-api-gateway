@@ -1292,6 +1292,44 @@ foreach (var header in customHeaders)
 }
 ```
 
+## CryptoUtility
+
+The `CryptoUtility` class provides cryptographic operations including SHA256 hashing and HMAC-SHA256 signature generation for data integrity verification and webhook signature validation. It offers secure methods for generating cryptographic hashes, creating message authentication codes, and verifying signatures using constant-time comparison to prevent timing attacks.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Utilities;
+
+// Generate SHA256 hash of a string
+string inputData = "Hello, World!";
+string sha256Hash = CryptoUtility.GenerateSha256Hash(inputData);
+Console.WriteLine($"SHA256 hash: {sha256Hash}");
+
+// Generate SHA256 hash of byte array
+byte[] dataBytes = Encoding.UTF8.GetBytes(inputData);
+string sha256HashBytes = CryptoUtility.GenerateSha256Hash(dataBytes);
+Console.WriteLine($"SHA256 hash (bytes): {sha256HashBytes}");
+
+// Generate HMAC-SHA256 signature for webhook verification
+string webhookData = "{\"event\":\"user.created\",\"userId\":123}";
+string webhookSecret = "your-secret-key-12345";
+string hmacSignature = CryptoUtility.GenerateHmacSha256(webhookData, webhookSecret);
+Console.WriteLine($"HMAC-SHA256 signature: {hmacSignature}");
+
+// Verify HMAC signature (constant-time comparison)
+bool isValid = CryptoUtility.VerifyHmacSha256(webhookData, hmacSignature, webhookSecret);
+Console.WriteLine($"Signature valid: {isValid}");
+
+// Generate cryptographically secure random string for API keys or tokens
+string apiKey = CryptoUtility.GenerateRandomString(64);
+Console.WriteLine($"Generated API key: {apiKey}");
+
+// Generate random bytes for cryptographic operations
+byte[] randomBytes = CryptoUtility.GenerateRandomBytes(32);
+Console.WriteLine($"Generated {randomBytes.Length} random bytes");
+```
+
 ## ExtensionMethods
 
 The `ExtensionMethods` class provides extension methods for common types used throughout the API gateway. It offers a fluent API for string manipulation, collections, and object operations, including null-safe checks, transformations, and formatting utilities.
