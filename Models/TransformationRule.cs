@@ -32,6 +32,9 @@ public enum TransformationOperation
     /// <summary>Remove a header from the message.</summary>
     RemoveHeader,
 
+    /// <summary>Only allow specific headers to be forwarded upstream; removes all others.</summary>
+    AllowlistHeaders,
+
     /// <summary>Add a query parameter if it does not already exist.</summary>
     AddQueryParam,
 
