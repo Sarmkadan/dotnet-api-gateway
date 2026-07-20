@@ -130,6 +130,41 @@ public sealed class AnalyticsService
     }
 
     /// <summary>
+    /// Get the n most‑requested endpoints (routes) with request count and average latency.
+    /// If latency is not tracked by the underlying metrics service, <c>AverageResponseTimeMs</c>
+    /// will be returned as <c>0</c>.
+    /// </summary>
+    /// <param name="n">The maximum number of endpoints to return.</param>
+    /// <returns>A list of <see cref="RouteAnalytics"/> ordered by request count descending.</returns>
+    public async Task<List<RouteAnalytics>> GetTopEndpoints(int n)
+    {
+        _logger.LogDebug("Getting top {Count} endpoints by request volume", n);
+        var routes = await _routeRepository.GetAllAsync();
+        var analytics = new List<RouteAnalytics>();
+
+        foreach (var route in routes)
+        {
+            var metrics = await _metricsService.GetRouteMetricsAsync(route.Id);
+            analytics.Add(new RouteAnalytics
+            {
+                RouteId = route.Id,
+                RouteName = route.Name,
+                TotalRequests = metrics?.TotalRequests ?? 0,
+                // Latency may not be tracked; default to 0 if unavailable.
+                AverageResponseTimeMs = metrics?.AverageResponseTimeMs ?? 0
+            });
+        }
+
+        var result = analytics
+            .OrderByDescending(r => r.TotalRequests)
+            .Take(n)
+            .ToList();
+
+        _logger.LogDebug("Retrieved {Count} endpoints for top endpoints report", result.Count);
+        return result;
+    }
+
+    /// <summary>
     /// Get routes with highest error rates.
     /// </summary>
     public async Task<List<RouteAnalytics>> GetProblematicRoutesAsync(int limit = 10)
