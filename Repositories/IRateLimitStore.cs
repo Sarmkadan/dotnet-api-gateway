@@ -31,6 +31,12 @@ public interface IRateLimitStore
     Task<RateLimitEntry> GetEntryAsync(string key, RateLimitPolicy policy);
 
     /// <summary>
+    /// Retrieves all current rate limit entries.
+    /// </summary>
+    /// <returns>A collection of all RateLimitEntry objects.</returns>
+    Task<IEnumerable<RateLimitEntry>> GetAllEntriesAsync();
+
+    /// <summary>
     /// Resets the rate limit counter for a specific key.
     /// </summary>
     /// <param name="key">The unique key for the rate limit.</param>

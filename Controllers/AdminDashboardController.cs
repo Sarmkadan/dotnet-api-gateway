@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using DotNetApiGateway.Services;
 using DotNetApiGateway.Repositories;
 using DotNetApiGateway.Configuration;
+using DotNetApiGateway.Models;
 
 /// <summary>
 /// Admin dashboard endpoint that provides a real-time HTML overview of gateway health,
@@ -25,6 +26,7 @@ public sealed class AdminDashboardController : ControllerBase
     private readonly GatewayRouteRepository _routeRepository;
     private readonly DotnetApiGatewayOptions _configuration;
     private readonly ILogger<AdminDashboardController> _logger;
+    private readonly IRateLimitStoreFactory _rateLimitStoreFactory;
 
     public AdminDashboardController(
         MetricsService metricsService,
@@ -32,7 +34,8 @@ public sealed class AdminDashboardController : ControllerBase
         CircuitBreakerService circuitBreakerService,
         GatewayRouteRepository routeRepository,
         DotnetApiGatewayOptions configuration,
-        ILogger<AdminDashboardController> logger)
+        ILogger<AdminDashboardController> logger,
+        IRateLimitStoreFactory rateLimitStoreFactory)
     {
         _metricsService = metricsService;
         _routingService = routingService;
@@ -40,6 +43,7 @@ public sealed class AdminDashboardController : ControllerBase
         _routeRepository = routeRepository;
         _configuration = configuration;
         _logger = logger;
+        _rateLimitStoreFactory = rateLimitStoreFactory;
     }
 
     /// <summary>
@@ -311,5 +315,38 @@ public sealed class AdminDashboardController : ControllerBase
             sb.Append("</tr>");
         }
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Returns the current rate limit state for all clients/routes.
+    /// </summary>
+    [HttpGet("rate-limits")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetRateLimits()
+    {
+        try
+        {
+            var entries = await _rateLimitStoreFactory.GetAllEntriesAsync();
+
+            var result = entries.Select(entry => new
+            {
+                client = entry.Key,
+                count = entry.Count,
+                remaining = entry.Tokens > 0 ? (int)entry.Tokens : 0,
+                resetTimeSeconds = entry.RemainingTimeSeconds,
+                resetTimeUtc = entry.LastRequest.AddSeconds(entry.RemainingTimeSeconds),
+                strategy = entry.Tokens > 0 ? "TokenBucket" :
+                          entry.Count > 0 ? "FixedWindow" : "Unknown",
+                lastRequest = entry.LastRequest
+            }).ToList();
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving rate limit state");
+            return BadRequest(new { error = "Failed to retrieve rate limit state", message = ex.Message });
+        }
     }
 }

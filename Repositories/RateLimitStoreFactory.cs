@@ -72,6 +72,28 @@ public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
     }
 
     /// <summary>
+    /// Gets all rate limit entries from all stores.
+    /// </summary>
+    /// <returns>A collection of all rate limit entries.</returns>
+    public async Task<IEnumerable<RateLimitEntry>> GetAllEntriesAsync()
+    {
+        var allEntries = new List<RateLimitEntry>();
+
+        // Get entries from in-memory store
+        var inMemoryEntries = await _inMemoryStore.GetAllEntriesAsync();
+        allEntries.AddRange(inMemoryEntries);
+
+        // Get entries from all Redis stores
+        foreach (var redisStore in _redisStores.Values)
+        {
+            var redisEntries = await redisStore.GetAllEntriesAsync();
+            allEntries.AddRange(redisEntries);
+        }
+
+        return allEntries;
+    }
+
+    /// <summary>
     /// Disposes of the rate limit stores.
     /// </summary>
     public void Dispose()

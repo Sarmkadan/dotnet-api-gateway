@@ -25,4 +25,10 @@ public interface IRateLimitStoreFactory : IDisposable
     /// </summary>
     /// <returns>A collection of all IRateLimitStore instances.</returns>
     IEnumerable<IRateLimitStore> GetAllStores();
+
+    /// <summary>
+    /// Gets all rate limit entries from all stores.
+    /// </summary>
+    /// <returns>A collection of all rate limit entries.</returns>
+    Task<IEnumerable<RateLimitEntry>> GetAllEntriesAsync();
 }

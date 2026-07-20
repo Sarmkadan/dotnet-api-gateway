@@ -203,4 +203,10 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
         // uses a one-minute window, otherwise the per-hour limit applies.
         return policy.RequestsPerMinute > 0 ? policy.RequestsPerMinute : policy.RequestsPerHour;
     }
+
+    public Task<IEnumerable<RateLimitEntry>> GetAllEntriesAsync()
+    {
+        var allEntries = _storage.Values.ToList();
+        return Task.FromResult<IEnumerable<RateLimitEntry>>(allEntries);
+    }
 }

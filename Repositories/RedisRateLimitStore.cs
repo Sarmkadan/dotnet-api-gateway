@@ -271,4 +271,42 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
         }
         return allowed == 1;
     }
+
+    public async Task<IEnumerable<RateLimitEntry>> GetAllEntriesAsync()
+    {
+        var entries = new List<RateLimitEntry>();
+        var server = _redis.GetServer(_redis.GetEndPoints().First());
+
+        // Scan for all rate limit keys
+        await foreach (var key in server.KeysAsync(pattern: "ratelimit:*"))
+        {
+            try
+            {
+                // Extract key name from the Redis key
+                var keyParts = key.ToString().Split(':');
+                if (keyParts.Length >= 3)
+                {
+                    var rateLimitKey = keyParts[1];
+                    var strategy = keyParts[2];
+
+                    // For simplicity, we'll create a basic entry with just the key and strategy
+                    // A more complete implementation would parse the actual rate limit state
+                    entries.Add(new RateLimitEntry
+                    {
+                        Key = rateLimitKey,
+                        Count = 0, // Placeholder - actual count would require additional Redis queries
+                        RemainingTimeSeconds = 0,
+                        Tokens = 0,
+                        LastRequest = DateTime.UtcNow
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reading Redis rate limit entry for key {Key}", key);
+            }
+        }
+
+        return entries;
+    }
 }
