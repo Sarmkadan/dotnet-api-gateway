@@ -62,18 +62,33 @@ public sealed class RateLimitingMiddleware
         {
             var info = await rateLimitingService.GetRateLimitInfoAsync(key, policy);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+            // Standard headers
             context.Response.Headers["Retry-After"] = info.Reset.ToString();
+            context.Response.Headers["X-RateLimit-Limit"] = info.Limit.ToString();
+            context.Response.Headers["X-RateLimit-Remaining"] = info.Remaining.ToString();
+
+            // Existing custom gateway headers (preserved for backward compatibility)
             context.Response.Headers[GatewayConstants.RateLimitHeader] = info.Limit.ToString();
             context.Response.Headers[GatewayConstants.RateLimitRemainingHeader] = info.Remaining.ToString();
             context.Response.Headers[GatewayConstants.RateLimitResetHeader] = info.Reset.ToString();
+
             await context.Response.WriteAsync("Too Many Requests");
-            _logger.LogWarning("Rate limit exceeded for key {Key} on route {RouteId}. Limit: {Limit}, Remaining: {Remaining}",
+            _logger.LogWarning(
+                "Rate limit exceeded for key {Key} on route {RouteId}. Limit: {Limit}, Remaining: {Remaining}",
                 key, route.Id, info.Limit, info.Remaining);
             return;
         }
 
         // Set response headers for allowed requests
         var allowedInfo = await rateLimitingService.GetRateLimitInfoAsync(key, policy);
+
+        // Standard headers
+        context.Response.Headers["X-RateLimit-Limit"] = allowedInfo.Limit.ToString();
+        context.Response.Headers["X-RateLimit-Remaining"] = allowedInfo.Remaining.ToString();
+        context.Response.Headers["Retry-After"] = allowedInfo.Reset.ToString();
+
+        // Existing custom gateway headers (preserved for backward compatibility)
         context.Response.Headers[GatewayConstants.RateLimitHeader] = allowedInfo.Limit.ToString();
         context.Response.Headers[GatewayConstants.RateLimitRemainingHeader] = allowedInfo.Remaining.ToString();
         context.Response.Headers[GatewayConstants.RateLimitResetHeader] = allowedInfo.Reset.ToString();
