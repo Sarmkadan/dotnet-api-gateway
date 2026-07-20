@@ -58,7 +58,7 @@ app.MapGet("/gateway/info", () => new
         health = "/health",
         routes = "/gateway/routes",
         stats = "/gateway/stats",
-        circuitBreakers = "/gateway/circuit-breakers",
+        circuitBreakers = "/api/CircuitBreaker/statuses",
         rateLimits = "/api/GatewayManagement/rate-limits/{key}"
     }
 }).WithName("GatewayInfo");
@@ -70,12 +70,6 @@ app.MapGet("/gateway/routes", async (DotNetApiGateway.Services.RoutingService ro
     return Results.Ok(routes);
 }).WithName("GetRoutes");
 
-// Circuit breaker status endpoint
-app.MapGet("/gateway/circuit-breakers", async (DotNetApiGateway.Services.CircuitBreakerService cbService) =>
-{
-    var statuses = await cbService.GetAllStatusesAsync();
-    return Results.Ok(statuses);
-}).WithName("GetCircuitBreakers");
 
 // Request metrics dashboard endpoint
 app.MapGet("/gateway/stats", (DotNetApiGateway.Services.MetricsService metricsService) =>
