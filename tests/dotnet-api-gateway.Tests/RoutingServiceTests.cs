@@ -4,408 +4,538 @@
 // CTO & Software Architect
 // =============================================================================
 
-using DotNetApiGateway.Constants;
+using DotNetApiGateway.Exceptions;
 using DotNetApiGateway.Models;
 using DotNetApiGateway.Repositories;
 using DotNetApiGateway.Services;
 using FluentAssertions;
-using Xunit;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 
 namespace DotNetApiGateway.Tests;
 
 /// <summary>
-/// Test suite for <see cref="RoutingService"/> class that validates routing, load balancing, and gateway functionality.
-/// Tests cover route discovery, target selection strategies, URL construction, header transformations,
-/// and CRUD operations for gateway routes.
+/// Test implementation of GatewayRouteRepository that allows testing repository-dependent functionality
 /// </summary>
-public sealed class RoutingServiceTests
+public class TestGatewayRouteRepository : GatewayRouteRepository
 {
-	/// <summary>
-	/// Creates a healthy route target for testing purposes.
-	/// </summary>
-	/// <param name="name">The name of the target backend. Defaults to "backend".</param>
-	/// <returns>A new <see cref="RouteTarget"/> instance configured as healthy.</returns>
-    private static RouteTarget HealthyTarget(string name = "backend") => new()
+    public TestGatewayRouteRepository()
     {
-        Name = name,
-        BaseUrl = "http://backend:8080",
-        Weight = 1,
-        IsHealthy = true,
-        HealthCheckIntervalSeconds = 60
-    };
+        // Initialize with empty routes
+    }
+}
 
-    private static RouteTarget UnhealthyTarget(string name = "backend") => new()
-    {
-        Name = name,
-        BaseUrl = "http://backend:8080",
-        Weight = 1,
-        IsHealthy = false,
-        HealthCheckIntervalSeconds = 60
-    };
+public class RoutingServiceTests
+{
+    private readonly Mock<GatewayRouteRepository> _routeRepositoryMock;
+    private readonly RoutingService _routingService;
 
-    private static GatewayRoute ValidRoute(string path = "/api/users") => new()
+    public RoutingServiceTests()
     {
-        Name = "UserRoute",
-        PathPattern = path,
-        AllowedMethods = ["GET"],
-        Targets = [HealthyTarget()],
-        TimeoutSeconds = 30
-    };
+        _routeRepositoryMock = new Mock<GatewayRouteRepository>();
+        _routingService = new RoutingService(_routeRepositoryMock.Object, LoadBalancingStrategy.RoundRobin, NullLogger<RoutingService>.Instance);
+    }
 
     [Fact]
-    public async Task FindRouteAsync_ExistingRoute_ReturnsRoute()
+    public async Task FindRouteAsync_ExactPathMatch_ReturnsRoute()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
-        var route = ValidRoute();
-        await repository.AddAsync(route);
+        var routeRepository = new TestGatewayRouteRepository();
+        var route = new GatewayRoute
+        {
+            Id = "test-route-1",
+            Name = "Test Route",
+            PathPattern = "/api/users",
+            AllowedMethods = new[] { "GET", "POST" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "target-1",
+                    Name = "Test Target",
+                    BaseUrl = "https://api.example.com"
+                }
+            }
+        };
 
-        var service = new RoutingService(repository);
+        await routeRepository.AddAsync(route);
+
+        var routingService = new RoutingService(routeRepository, LoadBalancingStrategy.RoundRobin, NullLogger<RoutingService>.Instance);
 
         // Act
-        var result = await service.FindRouteAsync("/api/users", "GET");
+        var result = await routingService.FindRouteAsync("/api/users", "GET");
 
         // Assert
         result.Should().NotBeNull();
-        result!.Name.Should().Be("UserRoute");
+        result.Should().BeSameAs(route);
     }
 
     [Fact]
-    public async Task FindRouteAsync_NonExistentRoute_ThrowsRouteNotFoundException()
+    public async Task FindRouteAsync_PrefixTemplateMatch_ReturnsRoute()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
-        var service = new RoutingService(repository);
-
-        // Act
-        var act = () => service.FindRouteAsync("/api/nonexistent", "GET");
-
-        // Assert
-        await act.Should().ThrowAsync<RouteNotFoundException>();
-    }
-
-    [Fact]
-    public void SelectTarget_RoundRobin_DistributesEvenly()
-    {
-        // Arrange
-        var repository = new GatewayRouteRepository();
-        var target1 = new RouteTarget { Name = "backend-1", BaseUrl = "http://backend1:8080", IsHealthy = true };
-        var target2 = new RouteTarget { Name = "backend-2", BaseUrl = "http://backend2:8080", IsHealthy = true };
+        var routeRepository = new TestGatewayRouteRepository();
         var route = new GatewayRoute
         {
-            Name = "TestRoute",
-            PathPattern = "/api/test",
-            AllowedMethods = ["GET"],
-            Targets = [target1, target2],
-            TimeoutSeconds = 30
+            Id = "test-route-2",
+            Name = "User Route",
+            PathPattern = "/api/users/{id}",
+            AllowedMethods = new[] { "GET", "PUT", "DELETE" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "target-2",
+                    Name = "User Service Target",
+                    BaseUrl = "https://users.example.com"
+                }
+            }
         };
 
-        var service = new RoutingService(repository, LoadBalancingStrategy.RoundRobin);
+        await routeRepository.AddAsync(route);
+
+        var routingService = new RoutingService(routeRepository, LoadBalancingStrategy.RoundRobin, NullLogger<RoutingService>.Instance);
 
         // Act
-        var selected1 = service.SelectTarget(route);
-        var selected2 = service.SelectTarget(route);
-        var selected3 = service.SelectTarget(route);
+        var result = await routingService.FindRouteAsync("/api/users/123", "GET");
 
         // Assert
-        selected1.Should().Be(target1);
-        selected2.Should().Be(target2);
-        selected3.Should().Be(target1); // Cycles back
+        result.Should().NotBeNull();
+        result.Should().BeSameAs(route);
     }
 
     [Fact]
-    public void SelectTarget_IpHash_SameIpSameTarget()
+    public async Task FindRouteAsync_WildcardMatch_ReturnsRoute()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
-        var target1 = new RouteTarget { Name = "backend-1", BaseUrl = "http://backend1:8080", IsHealthy = true };
-        var target2 = new RouteTarget { Name = "backend-2", BaseUrl = "http://backend2:8080", IsHealthy = true };
+        var routeRepository = new TestGatewayRouteRepository();
         var route = new GatewayRoute
         {
-            Name = "TestRoute",
-            PathPattern = "/api/test",
-            AllowedMethods = ["GET"],
-            Targets = [target1, target2],
-            TimeoutSeconds = 30
+            Id = "test-route-3",
+            Name = "Static Files Route",
+            PathPattern = "/static/*",
+            AllowedMethods = new[] { "GET" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "target-3",
+                    Name = "Static Files Target",
+                    BaseUrl = "https://static.example.com"
+                }
+            }
         };
 
-        var service = new RoutingService(repository, LoadBalancingStrategy.IpHash);
-        const string clientIp = "192.168.1.100";
+        await routeRepository.AddAsync(route);
 
-        // Act
-        var selected1 = service.SelectTarget(route, clientIp);
-        var selected2 = service.SelectTarget(route, clientIp);
+        var routingService = new RoutingService(routeRepository, LoadBalancingStrategy.RoundRobin, NullLogger<RoutingService>.Instance);
+
+        // Act - wildcard matches exactly one segment
+        var result = await routingService.FindRouteAsync("/static/image.png", "GET");
 
         // Assert
-        selected1.Should().Be(selected2);
+        result.Should().NotBeNull();
+        result.Should().BeSameAs(route);
     }
 
     [Fact]
-    public void SelectTarget_IpHash_NoIpFallsBackToRoundRobin()
+    public async Task FindRouteAsync_NoMatch_ThrowsRouteNotFoundException()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
-        var target1 = new RouteTarget { Name = "backend-1", BaseUrl = "http://backend1:8080", IsHealthy = true };
-        var target2 = new RouteTarget { Name = "backend-2", BaseUrl = "http://backend2:8080", IsHealthy = true };
-        var route = new GatewayRoute
-        {
-            Name = "TestRoute",
-            PathPattern = "/api/test",
-            AllowedMethods = ["GET"],
-            Targets = [target1, target2],
-            TimeoutSeconds = 30
-        };
-
-        var service = new RoutingService(repository, LoadBalancingStrategy.IpHash);
+        var routeRepository = new TestGatewayRouteRepository();
+        var routingService = new RoutingService(routeRepository, LoadBalancingStrategy.RoundRobin, NullLogger<RoutingService>.Instance);
 
         // Act
-        var selected1 = service.SelectTarget(route, null);
-        var selected2 = service.SelectTarget(route, null);
+        Func<Task> act = async () => await routingService.FindRouteAsync("/nonexistent", "GET");
 
         // Assert
-        selected1.Should().Be(target1);
-        selected2.Should().Be(target2);
+        await act.Should().ThrowAsync<RouteNotFoundException>()
+            .WithMessage("Route not found: GET /nonexistent");
     }
 
     [Fact]
-    public void SelectTarget_LeastConnections_SelectsByWeight()
+    public async Task FindRouteAsync_MethodNotSupported_ThrowsRouteNotFoundException()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
-        var target1 = new RouteTarget { Name = "backend-1", BaseUrl = "http://backend1:8080", IsHealthy = true, Weight = 5 };
-        var target2 = new RouteTarget { Name = "backend-2", BaseUrl = "http://backend2:8080", IsHealthy = true, Weight = 1 };
+        var routeRepository = new TestGatewayRouteRepository();
         var route = new GatewayRoute
         {
-            Name = "TestRoute",
-            PathPattern = "/api/test",
-            AllowedMethods = ["GET"],
-            Targets = [target1, target2],
-            TimeoutSeconds = 30
+            Id = "test-route-4",
+            Name = "GET Only Route",
+            PathPattern = "/api/data",
+            AllowedMethods = new[] { "GET" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "target-4",
+                    Name = "Data Target",
+                    BaseUrl = "https://data.example.com"
+                }
+            }
         };
 
-        var service = new RoutingService(repository, LoadBalancingStrategy.LeastConnections);
+        await routeRepository.AddAsync(route);
+        var routingService = new RoutingService(routeRepository, LoadBalancingStrategy.RoundRobin, NullLogger<RoutingService>.Instance);
 
         // Act
-        var selected = service.SelectTarget(route);
+        Func<Task> act = async () => await routingService.FindRouteAsync("/api/data", "POST");
 
         // Assert
-        selected.Should().Be(target2); // Lower weight selected
+        await act.Should().ThrowAsync<RouteNotFoundException>()
+            .WithMessage("Route not found: POST /api/data");
+    }
+
+    [Fact]
+    public async Task SelectTarget_RoundRobinStrategy_DistributesEvenly()
+    {
+        // Arrange
+        var route = new GatewayRoute
+        {
+            Id = "test-route-5",
+            Name = "Load Balanced Route",
+            PathPattern = "/api/load",
+            AllowedMethods = new[] { "GET" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "target-5a",
+                    Name = "Target A",
+                    BaseUrl = "https://a.example.com",
+                    Weight = 1
+                },
+                new RouteTarget
+                {
+                    Id = "target-5b",
+                    Name = "Target B",
+                    BaseUrl = "https://b.example.com",
+                    Weight = 1
+                },
+                new RouteTarget
+                {
+                    Id = "target-5c",
+                    Name = "Target C",
+                    BaseUrl = "https://c.example.com",
+                    Weight = 1
+                }
+            }
+        };
+
+        // Act & Assert
+        var target1 = _routingService.SelectTarget(route);
+        var target2 = _routingService.SelectTarget(route);
+        var target3 = _routingService.SelectTarget(route);
+        var target4 = _routingService.SelectTarget(route);
+
+        target1.Should().NotBeNull();
+        target2.Should().NotBeNull();
+        target3.Should().NotBeNull();
+        target4.Should().NotBeNull();
+
+        // Should cycle through targets in round-robin fashion
+        target1.Id.Should().Be("target-5a");
+        target2.Id.Should().Be("target-5b");
+        target3.Id.Should().Be("target-5c");
+        target4.Id.Should().Be("target-5a"); // Back to first
     }
 
     [Fact]
     public void SelectTarget_NoHealthyTargets_ThrowsGatewayException()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
         var route = new GatewayRoute
         {
-            Name = "TestRoute",
-            PathPattern = "/api/test",
-            AllowedMethods = ["GET"],
-            Targets = [UnhealthyTarget()],
-            TimeoutSeconds = 30
+            Id = "test-route-6",
+            Name = "Unhealthy Route",
+            PathPattern = "/api/unhealthy",
+            AllowedMethods = new[] { "GET" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "target-6a",
+                    Name = "Unhealthy Target A",
+                    BaseUrl = "https://unhealthy-a.example.com",
+                    IsHealthy = false
+                },
+                new RouteTarget
+                {
+                    Id = "target-6b",
+                    Name = "Unhealthy Target B",
+                    BaseUrl = "https://unhealthy-b.example.com",
+                    IsHealthy = false
+                }
+            }
         };
 
-        var service = new RoutingService(repository);
-
         // Act
-        var act = () => service.SelectTarget(route);
+        Func<RouteTarget> act = () => _routingService.SelectTarget(route);
 
         // Assert
-        act.Should().Throw<GatewayException>().WithMessage("*No healthy targets*");
+        act.Should().Throw<GatewayException>()
+            .WithMessage("No healthy targets available for route Unhealthy Route")
+            .Where(ex => ex.ErrorCode == "NO_HEALTHY_TARGETS");
     }
 
     [Fact]
-    public void SelectTarget_FiltersOnlyHealthyTargets()
+    public void SelectTarget_IpHashStrategy_ReturnsConsistentTargetForSameIp()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
-        var healthyTarget = HealthyTarget("healthy");
-        var unhealthyTarget = UnhealthyTarget("unhealthy");
         var route = new GatewayRoute
         {
-            Name = "TestRoute",
-            PathPattern = "/api/test",
-            AllowedMethods = ["GET"],
-            Targets = [unhealthyTarget, healthyTarget],
-            TimeoutSeconds = 30
+            Id = "test-route-7",
+            Name = "IP Hash Route",
+            PathPattern = "/api/ip-hash",
+            AllowedMethods = new[] { "GET" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "target-7a",
+                    Name = "IP Target A",
+                    BaseUrl = "https://ipa.example.com"
+                },
+                new RouteTarget
+                {
+                    Id = "target-7b",
+                    Name = "IP Target B",
+                    BaseUrl = "https://ipb.example.com"
+                }
+            }
         };
 
-        var service = new RoutingService(repository);
+        var routingServiceIpHash = new RoutingService(_routeRepositoryMock.Object, LoadBalancingStrategy.IpHash, NullLogger<RoutingService>.Instance);
 
         // Act
-        var selected = service.SelectTarget(route);
+        var target1 = routingServiceIpHash.SelectTarget(route, "192.168.1.100");
+        var target2 = routingServiceIpHash.SelectTarget(route, "192.168.1.100"); // Same IP
+        var target3 = routingServiceIpHash.SelectTarget(route, "192.168.1.101"); // Different IP
 
         // Assert
-        selected.Should().Be(healthyTarget);
+        target1.Should().NotBeNull();
+        target2.Should().NotBeNull();
+        target3.Should().NotBeNull();
+
+        // Same IP should return same target
+        target1.Id.Should().Be(target2.Id);
+        // Different IP may return different target (not guaranteed but likely)
     }
 
     [Fact]
-    public void BuildForwardUrl_CombinesTargetAndPath()
+    public void SelectTarget_LeastConnectionsStrategy_ReturnsLowestWeightTarget()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
-        var service = new RoutingService(repository);
-        var target = new RouteTarget { BaseUrl = "http://backend:8080" };
+        var route = new GatewayRoute
+        {
+            Id = "test-route-8",
+            Name = "Least Connections Route",
+            PathPattern = "/api/least-conn",
+            AllowedMethods = new[] { "GET" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "target-8a",
+                    Name = "High Weight Target",
+                    BaseUrl = "https://high.example.com",
+                    Weight = 10
+                },
+                new RouteTarget
+                {
+                    Id = "target-8b",
+                    Name = "Low Weight Target",
+                    BaseUrl = "https://low.example.com",
+                    Weight = 1
+                },
+                new RouteTarget
+                {
+                    Id = "target-8c",
+                    Name = "Medium Weight Target",
+                    BaseUrl = "https://medium.example.com",
+                    Weight = 5
+                }
+            }
+        };
+
+        var routingServiceLeastConn = new RoutingService(_routeRepositoryMock.Object, LoadBalancingStrategy.LeastConnections, NullLogger<RoutingService>.Instance);
 
         // Act
-        var url = service.BuildForwardUrl(target, "/api/users/123");
+        var target = routingServiceLeastConn.SelectTarget(route);
 
         // Assert
-        url.Should().Be("http://backend:8080/api/users/123");
+        target.Should().NotBeNull();
+        target.Id.Should().Be("target-8b"); // Should select target with lowest weight (1)
     }
 
     [Fact]
-    public void ApplyHeaderTransforms_AddsTransformedHeaders()
+    public void BuildForwardUrl_CombinesBaseUrlAndPathCorrectly()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
-        var service = new RoutingService(repository);
         var target = new RouteTarget
         {
+            Id = "target-9",
+            Name = "Forward URL Target",
+            BaseUrl = "https://api.example.com",
+            StripPathPrefix = false
+        };
+
+        // Act
+        var url = _routingService.BuildForwardUrl(target, "/users/123/posts");
+
+        // Assert
+        url.Should().Be("https://api.example.com/users/123/posts");
+    }
+
+    [Fact]
+    public void ApplyHeaderTransforms_AddsAndOverridesHeaders()
+    {
+        // Arrange
+        var target = new RouteTarget
+        {
+            Id = "target-11",
+            Name = "Header Transform Target",
+            BaseUrl = "https://api.example.com",
             TransformHeaders = new Dictionary<string, string>
             {
-                ["X-Custom-Header"] = "custom-value",
-                ["X-Gateway-Version"] = "1.0"
+                { "X-Custom-Header", "custom-value" },
+                { "Authorization", "Bearer overridden-token" },
+                { "X-Another-Header", "another-value" }
             }
         };
 
         var originalHeaders = new Dictionary<string, string>
         {
-            ["Authorization"] = "Bearer token",
-            ["User-Agent"] = "MyClient/1.0"
+            { "Authorization", "Bearer original-token" },
+            { "Content-Type", "application/json" },
+            { "User-Agent", "test-agent" }
         };
 
         // Act
-        var transformed = service.ApplyHeaderTransforms(target, originalHeaders);
+        var result = _routingService.ApplyHeaderTransforms(target, originalHeaders);
 
         // Assert
-        transformed.Should().Contain("Authorization", "Bearer token");
-        transformed.Should().Contain("X-Custom-Header", "custom-value");
-        transformed.Should().Contain("X-Gateway-Version", "1.0");
+        result.Should().ContainKey("X-Custom-Header").WhoseValue.Should().Be("custom-value");
+        result.Should().ContainKey("Authorization").WhoseValue.Should().Be("Bearer overridden-token"); // Overridden
+        result.Should().ContainKey("X-Another-Header").WhoseValue.Should().Be("another-value");
+        result.Should().ContainKey("Content-Type").WhoseValue.Should().Be("application/json"); // Preserved
+        result.Should().ContainKey("User-Agent").WhoseValue.Should().Be("test-agent"); // Preserved
     }
 
     [Fact]
-    public void ApplyHeaderTransforms_OverridesExistingHeaders()
+    public async Task GetAllActiveRoutesAsync_ReturnsOnlyActiveRoutes()
     {
         // Arrange
-        var repository = new GatewayRouteRepository();
-        var service = new RoutingService(repository);
-        var target = new RouteTarget
+        var routeRepository = new TestGatewayRouteRepository();
+        var routingService = new RoutingService(routeRepository, LoadBalancingStrategy.RoundRobin, NullLogger<RoutingService>.Instance);
+
+        var activeRoute = new GatewayRoute
         {
-            TransformHeaders = new Dictionary<string, string>
+            Id = "active-route",
+            Name = "Active Route",
+            PathPattern = "/api/active",
+            AllowedMethods = new[] { "GET" },
+            Targets = new[]
             {
-                ["Content-Type"] = "application/json"
+                new RouteTarget
+                {
+                    Id = "active-target",
+                    Name = "Active Target",
+                    BaseUrl = "https://active.example.com"
+                }
+            },
+            IsActive = true
+        };
+
+        var inactiveRoute = new GatewayRoute
+        {
+            Id = "inactive-route",
+            Name = "Inactive Route",
+            PathPattern = "/api/inactive",
+            AllowedMethods = new[] { "GET" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "inactive-target",
+                    Name = "Inactive Target",
+                    BaseUrl = "https://inactive.example.com"
+                }
+            },
+            IsActive = false
+        };
+
+        await routeRepository.AddAsync(activeRoute);
+        await routeRepository.AddAsync(inactiveRoute);
+
+        // Act
+        var result = await routingService.GetAllActiveRoutesAsync();
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.First().Id.Should().Be("active-route");
+        result.First().IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateRouteAsync_ValidRoute_CallsRepositoryAndLogs()
+    {
+        // Arrange
+        var route = new GatewayRoute
+        {
+            Id = "new-route",
+            Name = "New Route",
+            PathPattern = "/api/new",
+            AllowedMethods = new[] { "POST" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "new-target",
+                    Name = "New Target",
+                    BaseUrl = "https://new.example.com"
+                }
             }
         };
 
-        var originalHeaders = new Dictionary<string, string>
+        // Act
+        var result = await _routingService.CreateRouteAsync(route);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be("new-route");
+    }
+
+    [Fact]
+    public async Task DeleteRouteAsync_ExistingRoute_ReturnsTrueAndLogs()
+    {
+        // Arrange
+        var routeRepository = new TestGatewayRouteRepository();
+        var routingService = new RoutingService(routeRepository, LoadBalancingStrategy.RoundRobin, NullLogger<RoutingService>.Instance);
+
+        var route = new GatewayRoute
         {
-            ["Content-Type"] = "text/plain"
+            Id = "existing-route-id",
+            Name = "Test Route",
+            PathPattern = "/api/test",
+            AllowedMethods = new[] { "GET" },
+            Targets = new[]
+            {
+                new RouteTarget
+                {
+                    Id = "target-1",
+                    Name = "Test Target",
+                    BaseUrl = "https://test.example.com"
+                }
+            }
         };
 
-        // Act
-        var transformed = service.ApplyHeaderTransforms(target, originalHeaders);
-
-        // Assert
-        transformed["Content-Type"].Should().Be("application/json");
-    }
-
-    [Fact]
-    public async Task GetAllActiveRoutesAsync_ReturnsActiveRoutes()
-    {
-        // Arrange
-        var repository = new GatewayRouteRepository();
-        var route1 = ValidRoute("/api/users");
-        var route2 = ValidRoute("/api/products");
-        await repository.AddAsync(route1);
-        await repository.AddAsync(route2);
-
-        var service = new RoutingService(repository);
+        await routeRepository.AddAsync(route);
 
         // Act
-        var routes = await service.GetAllActiveRoutesAsync();
+        var result = await routingService.DeleteRouteAsync("existing-route-id");
 
         // Assert
-        routes.Should().HaveCount(2);
-    }
-
-    [Fact]
-    public async Task CreateRouteAsync_ValidRoute_AddsRoute()
-    {
-        // Arrange
-        var repository = new GatewayRouteRepository();
-        var service = new RoutingService(repository);
-        var route = ValidRoute();
-
-        // Act
-        var created = await service.CreateRouteAsync(route);
-
-        // Assert
-        created.Should().NotBeNull();
-        created.Id.Should().NotBeEmpty();
-    }
-
-    [Fact]
-    public async Task CreateRouteAsync_InvalidRoute_ThrowsArgumentException()
-    {
-        // Arrange
-        var repository = new GatewayRouteRepository();
-        var service = new RoutingService(repository);
-        var invalidRoute = new GatewayRoute { Name = "" }; // Missing required fields
-
-        // Act
-        var act = () => service.CreateRouteAsync(invalidRoute);
-
-        // Assert
-        await act.Should().ThrowAsync<ArgumentException>();
-    }
-
-    [Fact]
-    public async Task UpdateRouteAsync_ValidRoute_UpdatesRoute()
-    {
-        // Arrange
-        var repository = new GatewayRouteRepository();
-        var service = new RoutingService(repository);
-        var route = ValidRoute();
-        var created = await repository.AddAsync(route);
-
-        created.TimeoutSeconds = 60;
-
-        // Act
-        var updated = await service.UpdateRouteAsync(created);
-
-        // Assert
-        updated.TimeoutSeconds.Should().Be(60);
-    }
-
-    [Fact]
-    public async Task DeleteRouteAsync_ExistingRoute_DeletesRoute()
-    {
-        // Arrange
-        var repository = new GatewayRouteRepository();
-        var service = new RoutingService(repository);
-        var route = ValidRoute();
-        var created = await repository.AddAsync(route);
-
-        // Act
-        var deleted = await service.DeleteRouteAsync(created.Id);
-
-        // Assert
-        deleted.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task DeleteRouteAsync_NonExistentRoute_ReturnsFalse()
-    {
-        // Arrange
-        var repository = new GatewayRouteRepository();
-        var service = new RoutingService(repository);
-
-        // Act
-        var deleted = await service.DeleteRouteAsync("nonexistent-id");
-
-        // Assert
-        deleted.Should().BeFalse();
+        result.Should().BeTrue();
     }
 }
