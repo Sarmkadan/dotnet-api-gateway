@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetApiGateway.Controllers;
 
@@ -175,6 +175,42 @@ public class WebhookManagementController : ControllerBase
             return StatusCode(502, new { error = "Webhook delivery failed", details = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Fire a test event to all registered webhooks for a specific event type.
+    /// Uses the WebhookRegistry to deliver events with retry logic.
+    /// </summary>
+    [HttpPost("test-fire")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> TestFireWebhook([FromBody] TestFireRequest request)
+    {
+        if (request is null)
+            return BadRequest(new { error = "Request body required" });
+
+        if (string.IsNullOrWhiteSpace(request.EventType))
+            return BadRequest(new { error = "Event type required" });
+
+        try
+        {
+            var testEvent = new WebhookEvent
+            {
+                EventType = request.EventType,
+                Timestamp = DateTime.UtcNow,
+                Data = request.Data ?? new { message = "Test fire event" }
+            };
+
+            await _webhookRegistry.PublishEventAsync(testEvent);
+
+            _logger.LogInformation("Test fire webhook event published: {EventType}", request.EventType);
+            return Ok(new { message = "Test event fired successfully", eventType = request.EventType });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Test fire webhook failed: {EventType}", request.EventType);
+            return StatusCode(500, new { error = "Test fire failed", details = ex.Message });
+        }
+    }
 }
 
 public sealed class CreateWebhookSubscriptionRequest
@@ -191,4 +227,10 @@ public sealed class UpdateWebhookSubscriptionRequest
     public string? CallbackUrl { get; set; }
     public string[]? EventTypes { get; set; }
     public int? MaxRetries { get; set; }
+}
+
+public sealed class TestFireRequest
+{
+    public string EventType { get; set; } = string.Empty;
+    public object? Data { get; set; }
 }
