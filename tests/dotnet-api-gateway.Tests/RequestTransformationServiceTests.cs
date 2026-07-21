@@ -185,6 +185,57 @@ public sealed class RequestTransformationServiceTests
     }
 
     /// <summary>
+    /// Tests that the ApplyRequestRules method adds a query parameter if it does not already exist.
+    /// </summary>
+    [Fact]
+    public void ApplyRequestRules_AddQueryParam_AddsParamWhenMissing()
+    {
+        var service = CreateService();
+        var request = new HttpRequestMessage(HttpMethod.Get, "http://backend/api/search");
+
+        var rules = new List<TransformationRule>
+        {
+            new()
+            {
+                Phase = TransformationPhase.Request,
+                Operation = TransformationOperation.AddQueryParam,
+                Key = "tracking",
+                Value = "12345"
+            }
+        };
+
+        service.ApplyRequestRules(request, rules);
+
+        request.RequestUri!.Query.Should().Contain("tracking=12345");
+    }
+
+    /// <summary>
+    /// Tests that the ApplyRequestRules method does not overwrite an existing query parameter when using AddQueryParam.
+    /// </summary>
+    [Fact]
+    public void ApplyRequestRules_AddQueryParam_DoesNotOverwriteExistingParam()
+    {
+        var service = CreateService();
+        var request = new HttpRequestMessage(HttpMethod.Get, "http://backend/api/search?tracking=existing");
+
+        var rules = new List<TransformationRule>
+        {
+            new()
+            {
+                Phase = TransformationPhase.Request,
+                Operation = TransformationOperation.AddQueryParam,
+                Key = "tracking",
+                Value = "new-value"
+            }
+        };
+
+        service.ApplyRequestRules(request, rules);
+
+        request.RequestUri!.Query.Should().Contain("tracking=existing");
+        request.RequestUri.Query.Should().NotContain("new-value");
+    }
+
+    /// <summary>
     /// Tests that the ApplyRequestRules method replaces a matching prefix in the path.
     /// </summary>
     [Fact]
@@ -394,5 +445,58 @@ public sealed class RequestTransformationServiceTests
 
         var act = () => rule.Validate();
         act.Should().NotThrow();
+    }
+
+    /// <summary>
+    /// Tests that the ApplyResponseRules method adds a header if it does not already exist.
+    /// </summary>
+    [Fact]
+    public void ApplyResponseRules_AddHeader_AddsHeaderWhenMissing()
+    {
+        var service = CreateService();
+        var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+
+        var rules = new List<TransformationRule>
+        {
+            new()
+            {
+                Phase = TransformationPhase.Response,
+                Operation = TransformationOperation.AddHeader,
+                Key = "X-Response-Added",
+                Value = "present"
+            }
+        };
+
+        service.ApplyResponseRules(response, rules);
+
+        response.Headers.TryGetValues("X-Response-Added", out var values).Should().BeTrue();
+        values!.First().Should().Be("present");
+    }
+
+    /// <summary>
+    /// Tests that the ApplyResponseRules method does not overwrite an existing header when using AddHeader.
+    /// </summary>
+    [Fact]
+    public void ApplyResponseRules_AddHeader_DoesNotOverwriteExistingHeader()
+    {
+        var service = CreateService();
+        var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+        response.Headers.TryAddWithoutValidation("X-Response-Id", "original-id");
+
+        var rules = new List<TransformationRule>
+        {
+            new()
+            {
+                Phase = TransformationPhase.Response,
+                Operation = TransformationOperation.AddHeader,
+                Key = "X-Response-Id",
+                Value = "new-id"
+            }
+        };
+
+        service.ApplyResponseRules(response, rules);
+
+        response.Headers.TryGetValues("X-Response-Id", out var values).Should().BeTrue();
+        values!.First().Should().Be("original-id");
     }
 }
