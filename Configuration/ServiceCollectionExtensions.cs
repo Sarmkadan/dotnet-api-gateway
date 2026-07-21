@@ -55,6 +55,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<JwtValidationService>();
         services.AddSingleton<CircuitBreakerService>();
         services.AddSingleton<MetricsService>();
+services.AddSingleton<GatewayManagementService>();
         services.AddSingleton<IResponseTransformer, ResponseTransformationService>();
         services.AddSingleton<RequestTransformationService>();
         services.AddSingleton<ApiVersioningService>();
