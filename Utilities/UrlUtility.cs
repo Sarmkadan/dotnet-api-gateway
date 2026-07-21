@@ -46,20 +46,37 @@ public static class UrlUtility
         if (string.IsNullOrWhiteSpace(queryString))
             return parameters;
 
-        var query = queryString.TrimStart('?');
-        var pairs = query.Split('&');
+        ReadOnlySpan<char> query = queryString.AsSpan().TrimStart('?');
+        int start = 0;
 
-        foreach (var pair in pairs)
+        while (start < query.Length)
         {
-            var parts = pair.Split('=');
-            if (parts.Length >= 2)
-            {
-                var key = HttpUtility.UrlDecode(parts[0]);
-                var value = HttpUtility.UrlDecode(parts[1]);
+            int ampIndex = query.Slice(start).IndexOf('&');
+            ReadOnlySpan<char> pair = ampIndex < 0
+                ? query.Slice(start)
+                : query.Slice(start, ampIndex);
 
-                if (!parameters.ContainsKey(key))
-                    parameters[key] = value;
+            if (!pair.IsEmpty)
+            {
+                int eqIndex = pair.IndexOf('=');
+                ReadOnlySpan<char> key = eqIndex < 0
+                    ? pair
+                    : pair.Slice(0, eqIndex);
+                ReadOnlySpan<char> value = eqIndex < 0
+                    ? ReadOnlySpan<char>.Empty
+                    : pair.Slice(eqIndex + 1);
+
+                if (!key.IsEmpty)
+                {
+                    var decodedKey = HttpUtility.UrlDecode(key.ToString());
+                    var decodedValue = HttpUtility.UrlDecode(value.ToString());
+
+                    if (!parameters.ContainsKey(decodedKey))
+                        parameters[decodedKey] = decodedValue;
+                }
             }
+
+            start = ampIndex < 0 ? query.Length : start + ampIndex + 1;
         }
 
         return parameters;
@@ -74,7 +91,11 @@ public static class UrlUtility
         if (parameters is null || parameters.Count == 0)
             return string.Empty;
 
-        var pairs = parameters.Select(kvp => $"{HttpUtility.UrlEncode(kvp.Key)}={HttpUtility.UrlEncode(kvp.Value)}");
+        var pairs = new List<string>(parameters.Count);
+        foreach (var kvp in parameters)
+        {
+            pairs.Add(string.Concat(HttpUtility.UrlEncode(kvp.Key), "=", HttpUtility.UrlEncode(kvp.Value)));
+        }
         return "?" + string.Join("&", pairs);
     }
 
