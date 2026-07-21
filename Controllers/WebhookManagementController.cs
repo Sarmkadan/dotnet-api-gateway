@@ -12,6 +12,7 @@ using DotNetApiGateway.Integration;
 using WebhookSubscription = DotNetApiGateway.Integration.WebhookSubscription;
 using WebhookRetryPolicy = DotNetApiGateway.Integration.WebhookRetryPolicy;
 using WebhookEvent = DotNetApiGateway.Integration.WebhookEvent;
+using DotNetApiGateway.Formatters;
 
 /// <summary>
 /// Manages webhook subscriptions and delivery configuration.
@@ -31,6 +32,18 @@ public class WebhookManagementController : ControllerBase
         _logger = logger;
     }
 
+    private IActionResult FormatError(object errorObj)
+    {
+        var accept = HttpContext.Request.Headers["Accept"].ToString();
+        if (!string.IsNullOrEmpty(accept) && accept.Contains("application/xml", StringComparison.OrdinalIgnoreCase))
+        {
+            var xml = XmlFormatter.Serialize(errorObj);
+            return Content(xml, "application/xml");
+        }
+
+        return BadRequest(errorObj);
+    }
+
     /// <summary>
     /// Subscribe to gateway events with webhook callback URL.
     /// Webhook will be called when specified events occur with event payload.
@@ -41,10 +54,10 @@ public class WebhookManagementController : ControllerBase
     public IActionResult CreateWebhookSubscription([FromBody] CreateWebhookSubscriptionRequest request)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.CallbackUrl))
-            return BadRequest(new { error = "Callback URL required" });
+            return FormatError(new { error = "Callback URL required" });
 
         if (!Uri.TryCreate(request.CallbackUrl, UriKind.Absolute, out _))
-            return BadRequest(new { error = "Invalid callback URL format" });
+            return FormatError(new { error = "Invalid callback URL format" });
 
         var subscription = new WebhookSubscription
         {
@@ -107,7 +120,7 @@ public class WebhookManagementController : ControllerBase
         if (!string.IsNullOrWhiteSpace(request.CallbackUrl))
         {
             if (!Uri.TryCreate(request.CallbackUrl, UriKind.Absolute, out _))
-                return BadRequest(new { error = "Invalid callback URL format" });
+                return FormatError(new { error = "Invalid callback URL format" });
 
             subscription.CallbackUrl = request.CallbackUrl;
         }

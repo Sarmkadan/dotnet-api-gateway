@@ -11,6 +11,7 @@ using DotNetApiGateway.Services;
 using DotNetApiGateway.Repositories;
 using DotNetApiGateway.Configuration;
 using DotNetApiGateway.Models;
+using DotNetApiGateway.Formatters;
 
 /// <summary>
 /// Admin dashboard endpoint that provides a real-time HTML overview of gateway health,
@@ -44,6 +45,18 @@ public sealed class AdminDashboardController : ControllerBase
         _configuration = configuration;
         _logger = logger;
         _rateLimitStoreFactory = rateLimitStoreFactory;
+    }
+
+    private IActionResult FormatError(object errorObj)
+    {
+        var accept = HttpContext.Request.Headers["Accept"].ToString();
+        if (!string.IsNullOrEmpty(accept) && accept.Contains("application/xml", StringComparison.OrdinalIgnoreCase))
+        {
+            var xml = XmlFormatter.Serialize(errorObj);
+            return Content(xml, "application/xml");
+        }
+
+        return BadRequest(errorObj);
     }
 
     /// <summary>
@@ -262,7 +275,7 @@ public sealed class AdminDashboardController : ControllerBase
             sb.Append($"<td>{statusPill}</td>");
             sb.Append($"<td>{requestCount:N0}</td>");
             sb.Append($"<td>{avgMs}</td>");
-            sb.Append("</tr>");
+            sb.Append($"</tr>");
         }
         return sb.ToString();
     }
@@ -289,7 +302,7 @@ public sealed class AdminDashboardController : ControllerBase
             sb.Append($"<td>{cb.SuccessCount}</td>");
             sb.Append($"<td style=\"color:#f87171;font-size:0.8rem\">{System.Net.WebUtility.HtmlEncode(cb.LastError ?? "—")}</td>");
             sb.Append($"<td style=\"color:#64748b;font-size:0.8rem\">{(cb.LastFailureAt is null ? "—" : cb.LastFailureAt.Value.ToString("u"))}</td>");
-            sb.Append("</tr>");
+            sb.Append($"</tr>");
         }
         return sb.ToString();
     }
@@ -346,7 +359,7 @@ public sealed class AdminDashboardController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving rate limit state");
-            return BadRequest(new { error = "Failed to retrieve rate limit state", message = ex.Message });
+            return FormatError(new { error = "Failed to retrieve rate limit state", message = ex.Message });
         }
     }
 }
