@@ -21,7 +21,9 @@ public static class HeaderUtility
         if (headers is null || string.IsNullOrWhiteSpace(headerName))
             return null;
 
-        return headers.FirstOrDefault(h => h.Key.Equals(headerName, StringComparison.OrdinalIgnoreCase)).Value.ToString();
+        var header = headers.FirstOrDefault(h => h.Key.Equals(headerName, StringComparison.OrdinalIgnoreCase));
+        var value = header.Value.ToString();
+        return string.IsNullOrEmpty(value) ? null : value;
     }
 
     /// <summary>
