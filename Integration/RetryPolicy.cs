@@ -7,6 +7,7 @@
 namespace DotNetApiGateway.Integration;
 
 using System.Net;
+using System.Net.Http;
 
 /// <summary>
 /// Implements retry logic for HTTP requests with exponential backoff.
@@ -48,9 +49,11 @@ public sealed class RetryPolicy
 
         for (int attempt = 0; attempt <= _maxRetries; attempt++)
         {
+            HttpRequestMessage requestToSend = attempt == 0 ? request : CloneRequest(request);
+
             try
             {
-                var response = await client.SendAsync(request);
+                var response = await client.SendAsync(requestToSend);
 
                 if (!shouldRetry(response.StatusCode))
                     return response;
@@ -153,7 +156,7 @@ public sealed class RetryPolicy
         return ex is TaskCanceledException ||
                ex is HttpRequestException ||
                ex is TimeoutException ||
-               ex is InvalidOperationException && ex.Message.Contains("retry", StringComparison.OrdinalIgnoreCase);
+               (ex is InvalidOperationException && ex.Message.Contains("retry", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -163,6 +166,44 @@ public sealed class RetryPolicy
     {
         var nextDelay = TimeSpan.FromMilliseconds(currentDelay.TotalMilliseconds * _backoffMultiplier);
         return nextDelay > _maxDelay ? _maxDelay : nextDelay;
+    }
+
+    /// <summary>
+    /// Clone an HttpRequestMessage to allow retrying with a fresh request object.
+    /// </summary>
+    private static HttpRequestMessage CloneRequest(HttpRequestMessage source)
+    {
+        var clone = new HttpRequestMessage(source.Method, source.RequestUri)
+        {
+            Version = source.Version,
+        };
+
+        if (source.Content != null)
+        {
+            if (source.Content is StringContent stringContent)
+            {
+                var content = stringContent.ReadAsStringAsync().GetAwaiter().GetResult();
+                var encoding = source.Content.Headers.ContentEncoding.FirstOrDefault();
+                var mediaType = source.Content.Headers.ContentType;
+                clone.Content = new StringContent(content, encoding != null ? System.Text.Encoding.GetEncoding(encoding) : null, mediaType?.MediaType);
+            }
+            else
+            {
+                clone.Content = source.Content;
+            }
+        }
+
+        foreach (var header in source.Headers)
+        {
+            clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        foreach (var property in source.Properties)
+        {
+            clone.Properties[property.Key] = property.Value;
+        }
+
+        return clone;
     }
 }
 
