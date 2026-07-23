@@ -4,6 +4,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using DotNetApiGateway.Constants;
+
 namespace DotNetApiGateway.Services;
 
 /// <summary>
@@ -48,13 +50,15 @@ public sealed class RoutingService
 
     /// <summary>
     /// Selects a target for the given route based on the configured load balancing strategy.
+    /// Considers both health status and circuit breaker state when selecting targets.
     /// </summary>
     /// <param name="route">The gateway route.</param>
     /// <param name="clientIp">The client IP address, used for IP hash strategy.</param>
     /// <returns>The selected route target.</returns>
-    /// <exception cref="GatewayException">Thrown if no healthy targets are available.</exception>
+    /// <exception cref="GatewayException">Thrown if no available targets are found.</exception>
     public RouteTarget SelectTarget(GatewayRoute route, string? clientIp = null)
     {
+        // First, filter targets by health status
         var healthyTargets = route.Targets.Where(t => t.IsHealthy).ToList();
 
         if (healthyTargets.Count == 0)
@@ -66,12 +70,24 @@ public sealed class RoutingService
                 503);
         }
 
+        // Then, filter out targets with open circuits
+        var availableTargets = FilterTargetsWithOpenCircuits(healthyTargets);
+
+        if (availableTargets.Count == 0)
+        {
+            _logger.LogError("No available targets with closed circuits for route {RouteName} ({RouteId})", route.Name, route.Id);
+            throw new GatewayException(
+                $"No available targets with closed circuits for route {route.Name}",
+                "ALL_CIRCUITS_OPEN",
+                503);
+        }
+
         var target = _loadBalancingStrategy switch
         {
-            LoadBalancingStrategy.RoundRobin => SelectTargetRoundRobin(healthyTargets),
-            LoadBalancingStrategy.IpHash => SelectTargetByIpHash(healthyTargets, clientIp),
-            LoadBalancingStrategy.LeastConnections => SelectTargetLeastConnections(healthyTargets),
-            _ => SelectTargetRoundRobin(healthyTargets)
+            LoadBalancingStrategy.RoundRobin => SelectTargetRoundRobin(availableTargets),
+            LoadBalancingStrategy.IpHash => SelectTargetByIpHash(availableTargets, clientIp),
+            LoadBalancingStrategy.LeastConnections => SelectTargetLeastConnections(availableTargets),
+            _ => SelectTargetRoundRobin(availableTargets)
         };
 
         _logger.LogDebug("Selected target {TargetUrl} for route {RouteId} using {Strategy}", target.BaseUrl, route.Id, _loadBalancingStrategy);
@@ -128,6 +144,27 @@ public sealed class RoutingService
         // Connection counts are not tracked per target, so approximate least-loaded
         // by weight (lower weight = less loaded).
         return targets.OrderBy(t => t.Weight).First();
+    }
+
+    /// <summary>
+    /// Filters out targets with open circuit breakers.
+    /// </summary>
+    /// <param name="targets">The list of healthy targets to filter.</param>
+    /// <returns>Targets with closed or half-open circuits only.</returns>
+    private List<RouteTarget> FilterTargetsWithOpenCircuits(List<RouteTarget> targets)
+    {
+        // If no circuit breaker is configured for any target, return all targets
+        if (targets.All(t => t.CircuitState == null))
+        {
+            return targets;
+        }
+
+        // Filter out targets with open circuits
+        var availableTargets = targets.Where(t => t.CircuitState != CircuitBreakerState.Open).ToList();
+
+        // If all targets have open circuits, return all targets (they'll be handled by the exception)
+        // This allows the circuit breaker half-open probing to work
+        return availableTargets.Count > 0 ? availableTargets : targets;
     }
 
     public Dictionary<string, string> ApplyHeaderTransforms(RouteTarget target, Dictionary<string, string> originalHeaders)

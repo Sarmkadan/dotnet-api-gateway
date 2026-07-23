@@ -25,6 +25,22 @@ public sealed class RouteTarget
     public DateTime LastHealthCheckAt { get; set; }
     public string? LastHealthCheckError { get; set; }
 
+    /// <summary>
+    /// Gets or sets the circuit breaker state for this specific endpoint.
+    /// When null, no circuit breaker is configured for this endpoint.
+    /// </summary>
+    public CircuitBreakerState? CircuitState { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp when this endpoint's circuit was last opened.
+    /// </summary>
+    public DateTime? CircuitOpenedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the circuit breaker timeout in seconds for this endpoint.
+    /// </summary>
+    public int CircuitTimeoutSeconds { get; set; } = 60;
+
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Name))
@@ -75,5 +91,76 @@ public sealed class RouteTarget
         IsHealthy = isHealthy;
         LastHealthCheckAt = DateTime.UtcNow;
         LastHealthCheckError = error;
+    }
+
+    /// <summary>
+    /// Checks if this endpoint's circuit breaker is currently open.
+    /// </summary>
+    /// <returns>True if the circuit is open and requests should be blocked.</returns>
+    public bool IsCircuitOpen(int circuitTimeoutSeconds)
+    {
+        if (CircuitState == CircuitBreakerState.Open)
+        {
+            var timeSinceOpen = DateTime.UtcNow - CircuitOpenedAt.GetValueOrDefault();
+            return timeSinceOpen.TotalSeconds < circuitTimeoutSeconds;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Records a successful request for this endpoint.
+    /// </summary>
+    public void RecordCircuitSuccess()
+    {
+        if (CircuitState == CircuitBreakerState.HalfOpen)
+        {
+            CircuitState = CircuitBreakerState.Closed;
+            CircuitOpenedAt = null;
+        }
+        else if (CircuitState == CircuitBreakerState.Closed)
+        {
+            // In closed state, we can reset failure count
+            // Note: We don't track failure count per endpoint in this simple model
+        }
+    }
+
+    /// <summary>
+    /// Records a failed request for this endpoint.
+    /// </summary>
+    /// <param name="circuitTimeoutSeconds">The circuit breaker timeout in seconds.</param>
+    public void RecordCircuitFailure(int circuitTimeoutSeconds)
+    {
+        if (CircuitState == CircuitBreakerState.HalfOpen)
+        {
+            // Single failure reopens the circuit
+            CircuitState = CircuitBreakerState.Open;
+            CircuitOpenedAt = DateTime.UtcNow;
+        }
+        else if (CircuitState == CircuitBreakerState.Closed)
+        {
+            // For now, we'll just trip the circuit immediately on first failure
+            // In a more sophisticated implementation, we'd track failure count
+            CircuitState = CircuitBreakerState.Open;
+            CircuitOpenedAt = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// Changes the circuit state for this endpoint.
+    /// </summary>
+    public void ChangeCircuitState(CircuitBreakerState newState)
+    {
+        if (CircuitState != newState)
+        {
+            CircuitState = newState;
+            if (newState == CircuitBreakerState.Open)
+            {
+                CircuitOpenedAt = DateTime.UtcNow;
+            }
+            else if (newState == CircuitBreakerState.Closed)
+            {
+                CircuitOpenedAt = null;
+            }
+        }
     }
 }
