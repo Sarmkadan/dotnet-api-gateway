@@ -6,6 +6,7 @@
 
 using System.Net.Http.Headers;
 using DotNetApiGateway.Middleware;
+using DotNetApiGateway.Utilities;
 using HttpMethod = System.Net.Http.HttpMethod;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -187,15 +188,15 @@ app.MapFallback(async (
             Content = requestContent
         };
 
-        // Copy headers from incoming request to outgoing request
-        foreach (var header in context.Request.Headers)
-        {
-            if (header.Key.Equals("Host", StringComparison.OrdinalIgnoreCase)) continue; // Host header is managed by HttpClient
-            if (requestMessage.Headers.Contains(header.Key) == false)
-            {
-                requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
-            }
-        }
+
+                // Sanitize and copy headers from incoming request to outgoing request
+                // This removes hop-by-hop headers, sensitive auth headers, and sets proper forwarding headers
+                HeaderSanitizationUtility.SanitizeForForwarding(
+                    context.Request.Headers,
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    context.Request.Scheme,
+                    requestMessage,
+                    removeHostHeader: true);
 
         // Apply request-phase transformation rules before forwarding
         if (route.TransformationRules.Count > 0)
@@ -215,16 +216,20 @@ app.MapFallback(async (
         if (route.TransformationRules.Count > 0)
             requestTransformationService.ApplyResponseRules(responseMessage, route.TransformationRules);
 
-        // Copy status code and headers from upstream response to downstream response
-        context.Response.StatusCode = (int)responseMessage.StatusCode;
-        foreach (var header in responseMessage.Headers)
-        {
-            context.Response.Headers[header.Key] = header.Value.ToArray();
-        }
-        foreach (var header in responseMessage.Content.Headers)
-        {
-            context.Response.Headers[header.Key] = header.Value.ToArray();
-        }
+
+                // Sanitize and copy headers from upstream response to client response
+                // This removes hop-by-hop and sensitive headers before forwarding to client
+                HeaderSanitizationUtility.SanitizeResponseHeaders(context.Response.Headers);
+
+                context.Response.StatusCode = (int)responseMessage.StatusCode;
+                foreach (var header in responseMessage.Headers)
+                {
+                    context.Response.Headers[header.Key] = header.Value.ToArray();
+                }
+                foreach (var header in responseMessage.Content.Headers)
+                {
+                    context.Response.Headers[header.Key] = header.Value.ToArray();
+                }
 
         // Stream the response body directly to the client without buffering in memory
         await responseMessage.Content.CopyToAsync(context.Response.Body);
