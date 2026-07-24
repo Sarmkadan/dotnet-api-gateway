@@ -7,6 +7,7 @@
 using System.Collections.Concurrent;
 using DotNetApiGateway.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DotNetApiGateway.Repositories;
 
@@ -15,18 +16,18 @@ namespace DotNetApiGateway.Repositories;
 /// </summary>
 public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
 {
-    private readonly InMemoryRateLimitStore _inMemoryStore;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<RedisRateLimitStore> _redisLogger;
     private readonly ConcurrentDictionary<string, RedisRateLimitStore> _redisStores = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RateLimitStoreFactory"/> class.
     /// </summary>
-    /// <param name="inMemoryStore">The in-memory rate limit store.</param>
+    /// <param name="serviceProvider">The service provider.</param>
     /// <param name="redisLogger">The Redis logger.</param>
-    public RateLimitStoreFactory(InMemoryRateLimitStore inMemoryStore, ILogger<RedisRateLimitStore> redisLogger)
+    public RateLimitStoreFactory(IServiceProvider serviceProvider, ILogger<RedisRateLimitStore> redisLogger)
     {
-        _inMemoryStore = inMemoryStore;
+        _serviceProvider = serviceProvider;
         _redisLogger = redisLogger;
     }
 
@@ -41,7 +42,7 @@ public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
         {
             // If rate limiting is disabled, return a no-op store or just allow
             // For now, we'll return the in-memory store, which will handle policy.Enabled = false
-            return _inMemoryStore;
+            return _serviceProvider.GetService<InMemoryRateLimitStore>();
         }
 
         if (policy.StorageType == RateLimitStorageType.Redis)
@@ -49,13 +50,13 @@ public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
             if (string.IsNullOrWhiteSpace(policy.RedisConnectionString))
             {
                 _redisLogger.LogError("RedisConnectionString is required for Redis rate limiting. Falling back to InMemory store for policy {PolicyId}.", policy.Id);
-                return _inMemoryStore;
+                return _serviceProvider.GetService<InMemoryRateLimitStore>();
             }
 
-            return _redisStores.GetOrAdd(policy.RedisConnectionString, cs => new RedisRateLimitStore(cs, _redisLogger));
+            return _redisStores.GetOrAdd(policy.RedisConnectionString, cs => _serviceProvider.GetService<RedisRateLimitStore>() ?? new RedisRateLimitStore(cs, _redisLogger));
         }
 
-        return _inMemoryStore;
+        return _serviceProvider.GetService<InMemoryRateLimitStore>();
     }
 
     /// <summary>
@@ -64,7 +65,7 @@ public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
     /// <returns>An enumerable of rate limit stores.</returns>
     public IEnumerable<IRateLimitStore> GetAllStores()
     {
-        yield return _inMemoryStore;
+        yield return _serviceProvider.GetService<InMemoryRateLimitStore>();
         foreach (var redisStore in _redisStores.Values)
         {
             yield return redisStore;
@@ -80,7 +81,7 @@ public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
         var allEntries = new List<RateLimitEntry>();
 
         // Get entries from in-memory store
-        var inMemoryEntries = await _inMemoryStore.GetAllEntriesAsync();
+        var inMemoryEntries = await _serviceProvider.GetService<InMemoryRateLimitStore>().GetAllEntriesAsync();
         allEntries.AddRange(inMemoryEntries);
 
         // Get entries from all Redis stores

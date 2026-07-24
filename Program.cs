@@ -7,6 +7,7 @@
 using System.Net.Http.Headers;
 using DotNetApiGateway.Middleware;
 using HttpMethod = System.Net.Http.HttpMethod;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,9 @@ var gatewayConfig = new DotNetApiGateway.Configuration.DotnetApiGatewayOptions
     EnableMetrics = true
 };
 
+builder.Services.AddSingleton<InMemoryRateLimitStore>();
+builder.Services.AddSingleton<RedisRateLimitStore>();
+builder.Services.AddSingleton<IRateLimitStoreFactory, RateLimitStoreFactory>();
 builder.Services.AddGatewayServices(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
