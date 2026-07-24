@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetApiGateway.Models;
 
@@ -10,10 +10,6 @@ using System.Text.Json.Serialization;
 
 /// <summary>
 /// Models for webhook configuration and delivery.
-/// </summary>
-
-/// <summary>
-/// Webhook subscription configuration.
 /// </summary>
 public sealed class WebhookSubscription
 {
@@ -26,8 +22,14 @@ public sealed class WebhookSubscription
     [JsonPropertyName("eventTypes")]
     public string[] EventTypes { get; set; } = [];
 
-    [JsonPropertyName("secret")]
-    public string Secret { get; set; } = string.Empty;
+    [JsonPropertyName("currentSecret")]
+    public string CurrentSecret { get; set; } = string.Empty;
+
+    [JsonPropertyName("previousSecret")]
+    public string? PreviousSecret { get; set; }
+
+    [JsonPropertyName("secretRotationAt")]
+    public DateTime? SecretRotationAt { get; set; }
 
     [JsonPropertyName("active")]
     public bool Active { get; set; } = true;
@@ -79,21 +81,40 @@ public sealed class WebhookDeliveryStats
 }
 
 /// <summary>
-/// Webhook event payload.
+/// Webhook event payload sent to subscribers.
 /// </summary>
 public sealed class WebhookEvent
 {
+    /// <summary>
+    /// The type of event being delivered.
+    /// </summary>
     [JsonPropertyName("eventType")]
     public string EventType { get; set; } = string.Empty;
 
+    /// <summary>
+    /// When the event occurred (UTC).
+    /// </summary>
     [JsonPropertyName("timestamp")]
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// The event payload data.
+    /// </summary>
     [JsonPropertyName("data")]
     public object? Data { get; set; }
 
+    /// <summary>
+    /// The number of delivery attempts made for this event.
+    /// </summary>
     [JsonPropertyName("retryCount")]
     public int RetryCount { get; set; }
+
+    /// <summary>
+    /// Unix timestamp in seconds when the event was signed (for replay protection).
+    /// This timestamp is used in the HMAC signature to ensure payload authenticity.
+    /// </summary>
+    [JsonPropertyName("signedAt")]
+    public long SignedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 }
 
 /// <summary>

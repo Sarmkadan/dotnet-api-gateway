@@ -38,6 +38,9 @@ public static class ServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<WebhookSecurityOptions>()
+            .Bind(configuration.GetSection(WebhookSecurityOptions.SectionName));
+
         // Some consumers (e.g. AdminDashboardController) take the options object directly
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<DotnetApiGatewayOptions>>().Value);
 
@@ -62,6 +65,7 @@ services.AddSingleton<GatewayManagementService>();
         services.AddScoped<RequestAggregationService>();
 
         // Register integration layer
+        services.AddSingleton<WebhookCallbackUrlValidator>();
         services.AddSingleton<WebhookRegistry>();
 
         // Register HTTP clients

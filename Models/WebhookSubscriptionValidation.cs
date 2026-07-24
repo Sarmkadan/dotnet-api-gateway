@@ -63,10 +63,14 @@ public static class WebhookSubscriptionValidation
             }
         }
 
-        // Validate Secret
-        if (string.IsNullOrWhiteSpace(value.Secret))
+        // Validate CurrentSecret
+        if (string.IsNullOrWhiteSpace(value.CurrentSecret))
         {
-            problems.Add("Secret must be a non-empty string.");
+            problems.Add("CurrentSecret must be a non-empty string.");
+        }
+        else if (value.CurrentSecret.Length < 16)
+        {
+            problems.Add("CurrentSecret must be at least 16 characters long.");
         }
 
         // Validate RetryPolicy

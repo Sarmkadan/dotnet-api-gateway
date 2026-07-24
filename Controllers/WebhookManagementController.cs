@@ -9,6 +9,7 @@ namespace DotNetApiGateway.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using DotNetApiGateway.Models;
 using DotNetApiGateway.Integration;
+using DotNetApiGateway.Utilities;
 using WebhookSubscription = DotNetApiGateway.Integration.WebhookSubscription;
 using WebhookRetryPolicy = DotNetApiGateway.Integration.WebhookRetryPolicy;
 using WebhookEvent = DotNetApiGateway.Integration.WebhookEvent;
@@ -23,13 +24,51 @@ using DotNetApiGateway.Formatters;
 public class WebhookManagementController : ControllerBase
 {
     private readonly WebhookRegistry _webhookRegistry;
+    private readonly WebhookCallbackUrlValidator _urlValidator;
     private readonly ILogger<WebhookManagementController> _logger;
     private static readonly Dictionary<string, WebhookSubscription> _subscriptions = new();
 
-    public WebhookManagementController(WebhookRegistry webhookRegistry, ILogger<WebhookManagementController> logger)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WebhookManagementController"/> class.
+    /// </summary>
+    /// <param name="webhookRegistry">Registry used to store subscriptions and route events.</param>
+    /// <param name="urlValidator">Validator used to reject callback URLs that are unsafe (SSRF).</param>
+    /// <param name="logger">Logger used to record subscription lifecycle events.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any parameter is null.</exception>
+    public WebhookManagementController(
+        WebhookRegistry webhookRegistry,
+        WebhookCallbackUrlValidator urlValidator,
+        ILogger<WebhookManagementController> logger)
     {
+        ArgumentNullException.ThrowIfNull(webhookRegistry);
+        ArgumentNullException.ThrowIfNull(urlValidator);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _webhookRegistry = webhookRegistry;
+        _urlValidator = urlValidator;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Formats a callback URL rejection as a 422 Unprocessable Entity response, honoring
+    /// the caller's Accept header for XML output the same way <see cref="FormatError"/> does.
+    /// </summary>
+    /// <param name="reason">Human-readable reason the callback URL was rejected.</param>
+    /// <returns>A 422 response describing the rejection.</returns>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="reason"/> is null or empty.</exception>
+    private IActionResult FormatUnprocessable(string reason)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(reason);
+
+        var errorObj = new { error = "Invalid callback URL", details = reason };
+        var accept = HttpContext.Request.Headers["Accept"].ToString();
+        if (!string.IsNullOrEmpty(accept) && accept.Contains("application/xml", StringComparison.OrdinalIgnoreCase))
+        {
+            var xml = XmlFormatter.Serialize(errorObj);
+            return new ContentResult { Content = xml, ContentType = "application/xml", StatusCode = StatusCodes.Status422UnprocessableEntity };
+        }
+
+        return UnprocessableEntity(errorObj);
     }
 
     private IActionResult FormatError(object errorObj)
@@ -51,20 +90,28 @@ public class WebhookManagementController : ControllerBase
     [HttpPost("subscriptions")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult CreateWebhookSubscription([FromBody] CreateWebhookSubscriptionRequest request)
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CreateWebhookSubscription([FromBody] CreateWebhookSubscriptionRequest request)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.CallbackUrl))
             return FormatError(new { error = "Callback URL required" });
 
-        if (!Uri.TryCreate(request.CallbackUrl, UriKind.Absolute, out _))
-            return FormatError(new { error = "Invalid callback URL format" });
+        var validation = await _urlValidator.ValidateAsync(request.CallbackUrl);
+        if (!validation.IsAllowed)
+            return FormatUnprocessable(validation.Error!);
+
+        var secret = !string.IsNullOrWhiteSpace(request.Secret) && request.Secret.Length >= 16
+            ? request.Secret
+            : CryptoUtility.GenerateRandomString(32);
 
         var subscription = new WebhookSubscription
         {
             Id = Guid.NewGuid().ToString(),
             CallbackUrl = request.CallbackUrl,
             EventTypes = request.EventTypes ?? new[] { "*" },
-            Secret = Guid.NewGuid().ToString("N"),
+            CurrentSecret = secret,
+            PreviousSecret = null,
+            SecretRotationAt = null,
             CreatedAt = DateTime.UtcNow,
             Active = true,
             RetryPolicy = new WebhookRetryPolicy
@@ -80,6 +127,48 @@ public class WebhookManagementController : ControllerBase
         _logger.LogInformation("Webhook subscription created: {SubscriptionId}", subscription.Id);
 
         return CreatedAtAction(nameof(GetWebhookSubscription), new { id = subscription.Id }, subscription);
+    }
+
+    /// <summary>
+    /// Rotate the webhook subscription secret.
+    /// Generates a new secret and keeps the old one active for a period to allow rotation.
+    /// Returns the new secret only once (not persisted in response).
+    /// </summary>
+    [HttpPost("subscriptions/{id}/rotate-secret")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult RotateWebhookSecret(string id)
+    {
+        if (!_subscriptions.TryGetValue(id, out var subscription))
+            return NotFound(new { error = "Subscription not found", id });
+
+        // Store current secret as previous before rotating
+        subscription.PreviousSecret = subscription.CurrentSecret;
+        subscription.SecretRotationAt = DateTime.UtcNow;
+
+        // Generate new secret
+        var newSecret = CryptoUtility.GenerateRandomString(32);
+        subscription.CurrentSecret = newSecret;
+
+        _logger.LogInformation("Webhook secret rotated: {SubscriptionId}", id);
+
+        // Return only the new secret (not the full subscription)
+        return Ok(new { secret = newSecret });
+    }
+
+    /// <summary>
+    /// Get the current secret for a webhook subscription.
+    /// WARNING: Only call this endpoint when you need to retrieve the secret.
+    /// </summary>
+    [HttpGet("subscriptions/{id}/secret")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetWebhookSecret(string id)
+    {
+        if (!_subscriptions.TryGetValue(id, out var subscription))
+            return NotFound(new { error = "Subscription not found", id });
+
+        return Ok(new { secret = subscription.CurrentSecret });
     }
 
     /// <summary>
@@ -112,15 +201,17 @@ public class WebhookManagementController : ControllerBase
     [HttpPut("subscriptions/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult UpdateWebhookSubscription(string id, [FromBody] UpdateWebhookSubscriptionRequest request)
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateWebhookSubscription(string id, [FromBody] UpdateWebhookSubscriptionRequest request)
     {
         if (!_subscriptions.TryGetValue(id, out var subscription))
             return NotFound(new { error = "Subscription not found", id });
 
         if (!string.IsNullOrWhiteSpace(request.CallbackUrl))
         {
-            if (!Uri.TryCreate(request.CallbackUrl, UriKind.Absolute, out _))
-                return FormatError(new { error = "Invalid callback URL format" });
+            var validation = await _urlValidator.ValidateAsync(request.CallbackUrl);
+            if (!validation.IsAllowed)
+                return FormatUnprocessable(validation.Error!);
 
             subscription.CallbackUrl = request.CallbackUrl;
         }
@@ -164,6 +255,10 @@ public class WebhookManagementController : ControllerBase
     {
         if (!_subscriptions.TryGetValue(id, out var subscription))
             return NotFound(new { error = "Subscription not found", id });
+
+        var validation = await _urlValidator.ValidateAsync(subscription.CallbackUrl);
+        if (!validation.IsAllowed)
+            return FormatUnprocessable(validation.Error!);
 
         try
         {
@@ -233,6 +328,11 @@ public sealed class CreateWebhookSubscriptionRequest
     public int? MaxRetries { get; set; }
     public int? InitialDelayMs { get; set; }
     public int? MaxDelayMs { get; set; }
+
+    /// <summary>
+    /// Optional: Provide your own secret. If not provided, a secure random secret will be generated.
+    /// </summary>
+    public string? Secret { get; set; }
 }
 
 public sealed class UpdateWebhookSubscriptionRequest

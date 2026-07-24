@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using DotNetApiGateway.Models;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Extension methods for <see cref="WebhookManagementController"/> providing additional webhook management functionality.
@@ -53,7 +54,7 @@ public static class WebhookManagementControllerExtensions
     /// <returns>No content result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="controller"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
-    public static IActionResult PauseWebhookSubscription(this WebhookManagementController controller, string id)
+    public static Task<IActionResult> PauseWebhookSubscription(this WebhookManagementController controller, string id)
     {
         ArgumentNullException.ThrowIfNull(controller);
         ArgumentNullException.ThrowIfNull(id);
@@ -63,10 +64,10 @@ public static class WebhookManagementControllerExtensions
         return subscriptionResult switch
         {
             OkObjectResult okResult => HandlePauseSubscription(controller, okResult, id),
-            _ => subscriptionResult
+            _ => Task.FromResult(subscriptionResult)
         };
 
-        static IActionResult HandlePauseSubscription(WebhookManagementController controller, OkObjectResult okResult, string id)
+        static Task<IActionResult> HandlePauseSubscription(WebhookManagementController controller, OkObjectResult okResult, string id)
         {
             var subscription = (WebhookSubscription)okResult.Value!;
             subscription.Active = false;
@@ -88,7 +89,7 @@ public static class WebhookManagementControllerExtensions
     /// <returns>No content result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="controller"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
-    public static IActionResult ResumeWebhookSubscription(this WebhookManagementController controller, string id)
+    public static Task<IActionResult> ResumeWebhookSubscription(this WebhookManagementController controller, string id)
     {
         ArgumentNullException.ThrowIfNull(controller);
         ArgumentNullException.ThrowIfNull(id);
@@ -98,10 +99,10 @@ public static class WebhookManagementControllerExtensions
         return subscriptionResult switch
         {
             OkObjectResult okResult => HandleResumeSubscription(controller, okResult, id),
-            _ => subscriptionResult
+            _ => Task.FromResult(subscriptionResult)
         };
 
-        static IActionResult HandleResumeSubscription(WebhookManagementController controller, OkObjectResult okResult, string id)
+        static Task<IActionResult> HandleResumeSubscription(WebhookManagementController controller, OkObjectResult okResult, string id)
         {
             var subscription = (WebhookSubscription)okResult.Value!;
             subscription.Active = true;
@@ -125,7 +126,7 @@ public static class WebhookManagementControllerExtensions
     /// <exception cref="ArgumentNullException"><paramref name="controller"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxRetries"/> is negative.</exception>
-    public static IActionResult UpdateWebhookRetryPolicy(
+    public static Task<IActionResult> UpdateWebhookRetryPolicy(
         this WebhookManagementController controller,
         string id,
         int maxRetries)
@@ -139,10 +140,10 @@ public static class WebhookManagementControllerExtensions
         return subscriptionResult switch
         {
             OkObjectResult okResult => HandleUpdateRetryPolicy(controller, okResult, id, maxRetries),
-            _ => subscriptionResult
+            _ => Task.FromResult(subscriptionResult)
         };
 
-        static IActionResult HandleUpdateRetryPolicy(WebhookManagementController controller, OkObjectResult okResult, string id, int maxRetries)
+        static Task<IActionResult> HandleUpdateRetryPolicy(WebhookManagementController controller, OkObjectResult okResult, string id, int maxRetries)
         {
             var subscription = (WebhookSubscription)okResult.Value!;
 

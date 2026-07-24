@@ -4,9 +4,11 @@
 // CTO & Software Architect
 // =============================================================================
 
+using DotNetApiGateway.Configuration;
 using DotNetApiGateway.Integration;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -23,7 +25,10 @@ public sealed class WebhookRegistryTests
     public WebhookRegistryTests()
     {
         _mockLogger = new Mock<ILogger<WebhookRegistry>>();
-        _registry = new WebhookRegistry(_mockLogger.Object);
+        var urlValidator = new WebhookCallbackUrlValidator(
+            Options.Create(new WebhookSecurityOptions()),
+            new Mock<ILogger<WebhookCallbackUrlValidator>>().Object);
+        _registry = new WebhookRegistry(_mockLogger.Object, urlValidator);
     }
 
     /// <summary>
@@ -37,7 +42,7 @@ public sealed class WebhookRegistryTests
         {
             CallbackUrl = "https://example.com/webhook",
             EventTypes = ["user.created", "user.updated"],
-            Secret = "secret123"
+            CurrentSecret = "secret123"
         };
 
         // Act
@@ -425,7 +430,7 @@ public sealed class WebhookRegistryTests
         {
             CallbackUrl = "https://example.com/webhook",
             EventTypes = ["user.created", "user.updated", "order.*"],
-            Secret = "my-secret-key",
+            CurrentSecret = "my-secret-key",
             Active = false,
             RetryPolicy = retryPolicy
         };
@@ -438,7 +443,7 @@ public sealed class WebhookRegistryTests
         retrieved.Id.Should().NotBeEmpty();
         retrieved.CallbackUrl.Should().Be("https://example.com/webhook");
         retrieved.EventTypes.Should().BeEquivalentTo(["user.created", "user.updated", "order.*"]);
-        retrieved.Secret.Should().Be("my-secret-key");
+        retrieved.CurrentSecret.Should().Be("my-secret-key");
         retrieved.Active.Should().BeFalse();
         retrieved.RetryPolicy.MaxRetries.Should().Be(5);
         retrieved.RetryPolicy.InitialDelayMs.Should().Be(2000);
