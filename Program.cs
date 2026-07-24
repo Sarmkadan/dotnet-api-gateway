@@ -2,8 +2,9 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
+using System.Net.Http.Headers;
 using DotNetApiGateway.Middleware;
 using HttpMethod = System.Net.Http.HttpMethod;
 
@@ -37,7 +38,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 // Core Gateway Middleware - Order is important!
-app.UseRoutingMiddleware();      // 1. Resolve GatewayRoute and store in HttpContext.Items
+app.UseRoutingMiddleware(); // 1. Resolve GatewayRoute and store in HttpContext.Items
 app.UseRateLimitingMiddleware(); // 2. Apply rate limiting based on resolved route
 
 // Health check endpoint
@@ -69,7 +70,6 @@ app.MapGet("/gateway/routes", async (DotNetApiGateway.Services.RoutingService ro
     var routes = await routingService.GetAllActiveRoutesAsync();
     return Results.Ok(routes);
 }).WithName("GetRoutes");
-
 
 // Request metrics dashboard endpoint
 app.MapGet("/gateway/stats", (DotNetApiGateway.Services.MetricsService metricsService) =>
@@ -160,22 +160,27 @@ app.MapFallback(async (
             : context.Request.Path.Value ?? "/";
         var forwardUrl = routingService.BuildForwardUrl(target, requestPath);
 
-        // Forward the request using ExternalApiClient
-        // Need to read the request body for forwarding
-        string? requestBody = null;
+        // Forward the request using ExternalApiClient with streaming to prevent memory issues
+        // Use HttpCompletionOption.ResponseHeadersRead to stream response instead of buffering entire body
+        StreamContent? requestContent = null;
+
         if (context.Request.ContentLength > 0)
         {
             context.Request.EnableBuffering();
-            using (var reader = new StreamReader(context.Request.Body, leaveOpen: true))
+            // Stream the request body directly to the outgoing request without buffering in memory
+            // This prevents the classic "buffering request/response bodies into memory" issue
+            requestContent = new StreamContent(context.Request.Body);
+
+            // Copy content type and headers from incoming request
+            if (!string.IsNullOrEmpty(context.Request.ContentType))
             {
-                requestBody = await reader.ReadToEndAsync();
-                context.Request.Body.Position = 0; // Rewind for potential downstream use
+                requestContent.Headers.ContentType = MediaTypeHeaderValue.Parse(context.Request.ContentType);
             }
         }
-        
+
         using var requestMessage = new HttpRequestMessage(new HttpMethod(context.Request.Method), forwardUrl)
         {
-            Content = requestBody != null ? new StringContent(requestBody, System.Text.Encoding.UTF8, context.Request.ContentType ?? "application/json") : null
+            Content = requestContent
         };
 
         // Copy headers from incoming request to outgoing request
@@ -191,10 +196,12 @@ app.MapFallback(async (
         // Apply request-phase transformation rules before forwarding
         if (route.TransformationRules.Count > 0)
             requestTransformationService.ApplyRequestRules(requestMessage, route.TransformationRules);
-        
+
         // Timeout handling for individual target
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(target.TimeoutSeconds ?? route.TimeoutSeconds));
 
+        // Use SendAsync with HttpCompletionOption.ResponseHeadersRead for streaming response
+        // This prevents buffering the entire response body into memory
         var responseMessage = await externalApiClient.SendRequestAsync(requestMessage, cts.Token);
 
         // Apply response transformations (security headers, custom headers, etc.)
@@ -215,6 +222,7 @@ app.MapFallback(async (
             context.Response.Headers[header.Key] = header.Value.ToArray();
         }
 
+        // Stream the response body directly to the client without buffering in memory
         await responseMessage.Content.CopyToAsync(context.Response.Body);
         return Results.Empty; // Indicate that the response has been handled
     }

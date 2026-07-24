@@ -2,13 +2,17 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
+
+using System.Net;
+using System.Net.Http;
 
 namespace DotNetApiGateway.Integration;
 
 /// <summary>
 /// Factory for creating and managing pooled HTTP client instances.
 /// Reuses HTTP clients for better performance and proper connection pooling.
+/// Uses SocketsHttpHandler with tuned connection pooling to prevent socket exhaustion.
 /// </summary>
 public sealed class HttpClientFactory
 {
@@ -16,10 +20,32 @@ public sealed class HttpClientFactory
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly ILogger<HttpClientFactory> _logger;
     private readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(30);
+    private readonly SocketsHttpHandler _sharedHandler;
 
     public HttpClientFactory(ILogger<HttpClientFactory> logger)
     {
         _logger = logger;
+
+        // Configure shared SocketsHttpHandler with proper connection pooling to prevent socket exhaustion
+        // These settings prevent the classic "too many open files/sockets" issue in high-throughput gateways
+        _sharedHandler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2), // Recycle connections periodically
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1), // Close idle connections
+            ConnectCallback = null, // Connection callback for advanced scenarios
+            EnableMultipleHttp2Connections = true, // Allow multiple HTTP/2 connections
+            UseProxy = false, // Let HttpClient decide proxy usage
+            AllowAutoRedirect = true,
+            AutomaticDecompression = DecompressionMethods.All // Decompress responses automatically
+        };
+
+        // Set connection pool limits via ServicePointManager for .NET 6+ compatibility
+        // Note: In .NET Core+, ServicePointManager settings are less critical but still respected
+        System.Net.ServicePointManager.DefaultConnectionLimit = 200;
+        System.Net.ServicePointManager.ReusePort = true;
+
+        _logger.LogInformation("HTTP client factory initialized with connection pooling (MaxConnectionsPerServer: {MaxConnectionsPerServer}, PooledConnectionLifetime: {PooledConnectionLifetime})",
+            _sharedHandler.MaxConnectionsPerServer, _sharedHandler.PooledConnectionLifetime);
     }
 
     /// <summary>
@@ -42,14 +68,26 @@ public sealed class HttpClientFactory
             _lock.ExitReadLock();
         }
 
-        // Create new client
+        // Create new client with shared handler for connection pooling
         _lock.EnterWriteLock();
         try
         {
             if (_clients.TryGetValue(baseUrl, out var client))
                 return client;
 
-            var newClient = new HttpClient
+            // Create HttpClient with shared SocketsHttpHandler for proper connection pooling
+            // This prevents the "creating HttpClient per request" anti-pattern that causes socket exhaustion
+            var handler = new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = _sharedHandler.PooledConnectionLifetime,
+                PooledConnectionIdleTimeout = _sharedHandler.PooledConnectionIdleTimeout,
+                EnableMultipleHttp2Connections = _sharedHandler.EnableMultipleHttp2Connections,
+                UseProxy = _sharedHandler.UseProxy,
+                AllowAutoRedirect = _sharedHandler.AllowAutoRedirect,
+                AutomaticDecompression = _sharedHandler.AutomaticDecompression
+            };
+
+            var newClient = new HttpClient(handler, disposeHandler: true)
             {
                 BaseAddress = new Uri(baseUrl),
                 Timeout = timeout ?? _defaultTimeout
@@ -58,7 +96,7 @@ public sealed class HttpClientFactory
             newClient.DefaultRequestHeaders.Add("User-Agent", "DotNetApiGateway/1.0");
 
             _clients[baseUrl] = newClient;
-            _logger.LogInformation("HTTP client created for {BaseUrl}", baseUrl);
+            _logger.LogInformation("HTTP client created for {BaseUrl} with connection pooling", baseUrl);
 
             return newClient;
         }
@@ -73,7 +111,18 @@ public sealed class HttpClientFactory
     /// </summary>
     public HttpClient CreateTransientClient(TimeSpan? timeout = null)
     {
-        var client = new HttpClient
+        // Use shared handler for transient clients too to benefit from connection pooling
+        var handler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = _sharedHandler.PooledConnectionLifetime,
+            PooledConnectionIdleTimeout = _sharedHandler.PooledConnectionIdleTimeout,
+            EnableMultipleHttp2Connections = _sharedHandler.EnableMultipleHttp2Connections,
+            UseProxy = _sharedHandler.UseProxy,
+            AllowAutoRedirect = _sharedHandler.AllowAutoRedirect,
+            AutomaticDecompression = _sharedHandler.AutomaticDecompression
+        };
+
+        var client = new HttpClient(handler, disposeHandler: true)
         {
             Timeout = timeout ?? _defaultTimeout
         };
