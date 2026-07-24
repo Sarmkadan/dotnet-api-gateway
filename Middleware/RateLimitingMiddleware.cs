@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Threading.RateLimiting;
 using DotNetApiGateway.Constants;
 using DotNetApiGateway.Models;
 using DotNetApiGateway.Services;
@@ -13,7 +14,7 @@ using Microsoft.Extensions.Logging;
 namespace DotNetApiGateway.Middleware;
 
 /// <summary>
-/// Middleware for enforcing rate limiting policies on incoming requests.
+/// Middleware for enforcing rate limiting policies on incoming requests using System.Threading.RateLimiting.
 /// </summary>
 public sealed class RateLimitingMiddleware
 {
@@ -63,10 +64,10 @@ public sealed class RateLimitingMiddleware
             var info = await rateLimitingService.GetRateLimitInfoAsync(key, policy);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
 
-            // Standard headers
+            // Standard headers (RFC 6585)
             context.Response.Headers["Retry-After"] = info.Reset.ToString();
-            context.Response.Headers["X-RateLimit-Limit"] = info.Limit.ToString();
-            context.Response.Headers["X-RateLimit-Remaining"] = info.Remaining.ToString();
+            context.Response.Headers["RateLimit-Limit"] = info.Limit.ToString();
+            context.Response.Headers["RateLimit-Remaining"] = info.Remaining.ToString();
 
             // Existing custom gateway headers (preserved for backward compatibility)
             context.Response.Headers[GatewayConstants.RateLimitHeader] = info.Limit.ToString();
@@ -83,9 +84,9 @@ public sealed class RateLimitingMiddleware
         // Set response headers for allowed requests
         var allowedInfo = await rateLimitingService.GetRateLimitInfoAsync(key, policy);
 
-        // Standard headers
-        context.Response.Headers["X-RateLimit-Limit"] = allowedInfo.Limit.ToString();
-        context.Response.Headers["X-RateLimit-Remaining"] = allowedInfo.Remaining.ToString();
+        // Standard headers (RFC 6585)
+        context.Response.Headers["RateLimit-Limit"] = allowedInfo.Limit.ToString();
+        context.Response.Headers["RateLimit-Remaining"] = allowedInfo.Remaining.ToString();
         context.Response.Headers["Retry-After"] = allowedInfo.Reset.ToString();
 
         // Existing custom gateway headers (preserved for backward compatibility)
