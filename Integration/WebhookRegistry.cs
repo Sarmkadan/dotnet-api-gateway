@@ -172,9 +172,11 @@ public sealed class WebhookRegistry
 
                 using var client = new HttpClient();
 
-                // Generate signature before serialization to ensure timestamp consistency
-                var signature = GenerateWebhookSignature(subscription, webhookEvent);
                 var json = System.Text.Json.JsonSerializer.Serialize(webhookEvent);
+
+                // Sign the exact JSON body being sent so tampering with any field, including
+                // the event data, invalidates the signature.
+                var signature = GenerateWebhookSignature(subscription, webhookEvent.SignedAt, json);
                 var content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
                 if (!string.IsNullOrEmpty(signature))
@@ -212,39 +214,34 @@ public sealed class WebhookRegistry
     }
 
     /// <summary>
-    /// Generate HMAC-SHA256 signature for webhook delivery.
+    /// Generate the HMAC-SHA256 signature header value for a webhook delivery, per the scheme
+    /// documented in docs/WebhookSignatureVerification.md: HMAC-SHA256("{timestamp}.{jsonPayload}", secret).
+    /// Always signs with the subscription's current secret, since receivers are expected to
+    /// accept signatures from either the current or previous secret while a rotation is rolling
+    /// out (see <see cref="WebhookSubscription.PreviousSecret"/>).
     /// </summary>
-    /// <param name="subscription">The webhook subscription.</param>
-    /// <param name="webhookEvent">The webhook event to sign.</param>
-    /// <returns>The HMAC-SHA256 signature header value.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if subscription or webhookEvent is null.</exception>
-    private string GenerateWebhookSignature(WebhookSubscription subscription, WebhookEvent webhookEvent)
+    /// <param name="subscription">The webhook subscription whose secret signs the payload.</param>
+    /// <param name="signedAt">Unix timestamp in seconds included in the signature to prevent replay.</param>
+    /// <param name="jsonPayload">The exact serialized JSON body being delivered.</param>
+    /// <returns>The <c>X-Signature</c> header value, or an empty string if no secret is configured.</returns>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="jsonPayload"/> is null or empty.</exception>
+    private string GenerateWebhookSignature(WebhookSubscription subscription, long signedAt, string jsonPayload)
     {
         ArgumentNullException.ThrowIfNull(subscription);
-        ArgumentNullException.ThrowIfNull(webhookEvent);
+        ArgumentException.ThrowIfNullOrEmpty(jsonPayload);
 
-        if (string.IsNullOrWhiteSpace(subscription.CurrentSecret))
+        var secret = subscription.CurrentSecret;
+
+        if (string.IsNullOrWhiteSpace(secret))
         {
             _logger.LogWarning("No secret available for subscription {SubscriptionId}", subscription.Id);
             return string.Empty;
         }
 
-        // Use current secret (or previous if rotating)
-        var secret = subscription.PreviousSecret ?? subscription.CurrentSecret;
-
-        if (string.IsNullOrWhiteSpace(secret))
-        {
-            _logger.LogWarning("No valid secret available for subscription {SubscriptionId}", subscription.Id);
-            return string.Empty;
-        }
-
-        // Use the event's SignedAt timestamp for consistency
-        var timestamp = webhookEvent.SignedAt;
-        var message = $"{timestamp}.{webhookEvent.EventType}.{webhookEvent.Timestamp:O}";
-
+        var message = $"{signedAt}.{jsonPayload}";
         var signature = CryptoUtility.GenerateHmacSha256(message, secret);
 
-        return $"t={timestamp},v1={signature}";
+        return $"t={signedAt},v1={signature}";
     }
 }
 

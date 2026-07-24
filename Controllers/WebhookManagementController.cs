@@ -272,6 +272,14 @@ public class WebhookManagementController : ControllerBase
             using var client = new HttpClient();
             var json = System.Text.Json.JsonSerializer.Serialize(testEvent);
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            if (!string.IsNullOrWhiteSpace(subscription.CurrentSecret))
+            {
+                var message = $"{testEvent.SignedAt}.{json}";
+                var signature = CryptoUtility.GenerateHmacSha256(message, subscription.CurrentSecret);
+                content.Headers.Add("X-Signature", $"t={testEvent.SignedAt},v1={signature}");
+            }
+
             var response = await client.PostAsync(subscription.CallbackUrl, content);
 
             _logger.LogInformation("Webhook test delivery: {SubscriptionId} - {StatusCode}", id, response.StatusCode);
