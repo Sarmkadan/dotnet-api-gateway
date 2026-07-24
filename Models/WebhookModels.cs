@@ -42,6 +42,12 @@ public sealed class WebhookSubscription
 
     [JsonPropertyName("deliveryStats")]
     public WebhookDeliveryStats DeliveryStats { get; set; } = new();
+
+    /// <summary>
+    /// The ID of the client who owns this subscription (for multi-tenant access control).
+    /// </summary>
+    [JsonPropertyName("ownerId")]
+    public string OwnerId { get; set; } = string.Empty;
 }
 
 /// <summary>
