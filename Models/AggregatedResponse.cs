@@ -11,6 +11,8 @@ namespace DotNetApiGateway.Models;
 /// </summary>
 public sealed class AggregatedResponse
 {
+    private CancellationTokenSource? _cancellationTokenSource;
+
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public Dictionary<string, AggregatedResponseData> Responses { get; set; } = [];
     public DateTime AggregatedAt { get; set; } = DateTime.UtcNow;
@@ -18,6 +20,30 @@ public sealed class AggregatedResponse
     public int SuccessCount { get; set; } = 0;
     public int FailureCount { get; set; } = 0;
     public bool HasErrors => FailureCount > 0;
+    public bool WasCancelled { get; private set; } = false;
+
+    /// <summary>
+    /// Gets the cancellation token for this aggregation operation.
+    /// </summary>
+    public CancellationToken CancellationToken => _cancellationTokenSource?.Token ?? CancellationToken.None;
+
+    /// <summary>
+    /// Sets the cancellation token source for this aggregation.
+    /// </summary>
+    /// <param name="cts">The cancellation token source to use.</param>
+    public void SetCancellationToken(CancellationTokenSource cts)
+    {
+        _cancellationTokenSource = cts;
+    }
+
+    /// <summary>
+    /// Cancels all ongoing requests.
+    /// </summary>
+    public void Cancel()
+    {
+        _cancellationTokenSource?.Cancel();
+        WasCancelled = true;
+    }
 
     public void AddResponse(string alias, int statusCode, string? body, Dictionary<string, string>? headers = null, TimeSpan? duration = null, string? errorMessage = null)
     {

@@ -21,14 +21,21 @@ public sealed class ConditionalAggregationTarget
     public Dictionary<string, string>? Headers { get; set; }
     public string? Body { get; set; } // Optional request body for the aggregated call
     public int TimeoutSeconds { get; set; } = 30;
+    public int PerPartTimeoutSeconds { get; set; } = 5; // Maximum time allowed for this specific part before failing
     public bool Optional { get; set; } = false; // If true, failure of this target won't fail the whole aggregation
 
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(UpstreamUrl))
             throw new ArgumentException("UpstreamUrl cannot be empty for ConditionalAggregationTarget");
-        
+
         if (TimeoutSeconds < 1 || TimeoutSeconds > 300)
             throw new ArgumentException("TimeoutSeconds must be between 1 and 300 seconds");
+
+        if (PerPartTimeoutSeconds < 1 || PerPartTimeoutSeconds > 60)
+            throw new ArgumentException("PerPartTimeoutSeconds must be between 1 and 60 seconds");
+
+        if (PerPartTimeoutSeconds > TimeoutSeconds)
+            throw new ArgumentException("PerPartTimeoutSeconds cannot be greater than TimeoutSeconds");
     }
 }

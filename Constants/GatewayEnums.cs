@@ -25,9 +25,9 @@ public enum HttpMethod
 /// </summary>
 public enum CircuitBreakerState
 {
-    Closed,      // Normal operation, requests pass through
-    Open,        // Service is failing, requests are rejected
-    HalfOpen     // Testing if service recovered
+    Closed, // Normal operation, requests pass through
+    Open, // Service is failing, requests are rejected
+    HalfOpen // Testing if service recovered
 }
 
 /// <summary>
@@ -35,9 +35,9 @@ public enum CircuitBreakerState
 /// </summary>
 public enum RateLimitStrategy
 {
-    TokenBucket,     // Token bucket algorithm
-    SlidingWindow,   // Sliding window algorithm
-    FixedWindow      // Fixed window algorithm
+    TokenBucket, // Token bucket algorithm
+    SlidingWindow, // Sliding window algorithm
+    FixedWindow // Fixed window algorithm
 }
 
 /// <summary>
@@ -45,9 +45,21 @@ public enum RateLimitStrategy
 /// </summary>
 public enum AggregationStrategy
 {
-    Sequential,      // Execute requests one by one
-    Parallel,        // Execute requests in parallel
-    FirstSuccess     // Stop at first successful response
+    Sequential, // Execute requests one by one
+    Parallel, // Execute requests in parallel
+    FirstSuccess, // Stop at first successful response
+
+    /// <summary>
+    /// Fail-fast: Cancel all sibling requests when any request fails or times out.
+    /// The aggregated response will only contain successful responses up to the point of failure.
+    /// </summary>
+    FailFast,
+
+    /// <summary>
+    /// Best-effort: Include all responses in the aggregated response, even if some fail.
+    /// Each response includes its own status and error information.
+    /// </summary>
+    BestEffort
 }
 
 /// <summary>
@@ -76,9 +88,9 @@ public enum CacheStrategy
 /// </summary>
 public enum LoadBalancingStrategy
 {
-    RoundRobin,      // Distribute equally across backends
+    RoundRobin, // Distribute equally across backends
     LeastConnections, // Route to least busy backend
-    IpHash           // Route based on client IP
+    IpHash // Route based on client IP
 }
 
 /// <summary>

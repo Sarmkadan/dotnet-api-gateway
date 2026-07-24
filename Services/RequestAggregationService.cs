@@ -33,10 +33,13 @@ public sealed class RequestAggregationService
     /// <param name="policy">The aggregation policy for selecting targets and strategy.</param>
     /// <param name="incomingRequestBody">The incoming HTTP request body as a string, used for JSONPath evaluation.</param>
     /// <returns>An AggregatedResponse containing results from the selected backend calls.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if policy is null.</exception>
     public async Task<AggregatedResponse> AggregateAsync(
         AggregationPolicy policy,
         string? incomingRequestBody)
     {
+        ArgumentNullException.ThrowIfNull(policy, nameof(policy));
+
         var response = new AggregatedResponse();
         var startTime = DateTime.UtcNow;
 
@@ -79,6 +82,12 @@ public sealed class RequestAggregationService
                 break;
             case AggregationStrategy.FirstSuccess:
                 await ExecuteFirstSuccessAsync(selectedTargets, response);
+                break;
+            case AggregationStrategy.FailFast:
+                await ExecuteFailFastAsync(selectedTargets, response);
+                break;
+            case AggregationStrategy.BestEffort:
+                await ExecuteBestEffortAsync(selectedTargets, response);
                 break;
             default:
                 _logger.LogWarning("Unsupported aggregation strategy: {Strategy}. Falling back to Parallel.", policy.Strategy);
@@ -137,14 +146,14 @@ public sealed class RequestAggregationService
             try
             {
                 target.Validate();
-                var result = await ExecuteTargetRequestAsync(target);
+                var result = await ExecuteTargetRequestAsync(target, response.CancellationToken);
                 response.AddResponse(target.Id, result.StatusCode, result.Body, result.Headers, result.Duration);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogError(ex, "Error executing sequential aggregated request for target '{TargetId}'", target.Id);
                 if (!target.Optional)
-                    throw; // Re-throw if target is not optional
+                    throw;
 
                 response.AddResponse(target.Id, 500, null, null, null, ex.Message);
             }
@@ -156,26 +165,37 @@ public sealed class RequestAggregationService
         AggregatedResponse response)
     {
         var tasks = new List<Task>();
+        var cts = new CancellationTokenSource();
+        response.SetCancellationToken(cts);
 
         foreach (var target in targets)
         {
+            // Create a linked cancellation token that respects both the global timeout and per-part timeout
+            var timeoutCts = CreateTimeoutCancellationToken(target);
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, timeoutCts.Token);
+
             var task = Task.Run(async () =>
             {
                 try
                 {
                     target.Validate();
-                    var result = await ExecuteTargetRequestAsync(target);
+                    var result = await ExecuteTargetRequestAsync(target, linkedCts.Token);
                     response.AddResponse(target.Id, result.StatusCode, result.Body, result.Headers, result.Duration);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     _logger.LogError(ex, "Error executing parallel aggregated request for target '{TargetId}'", target.Id);
                     if (!target.Optional)
-                        throw; // Re-throw if target is not optional
+                        throw;
 
                     response.AddResponse(target.Id, 500, null, null, null, ex.Message);
                 }
-            });
+                finally
+                {
+                    linkedCts.Dispose();
+                    timeoutCts.Dispose();
+                }
+            }, cts.Token);
             tasks.Add(task);
         }
 
@@ -186,30 +206,155 @@ public sealed class RequestAggregationService
         IEnumerable<ConditionalAggregationTarget> targets,
         AggregatedResponse response)
     {
+        var cts = new CancellationTokenSource();
+        response.SetCancellationToken(cts);
+
         foreach (var target in targets)
         {
             try
             {
                 target.Validate();
-                var result = await ExecuteTargetRequestAsync(target);
+                var result = await ExecuteTargetRequestAsync(target, cts.Token);
                 response.AddResponse(target.Id, result.StatusCode, result.Body, result.Headers, result.Duration);
 
                 if (result.StatusCode >= 200 && result.StatusCode < 300)
                 {
                     _logger.LogInformation("First successful aggregated request for target '{TargetId}', stopping.", target.Id);
+                    cts.Cancel();
                     break; // Stop on first success
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 _logger.LogError(ex, "Error executing first-success aggregated request for target '{TargetId}'", target.Id);
                 if (!target.Optional)
-                    throw; // Re-throw if target is not optional
+                    throw;
             }
+        }
+
+        cts.Dispose();
+    }
+
+    private async Task ExecuteFailFastAsync(
+        IEnumerable<ConditionalAggregationTarget> targets,
+        AggregatedResponse response)
+    {
+        var cts = new CancellationTokenSource();
+        response.SetCancellationToken(cts);
+
+        var tasks = new List<Task>();
+
+        foreach (var target in targets)
+        {
+            // Create a linked cancellation token that respects both the global timeout and per-part timeout
+            var timeoutCts = CreateTimeoutCancellationToken(target);
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, timeoutCts.Token);
+
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    target.Validate();
+                    var result = await ExecuteTargetRequestAsync(target, linkedCts.Token);
+
+                    // Check if this is a failure that should trigger fail-fast
+                    if (result.StatusCode < 200 || result.StatusCode >= 300)
+                    {
+                        _logger.LogWarning("Fail-fast: Target '{TargetId}' returned status {StatusCode}. Cancelling sibling requests.", target.Id, result.StatusCode);
+                        cts.Cancel();
+                    }
+
+                    response.AddResponse(target.Id, result.StatusCode, result.Body, result.Headers, result.Duration);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogError(ex, "Error executing fail-fast aggregated request for target '{TargetId}'", target.Id);
+                    cts.Cancel(); // Cancel sibling requests on any error
+
+                    if (!target.Optional)
+                        throw;
+
+                    response.AddResponse(target.Id, 500, null, null, null, ex.Message);
+                }
+                finally
+                {
+                    linkedCts.Dispose();
+                    timeoutCts.Dispose();
+                }
+            }, cts.Token);
+            tasks.Add(task);
+        }
+
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Fail-fast: Request was cancelled due to sibling failure.");
+            // Don't throw - we want to return partial results
+        }
+        finally
+        {
+            cts.Dispose();
         }
     }
 
-    private async Task<RequestAggregationResult> ExecuteTargetRequestAsync(ConditionalAggregationTarget target)
+    private async Task ExecuteBestEffortAsync(
+        IEnumerable<ConditionalAggregationTarget> targets,
+        AggregatedResponse response)
+    {
+        var cts = new CancellationTokenSource();
+        response.SetCancellationToken(cts);
+
+        var tasks = new List<Task>();
+
+        foreach (var target in targets)
+        {
+            // Create a linked cancellation token that respects both the global timeout and per-part timeout
+            var timeoutCts = CreateTimeoutCancellationToken(target);
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, timeoutCts.Token);
+
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    target.Validate();
+                    var result = await ExecuteTargetRequestAsync(target, linkedCts.Token);
+                    response.AddResponse(target.Id, result.StatusCode, result.Body, result.Headers, result.Duration);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogError(ex, "Error executing best-effort aggregated request for target '{TargetId}'", target.Id);
+
+                    // Always include the error in the response for best-effort
+                    response.AddResponse(target.Id, 500, null, null, null, ex.Message);
+                }
+                finally
+                {
+                    linkedCts.Dispose();
+                    timeoutCts.Dispose();
+                }
+            }, cts.Token);
+            tasks.Add(task);
+        }
+
+        await Task.WhenAll(tasks);
+        cts.Dispose();
+    }
+
+    /// <summary>
+    /// Creates a cancellation token source that will timeout after PerPartTimeoutSeconds.
+    /// </summary>
+    private CancellationTokenSource CreateTimeoutCancellationToken(ConditionalAggregationTarget target)
+    {
+        var timeout = TimeSpan.FromSeconds(target.PerPartTimeoutSeconds);
+        return new CancellationTokenSource(timeout);
+    }
+
+    private async Task<RequestAggregationResult> ExecuteTargetRequestAsync(
+        ConditionalAggregationTarget target,
+        CancellationToken cancellationToken = default)
     {
         var startTime = DateTime.UtcNow;
 
@@ -227,10 +372,11 @@ public sealed class RequestAggregationService
             httpRequest.Content = new StringContent(target.Body);
 
         var timeout = TimeSpan.FromSeconds(target.TimeoutSeconds);
-        using var cts = new CancellationTokenSource(timeout);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(timeout);
 
         var httpResponse = await _httpClient.SendAsync(httpRequest, cts.Token);
-        var body = await httpResponse.Content.ReadAsStringAsync();
+        var body = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
 
         var headers = httpResponse.Headers.ToDictionary(x => x.Key, x => x.Value.FirstOrDefault() ?? string.Empty);
 
