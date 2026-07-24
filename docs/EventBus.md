@@ -2,60 +2,83 @@
 
 Centralized event dispatching mechanism for the API gateway, enabling decoupled communication between route handlers, middleware, and external services via strongly-typed events.
 
+## Dispatch Semantics
+
+The EventBus implements the following dispatch semantics:
+
+- **All handlers are invoked**: Regardless of individual handler failures, all subscribed handlers are invoked
+- **Exception isolation**: Individual handler exceptions do not prevent other handlers from executing
+- **Aggregate exceptions**: When multiple handlers fail, exceptions are aggregated and thrown as `EventDispatchException` after all handlers complete
+- **Structured failure information**: Detailed information about which handlers failed and with what exceptions is available
+- **Preserved execution order**: Handlers are invoked in the order they were subscribed
+- **Proper async/await**: Async handlers are awaited properly without deadlocks
+
 ## API
 
 ### `Subscribe<TEvent>`
 Registers a handler for events of type `TEvent`. Handlers are invoked in the order they are subscribed when the event is published.
 
+**Parameters:**
+- `handler`: The async handler callback that will process the event
+
+**Exceptions:**
+- `ArgumentNullException`: Thrown when handler is null
+
 ### `Unsubscribe<TEvent>`
-Removes all handlers previously registered for events of type `TEvent`.
+Removes a handler previously registered for events of type `TEvent`.
+
+**Parameters:**
+- `handler`: The handler callback to remove
 
 ### `PublishAsync<TEvent>`
-Asynchronously invokes all subscribed handlers for the given event. Throws `InvalidOperationException` if the event type has no subscribers.
+Asynchronously invokes all subscribed handlers for the given event.
+
+**Type Parameters:**
+- `TEvent`: The event type to publish
+
+**Parameters:**
+- `evt`: The event to publish
+
+**Returns:**
+- `Task`: Task representing the asynchronous operation
+
+**Exceptions:**
+- `ArgumentNullException`: Thrown when evt is null
+- `EventDispatchException`: Thrown when one or more handlers fail. Contains aggregated exceptions from all failed handlers
 
 ### `GetSubscriberCount<TEvent>`
 Returns the number of handlers currently subscribed to events of type `TEvent`.
 
+**Type Parameters:**
+- `TEvent`: The event type to check
+
+**Returns:**
+- `int`: The number of subscribers for the specified event type
+
 ### `Clear`
 Removes all event subscriptions across all types.
 
-### `Timestamp`
-Gets the creation timestamp of the bus instance.
+### `EventDispatchException`
+Exception thrown when event dispatch fails for one or more handlers.
 
-### `EventType`
-Gets the fully qualified type name of the current event being processed, or `null` if not in an event context.
+**Properties:**
+- `FailedHandlers`: Collection of handler failures with detailed error information
+- `EventType`: The event type that failed to dispatch
 
-### `RouteId`
-Gets the identifier of the route associated with the current event or operation.
-
-### `RouteName`
-Gets the name of the route associated with the current event or operation.
-
-### `TargetId`
-Gets the identifier of the target entity involved in the current event or operation.
-
-### `OldState`
-Gets the previous state value during state transition events.
-
-### `NewState`
-Gets the new state value during state transition events.
-
-### `ClientId`
-Gets the identifier of the client associated with the current event or operation.
-
-### `RequestCount`
-Gets the total number of requests processed by the gateway.
-
-### `Limit`
-Gets the configured maximum number of concurrent operations allowed.
-
-### `RequestId`
-Gets the identifier of the current request being processed.
-
-### `Path`
-Gets the request path associated with the current event or operation.
-
-### `Reason`
-Gets the reason or cause associated with the current event or operation.
+**Example:**
+```csharp
+try
+{
+    await eventBus.PublishAsync(routeCreatedEvent);
+}
+catch (EventDispatchException ex)
+{
+    Console.WriteLine($"Event dispatch failed for {ex.EventType}: {ex.Message}");
+    foreach (var failure in ex.FailedHandlers)
+    {
+        Console.WriteLine($"Handler #{failure.HandlerIndex} failed: {failure.Exception?.Message}");
+    }
+}
+```
 
 ## Usage

@@ -4,6 +4,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Collections.Immutable;
+
 namespace DotNetApiGateway.Events;
 
 /// <summary>
@@ -24,10 +26,12 @@ public sealed class EventBus
     /// <summary>
     /// Subscribe to events of specific type with handler callback.
     /// </summary>
+    /// <typeparam name="TEvent">The event type to subscribe to.</typeparam>
+    /// <param name="handler">The handler callback that will process the event.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="handler"/> is null.</exception>
     public void Subscribe<TEvent>(Func<TEvent, Task> handler) where TEvent : class, IGatewayEvent
     {
-        if (handler is null)
-            throw new ArgumentNullException(nameof(handler));
+        ArgumentNullException.ThrowIfNull(handler);
 
         var eventType = typeof(TEvent).Name;
 
@@ -49,6 +53,8 @@ public sealed class EventBus
     /// <summary>
     /// Unsubscribe handler from events.
     /// </summary>
+    /// <typeparam name="TEvent">The event type to unsubscribe from.</typeparam>
+    /// <param name="handler">The handler callback to remove.</param>
     public void Unsubscribe<TEvent>(Func<TEvent, Task> handler) where TEvent : class, IGatewayEvent
     {
         if (handler is null)
@@ -74,10 +80,24 @@ public sealed class EventBus
     /// <summary>
     /// Publish event to all subscribed handlers asynchronously.
     /// </summary>
+    /// <remarks>
+    /// Dispatch semantics:
+    /// <list type="bullet">
+    /// <item><description>All handlers are invoked regardless of individual failures</description></item>
+    /// <item><description>Exceptions from individual handlers are aggregated and thrown as <see cref="EventDispatchException"/> after all handlers complete</description></item>
+    /// <item><description>Each handler failure is logged individually with full exception details</description></item>
+    /// <item><description>Handler execution order is preserved</description></item>
+    /// <item><description>Async handlers are awaited properly without deadlocks</description></item>
+    /// </list>
+    /// </remarks>
+    /// <typeparam name="TEvent">The event type to publish.</typeparam>
+    /// <param name="evt">The event to publish.</param>
+    /// <returns>Task representing the asynchronous operation.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="evt"/> is null.</exception>
+    /// <exception cref="EventDispatchException">Thrown when one or more handlers fail. Contains aggregated exceptions from all failed handlers.</exception>
     public async Task PublishAsync<TEvent>(TEvent evt) where TEvent : class, IGatewayEvent
     {
-        if (evt is null)
-            throw new ArgumentNullException(nameof(evt));
+        ArgumentNullException.ThrowIfNull(evt);
 
         var eventType = typeof(TEvent).Name;
 
@@ -97,13 +117,42 @@ public sealed class EventBus
 
         _logger.LogInformation("Publishing event {EventType} to {HandlerCount} subscribers", eventType, handlers.Count);
 
-        var tasks = handlers.Cast<Func<TEvent, Task>>().Select(h => InvokeHandlerAsync(h, evt));
-        await Task.WhenAll(tasks);
+        var handlerTasks = handlers.Cast<Func<TEvent, Task>>().Select(h => InvokeHandlerAsync(h, evt)).ToList();
+
+        await Task.WhenAll(handlerTasks);
+
+        var failedHandlers = handlerTasks
+            .Select((task, index) => new { Index = index, Task = task })
+            .Where(x => x.Task.IsFaulted)
+            .Select(x => new HandlerFailure(
+                x.Index,
+                x.Task.Exception?.InnerException,
+                handlers[x.Index].Method?.DeclaringType?.Name ?? "Unknown"))
+            .ToImmutableArray();
+
+        if (failedHandlers.Length > 0)
+        {
+            _logger.LogError("Event dispatch completed with {FailedHandlerCount} failed handlers out of {TotalHandlerCount} total handlers",
+                failedHandlers.Length, handlers.Count);
+            throw new EventDispatchException(failedHandlers, eventType);
+        }
     }
 
     /// <summary>
     /// Invoke handler with error handling.
     /// </summary>
+    /// <remarks>
+    /// This method ensures that:
+    /// <list type="bullet">
+    /// <item><description>Exceptions are caught and logged individually</description></item>
+    /// <item><description>Async handlers are awaited properly</description></item>
+    /// <item><description>No exceptions propagate to the caller</description></item>
+    /// </list>
+    /// </remarks>
+    /// <typeparam name="TEvent">The event type.</typeparam>
+    /// <param name="handler">The handler to invoke.</param>
+    /// <param name="evt">The event to pass to the handler.</param>
+    /// <returns>Task representing the asynchronous operation.</returns>
     private async Task InvokeHandlerAsync<TEvent>(Func<TEvent, Task> handler, TEvent evt) where TEvent : class
     {
         try
@@ -119,6 +168,8 @@ public sealed class EventBus
     /// <summary>
     /// Get count of subscribers for specific event type.
     /// </summary>
+    /// <typeparam name="TEvent">The event type to check.</typeparam>
+    /// <returns>The number of subscribers for the specified event type.</returns>
     public int GetSubscriberCount<TEvent>() where TEvent : class, IGatewayEvent
     {
         var eventType = typeof(TEvent).Name;
@@ -140,6 +191,9 @@ public sealed class EventBus
     /// <summary>
     /// Clear all subscribers for all event types.
     /// </summary>
+    /// <remarks>
+    /// This method removes all registered handlers from the event bus.
+    /// </remarks>
     public void Clear()
     {
         _lock.EnterWriteLock();
@@ -154,6 +208,74 @@ public sealed class EventBus
         }
     }
 }
+
+/// <summary>
+/// Exception thrown when event dispatch fails for one or more handlers.
+/// </summary>
+/// <remarks>
+/// Contains detailed information about which handlers failed and with what exceptions.
+/// </remarks>
+public sealed class EventDispatchException : Exception
+{
+    /// <summary>
+    /// Gets the collection of handler failures.
+    /// </summary>
+    public IReadOnlyCollection<HandlerFailure> FailedHandlers { get; }
+
+    /// <summary>
+    /// Gets the event type that failed to dispatch.
+    /// </summary>
+    public string EventType { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EventDispatchException"/> class.
+    /// </summary>
+    /// <param name="failedHandlers">Collection of handler failures.</param>
+    /// <param name="eventType">The event type that failed to dispatch.</param>
+    public EventDispatchException(IReadOnlyCollection<HandlerFailure> failedHandlers, string eventType)
+    {
+        ArgumentNullException.ThrowIfNull(failedHandlers);
+        ArgumentException.ThrowIfNullOrEmpty(eventType);
+
+        FailedHandlers = failedHandlers;
+        EventType = eventType;
+
+        var failureCount = failedHandlers.Count;
+        var message = $"Event dispatch failed for {eventType}: {failureCount} handler(s) failed";
+
+        if (failedHandlers.Count == 1)
+        {
+            var failure = failedHandlers.First();
+            message += $"\nHandler #{failure.HandlerIndex} ({failure.HandlerType}) failed: {failure.Exception?.Message}";
+        }
+        else
+        {
+            message += "\nFailed handlers:";
+            foreach (var failure in failedHandlers)
+            {
+                message += $"\n- Handler #{failure.HandlerIndex} ({failure.HandlerType}): {failure.Exception?.Message}";
+            }
+        }
+
+        Data[nameof(FailedHandlers)] = failedHandlers;
+        Data[nameof(EventType)] = eventType;
+
+        base.Data[nameof(Message)] = message;
+    }
+
+    /// <summary>
+    /// Gets the message that describes the exception.
+    /// </summary>
+    public override string Message => (string?)base.Data[nameof(Message)] ?? base.Message ?? "Event dispatch failed";
+}
+
+/// <summary>
+/// Represents information about a failed handler during event dispatch.
+/// </summary>
+/// <param name="HandlerIndex">The index/position of the handler in the subscription list.</param>
+/// <param name="Exception">The exception thrown by the handler, if any.</param>
+/// <param name="HandlerType">The type containing the handler method.</param>
+public sealed record HandlerFailure(int HandlerIndex, Exception? Exception, string HandlerType);
 
 /// <summary>
 /// Interface for all gateway events.

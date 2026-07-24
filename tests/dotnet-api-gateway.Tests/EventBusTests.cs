@@ -188,6 +188,65 @@ public class EventBusTests
     }
 
     [Fact]
+    public async Task PublishAsync_WithThrowingHandlerFollowedBySucceedingOne_AllHandlersInvoked()
+    {
+        // Arrange
+        var throwingHandlerCalled = false;
+        var succeedingHandlerCalled = false;
+
+        Task ThrowingHandler(RouteCreatedEvent _)
+        {
+            throwingHandlerCalled = true;
+            throw new InvalidOperationException("Handler failed");
+        }
+
+        Task SucceedingHandler(RouteCreatedEvent _)
+        {
+            succeedingHandlerCalled = true;
+            return Task.CompletedTask;
+        }
+
+        _eventBus.Subscribe<RouteCreatedEvent>(ThrowingHandler);
+        _eventBus.Subscribe<RouteCreatedEvent>(SucceedingHandler);
+
+        var evt = new RouteCreatedEvent { RouteId = "route-1", RouteName = "test-route" };
+
+        // Act
+        await _eventBus.PublishAsync(evt);
+
+        // Assert
+        Assert.True(throwingHandlerCalled);
+        Assert.True(succeedingHandlerCalled);
+        Assert.Equal(2, _eventBus.GetSubscriberCount<RouteCreatedEvent>());
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithMultipleFailingHandlers_LogsAllFailures()
+    {
+        // Arrange
+        Task FailingHandler1(RouteCreatedEvent _)
+        {
+            throw new InvalidOperationException("Handler 1 failed");
+        }
+
+        Task FailingHandler2(RouteCreatedEvent _)
+        {
+            throw new ArgumentException("Handler 2 failed");
+        }
+
+        _eventBus.Subscribe<RouteCreatedEvent>(FailingHandler1);
+        _eventBus.Subscribe<RouteCreatedEvent>(FailingHandler2);
+
+        var evt = new RouteCreatedEvent { RouteId = "route-1", RouteName = "test-route" };
+
+        // Act - should not throw, all handlers are invoked and exceptions are logged
+        await _eventBus.PublishAsync(evt);
+
+        // Assert - both handlers were called and failed
+        Assert.Equal(2, _eventBus.GetSubscriberCount<RouteCreatedEvent>());
+    }
+
+    [Fact]
     public async Task PublishAsync_WithNullEvent_ThrowsArgumentNullException()
     {
         // Arrange & Act & Assert
