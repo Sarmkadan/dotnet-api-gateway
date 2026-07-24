@@ -2,18 +2,18 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
-
-namespace DotNetApiGateway.Controllers;
+// =====================================================================
 
 using Microsoft.AspNetCore.Mvc;
 using DotNetApiGateway.Models;
 using DotNetApiGateway.Services;
 using DotNetApiGateway.Repositories;
 
+namespace DotNetApiGateway.Controllers;
+
 /// <summary>
 /// Gateway management endpoints for route configuration, monitoring, and control.
-/// Provides operational endpoints for managing routes, policies, and gateway state.
+/// Provides operational endpoints for managing routes, policies, gateway state, and hot-reload configuration.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -26,8 +26,8 @@ public class GatewayManagementController : ControllerBase
         GatewayManagementService gatewayManagementService,
         ILogger<GatewayManagementController> logger)
     {
-        _gatewayManagementService = gatewayManagementService;
-        _logger = logger;
+        _gatewayManagementService = gatewayManagementService ?? throw new ArgumentNullException(nameof(gatewayManagementService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -192,5 +192,98 @@ public class GatewayManagementController : ControllerBase
     {
         var metrics = await _gatewayManagementService.GetGlobalMetricsAsync();
         return Ok(metrics);
+    }
+
+    /// <summary>
+    /// Get the current route table version and configuration status.
+    /// </summary>
+    [HttpGet("hot-reload/status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public IActionResult GetHotReloadStatus()
+    {
+        try
+        {
+            var status = _gatewayManagementService.GetHotReloadStatus();
+            return Ok(status);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting hot-reload status");
+            return StatusCode(500, new { error = "Failed to get hot-reload status", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Trigger a manual reload of the route configuration.
+    /// This is useful when automatic change detection fails or for testing purposes.
+    /// </summary>
+    [HttpPost("hot-reload/reload")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> TriggerRouteReload()
+    {
+        try
+        {
+            var result = await _gatewayManagementService.TriggerRouteReloadAsync();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error triggering route reload");
+            return StatusCode(500, new { error = "Failed to trigger route reload", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Subscribe to route configuration changes using Server-Sent Events (SSE).
+    /// Clients can listen for change events to implement real-time route configuration updates.
+    /// </summary>
+    [HttpGet("hot-reload/events")]
+    public async Task SubscribeToRouteEvents()
+    {
+        Response.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers.Connection = "keep-alive";
+
+        var routeRepository = _gatewayManagementService.GetRouteRepository();
+        var changeToken = routeRepository.ChangeToken;
+
+        _logger.LogInformation("Client subscribed to route configuration change events");
+
+        // Send initial connection confirmation
+        await Response.WriteAsync("event: connected\ndata: {\"status\": \"connected\", \"timestamp\": \"" + DateTime.UtcNow.ToString("o") + "\"}\n\n");
+        await Response.Body.FlushAsync();
+
+        // Register callback for changes
+        var registration = changeToken.RegisterChangeCallback(async state =>
+        {
+            var httpContext = (HttpContext)state!;
+            try
+            {
+                var repo = (GatewayRouteRepository)httpContext.RequestServices.GetService(typeof(GatewayRouteRepository))!;
+                var status = repo.GetHotReloadStatus();
+                await httpContext.Response.WriteAsync($"event: route-changed\ndata: {System.Text.Json.JsonSerializer.Serialize(status)}\n\n");
+                await httpContext.Response.Body.FlushAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending route change event");
+            }
+        }, HttpContext);
+
+        // Keep connection alive
+        try
+        {
+            while (!HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                await Task.Delay(1000, HttpContext.RequestAborted); // Keep connection alive
+            }
+        }
+        finally
+        {
+            registration.Dispose();
+            _logger.LogInformation("Client disconnected from route configuration events");
+        }
     }
 }

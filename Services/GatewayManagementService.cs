@@ -10,8 +10,9 @@ using DotNetApiGateway.Repositories;
 namespace DotNetApiGateway.Services;
 
 /// <summary>
-/// Service for gateway management operations including route CRUD, metrics, and system state management.
-/// Provides business logic for managing routes, policies, and gateway state.
+/// Service for gateway management operations including route CRUD, metrics, system state management,
+/// and hot-reload configuration.
+/// Provides business logic for managing routes, policies, gateway state, and route table updates.
 /// </summary>
 public sealed class GatewayManagementService
 {
@@ -30,12 +31,71 @@ public sealed class GatewayManagementService
         GatewayRouteRepository routeRepository,
         ILogger<GatewayManagementService>? logger = null)
     {
-        _routingService = routingService;
-        _circuitBreakerService = circuitBreakerService;
-        _rateLimitingService = rateLimitingService;
-        _metricsService = metricsService;
-        _routeRepository = routeRepository;
+        _routingService = routingService ?? throw new ArgumentNullException(nameof(routingService));
+        _circuitBreakerService = circuitBreakerService ?? throw new ArgumentNullException(nameof(circuitBreakerService));
+        _rateLimitingService = rateLimitingService ?? throw new ArgumentNullException(nameof(rateLimitingService));
+        _metricsService = metricsService ?? throw new ArgumentNullException(nameof(metricsService));
+        _routeRepository = routeRepository ?? throw new ArgumentNullException(nameof(routeRepository));
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<GatewayManagementService>.Instance;
+    }
+
+    /// <summary>
+    /// Gets the route repository instance.
+    /// </summary>
+    /// <returns>The route repository.</returns>
+    public GatewayRouteRepository GetRouteRepository()
+    {
+        return _routeRepository;
+    }
+
+    /// <summary>
+    /// Gets the current hot-reload status including route table version and configuration.
+    /// </summary>
+    /// <returns>Hot reload status information.</returns>
+    public object GetHotReloadStatus()
+    {
+        return new
+        {
+            routeTableVersion = _routingService.CurrentRouteTableVersion,
+            routeCount = _routingService.RouteCount,
+            changeTokenActive = _routeRepository.ChangeToken.HasChanged,
+            lastChangeVersion = _routeRepository.ChangeToken is RouteConfigurationChangeTokenSource tokenSource
+                ? tokenSource.GetChangeCount()
+                : 0,
+            timestamp = DateTime.UtcNow,
+            isHealthy = true
+        };
+    }
+
+    /// <summary>
+    /// Triggers a manual reload of the route configuration.
+    /// This forces recompilation of the route table and updates all dependent services.
+    /// </summary>
+    /// <returns>Result of the reload operation.</returns>
+    public async Task<object> TriggerRouteReloadAsync()
+    {
+        try
+        {
+            // Force recompilation by accessing the compiled route table
+            var currentTable = _routeRepository.CompiledRouteTable;
+
+            _logger.LogInformation("Manual route reload triggered. Route table version: {Version}, Route count: {Count}",
+                currentTable.Version, currentTable.Count);
+
+            return new
+            {
+                success = true,
+                newVersion = currentTable.Version,
+                routeCount = currentTable.Count,
+                timestamp = DateTime.UtcNow,
+                message = "Route configuration reloaded successfully"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error triggering route reload");
+            throw;
+        }
     }
 
     /// <summary>
@@ -84,6 +144,8 @@ public sealed class GatewayManagementService
     /// </summary>
     public async Task<(GatewayRoute? route, object? metrics)> GetRouteByIdWithMetricsAsync(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+
         var route = await _routeRepository.GetByIdAsync(id);
         if (route is null)
         {
@@ -99,6 +161,9 @@ public sealed class GatewayManagementService
     /// </summary>
     public async Task<GatewayRoute> UpdateRouteAsync(string id, GatewayRoute updatedRoute)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        ArgumentNullException.ThrowIfNull(updatedRoute);
+
         var existing = await _routeRepository.GetByIdAsync(id);
         if (existing is null)
         {
@@ -116,6 +181,8 @@ public sealed class GatewayManagementService
     /// </summary>
     public async Task<bool> DeleteRouteAsync(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+
         var route = await _routeRepository.GetByIdAsync(id);
         if (route is null)
         {
@@ -139,6 +206,7 @@ public sealed class GatewayManagementService
     /// </summary>
     public async Task<object> GetRouteMetricsAsync(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         return await _metricsService.GetRouteMetricsAsync(id);
     }
 
@@ -155,6 +223,8 @@ public sealed class GatewayManagementService
     /// </summary>
     public async Task<object> ResetCircuitBreakerAsync(string targetId)
     {
+        ArgumentException.ThrowIfNullOrEmpty(targetId);
+
         var status = await _circuitBreakerService.GetStatusAsync(targetId);
         if (status is null)
         {
@@ -172,6 +242,8 @@ public sealed class GatewayManagementService
     /// </summary>
     public async Task<object> GetRateLimitStatusAsync(string key)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+
         // Try to get a rate limit policy from an active route
         var activeRoute = (await _routeRepository.GetAllAsync())
             .FirstOrDefault(r => r.IsActive && r.RateLimitPolicy?.IsEnabled() == true);
@@ -191,6 +263,7 @@ public sealed class GatewayManagementService
     /// </summary>
     public async Task ResetRateLimitForKeyAsync(string key)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
         await _rateLimitingService.ResetKeyLimitsAsync(key);
     }
 

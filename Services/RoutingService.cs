@@ -2,29 +2,82 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using DotNetApiGateway.Constants;
+using Microsoft.Extensions.Primitives;
 
 namespace DotNetApiGateway.Services;
 
 /// <summary>
-/// Service for routing requests to appropriate backend targets
+/// Service for routing requests to appropriate backend targets with hot-reload support.
+/// Uses compiled route tables for efficient route matching and observes change tokens
+/// for route configuration updates.
 /// </summary>
-public sealed class RoutingService
+public sealed class RoutingService : IDisposable
 {
     private readonly GatewayRouteRepository _routeRepository;
     private readonly LoadBalancingStrategy _loadBalancingStrategy;
     private readonly ILogger<RoutingService> _logger;
     private int _roundRobinIndex = -1; // first Interlocked.Increment yields 0
+    private IDisposable? _changeTokenRegistration;
+    private CompiledRouteTable _currentRouteTable = new();
 
     public RoutingService(GatewayRouteRepository routeRepository,
         LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.RoundRobin,
         ILogger<RoutingService>? logger = null)
     {
-        _routeRepository = routeRepository;
+        _routeRepository = routeRepository ?? throw new ArgumentNullException(nameof(routeRepository));
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RoutingService>.Instance;
         _loadBalancingStrategy = loadBalancingStrategy;
+
+        // Register for change notifications
+        _changeTokenRegistration = _routeRepository.ChangeToken.RegisterChangeCallback(
+            OnRouteConfigurationChanged, null);
+
+        // Initialize with current route table
+        _currentRouteTable = _routeRepository.CompiledRouteTable;
+    }
+
+    /// <summary>
+    /// Gets the current route table version.
+    /// </summary>
+    public int CurrentRouteTableVersion => _currentRouteTable.Version;
+
+    /// <summary>
+    /// Gets the number of routes in the current route table.
+    /// </summary>
+    public int RouteCount => _currentRouteTable.Count;
+
+    /// <summary>
+    /// Disposes the change token registration.
+    /// </summary>
+    public void Dispose()
+    {
+        _changeTokenRegistration?.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Callback invoked when route configuration changes.
+    /// </summary>
+    private void OnRouteConfigurationChanged(object? state)
+    {
+        try
+        {
+            // Update the current route table
+            _currentRouteTable = _routeRepository.CompiledRouteTable;
+            _logger.LogInformation("Route configuration updated. New route table version: {Version}, Route count: {Count}",
+                _currentRouteTable.Version, _currentRouteTable.Count);
+
+            // Re-register for future changes
+            _changeTokenRegistration = _routeRepository.ChangeToken.RegisterChangeCallback(
+                OnRouteConfigurationChanged, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling route configuration change");
+        }
     }
 
     /// <summary>
@@ -36,7 +89,10 @@ public sealed class RoutingService
     /// <exception cref="RouteNotFoundException">Thrown if no route is found.</exception>
     public async Task<GatewayRoute?> FindRouteAsync(string path, string method)
     {
-        var route = await _routeRepository.FindRouteByPathAsync(path, method);
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentException.ThrowIfNullOrEmpty(method);
+
+        var route = _currentRouteTable.FindRoute(path, method);
 
         if (route is null)
         {
@@ -58,6 +114,8 @@ public sealed class RoutingService
     /// <exception cref="GatewayException">Thrown if no available targets are found.</exception>
     public RouteTarget SelectTarget(GatewayRoute route, string? clientIp = null)
     {
+        ArgumentNullException.ThrowIfNull(route);
+
         // First, filter targets by health status
         var healthyTargets = route.Targets.Where(t => t.IsHealthy).ToList();
 
@@ -102,6 +160,9 @@ public sealed class RoutingService
     /// <returns>The full URL for the backend target.</returns>
     public string BuildForwardUrl(RouteTarget target, string requestPath)
     {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentException.ThrowIfNullOrEmpty(requestPath);
+
         return target.GetForwardUrl(requestPath);
     }
 
@@ -169,6 +230,9 @@ public sealed class RoutingService
 
     public Dictionary<string, string> ApplyHeaderTransforms(RouteTarget target, Dictionary<string, string> originalHeaders)
     {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(originalHeaders);
+
         var headers = new Dictionary<string, string>(originalHeaders);
 
         foreach (var transform in target.TransformHeaders)
@@ -181,11 +245,13 @@ public sealed class RoutingService
 
     public async Task<IEnumerable<GatewayRoute>> GetAllActiveRoutesAsync()
     {
-        return await _routeRepository.GetActiveRoutesAsync();
+        return _currentRouteTable.GetAllActiveRoutes();
     }
 
     public async Task<GatewayRoute> CreateRouteAsync(GatewayRoute route)
     {
+        ArgumentNullException.ThrowIfNull(route);
+
         route.Validate();
         var created = await _routeRepository.AddAsync(route);
         _logger.LogInformation("Route created: {RouteId} ({RouteName})", created.Id, created.Name);
@@ -194,6 +260,8 @@ public sealed class RoutingService
 
     public async Task<GatewayRoute> UpdateRouteAsync(GatewayRoute route)
     {
+        ArgumentNullException.ThrowIfNull(route);
+
         route.Validate();
         var updated = await _routeRepository.UpdateAsync(route);
         _logger.LogInformation("Route updated: {RouteId} ({RouteName})", updated.Id, updated.Name);
@@ -202,6 +270,8 @@ public sealed class RoutingService
 
     public async Task<bool> DeleteRouteAsync(string routeId)
     {
+        ArgumentException.ThrowIfNullOrEmpty(routeId);
+
         var deleted = await _routeRepository.DeleteAsync(routeId);
         if (deleted)
         {
