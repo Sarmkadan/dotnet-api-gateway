@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetApiGateway.Utilities;
 
@@ -19,8 +19,13 @@ public static class CryptoUtility
     /// Generate SHA256 hash of input string.
     /// Returns hex-encoded hash suitable for comparisons and storage.
     /// </summary>
+    /// <param name="input">Input string to hash.</param>
+    /// <returns>Hex-encoded SHA256 hash, or empty string if input is null or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if input is null.</exception>
     public static string GenerateSha256Hash(string input)
     {
+        ArgumentNullException.ThrowIfNull(input);
+
         if (string.IsNullOrWhiteSpace(input))
             return string.Empty;
 
@@ -32,9 +37,14 @@ public static class CryptoUtility
     /// <summary>
     /// Generate SHA256 hash of byte array.
     /// </summary>
+    /// <param name="data">Byte array to hash.</param>
+    /// <returns>Hex-encoded SHA256 hash, or empty string if data is null or empty.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if data is null.</exception>
     public static string GenerateSha256Hash(byte[] data)
     {
-        if (data is null || data.Length == 0)
+        ArgumentNullException.ThrowIfNull(data);
+
+        if (data.Length == 0)
             return string.Empty;
 
         using var sha256 = SHA256.Create();
@@ -46,8 +56,15 @@ public static class CryptoUtility
     /// Generate HMAC-SHA256 signature for webhook verification.
     /// Secret is used as the key for HMAC generation.
     /// </summary>
+    /// <param name="data">Data to sign.</param>
+    /// <param name="secret">Secret key for HMAC.</param>
+    /// <returns>Hex-encoded HMAC-SHA256 signature, or empty string if data or secret is null or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if data or secret is null.</exception>
     public static string GenerateHmacSha256(string data, string secret)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(secret);
+
         if (string.IsNullOrWhiteSpace(data) || string.IsNullOrWhiteSpace(secret))
             return string.Empty;
 
@@ -61,9 +78,16 @@ public static class CryptoUtility
     /// <summary>
     /// Generate HMAC-SHA256 signature for byte array data.
     /// </summary>
+    /// <param name="data">Data to sign as byte array.</param>
+    /// <param name="secret">Secret key for HMAC.</param>
+    /// <returns>Hex-encoded HMAC-SHA256 signature, or empty string if data is null or empty, or secret is null or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if data or secret is null.</exception>
     public static string GenerateHmacSha256(byte[] data, string secret)
     {
-        if (data is null || data.Length == 0 || string.IsNullOrWhiteSpace(secret))
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(secret);
+
+        if (data.Length == 0 || string.IsNullOrWhiteSpace(secret))
             return string.Empty;
 
         var secretBytes = Encoding.UTF8.GetBytes(secret);
@@ -76,52 +100,57 @@ public static class CryptoUtility
     /// Verify HMAC signature by comparing computed hash with provided signature.
     /// Uses constant-time comparison to prevent timing attacks.
     /// </summary>
+    /// <param name="data">Data to verify.</param>
+    /// <param name="signature">Expected signature to compare against.</param>
+    /// <param name="secret">Secret key used for HMAC generation.</param>
+    /// <returns>True if signature matches, false otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if data, signature, or secret is null.</exception>
     public static bool VerifyHmacSha256(string data, string signature, string secret)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(signature);
+        ArgumentNullException.ThrowIfNull(secret);
+
         if (string.IsNullOrWhiteSpace(data) || string.IsNullOrWhiteSpace(signature))
             return false;
 
         var computedSignature = GenerateHmacSha256(data, secret);
-        return ConstantTimeCompare(signature, computedSignature);
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(signature),
+            Encoding.UTF8.GetBytes(computedSignature));
     }
 
     /// <summary>
     /// Verify HMAC signature for byte array data.
+    /// Uses constant-time comparison to prevent timing attacks.
     /// </summary>
+    /// <param name="data">Data to verify as byte array.</param>
+    /// <param name="signature">Expected signature to compare against.</param>
+    /// <param name="secret">Secret key used for HMAC generation.</param>
+    /// <returns>True if signature matches, false otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if data, signature, or secret is null.</exception>
     public static bool VerifyHmacSha256(byte[] data, string signature, string secret)
     {
-        if (data is null || string.IsNullOrWhiteSpace(signature))
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(signature);
+        ArgumentNullException.ThrowIfNull(secret);
+
+        if (data.Length == 0 || string.IsNullOrWhiteSpace(signature))
             return false;
 
         var computedSignature = GenerateHmacSha256(data, secret);
-        return ConstantTimeCompare(signature, computedSignature);
-    }
-
-    /// <summary>
-    /// Constant-time string comparison to prevent timing attacks.
-    /// Compares strings without early exit on mismatch.
-    /// </summary>
-    private static bool ConstantTimeCompare(string a, string b)
-    {
-        if (a is null || b is null)
-            return a == b;
-
-        if (a.Length != b.Length)
-            return false;
-
-        int result = 0;
-        for (int i = 0; i < a.Length; i++)
-        {
-            result |= a[i] ^ b[i];
-        }
-
-        return result == 0;
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(signature),
+            Encoding.UTF8.GetBytes(computedSignature));
     }
 
     /// <summary>
     /// Generate cryptographically secure random string of specified length.
     /// Useful for generating secrets, API keys, tokens.
     /// </summary>
+    /// <param name="length">Length of the random string to generate. Default is 32.</param>
+    /// <returns>Random alphanumeric string of specified length.</returns>
+    /// <exception cref="ArgumentException">Thrown if length is less than or equal to 0.</exception>
     public static string GenerateRandomString(int length = 32)
     {
         if (length <= 0)
@@ -145,6 +174,9 @@ public static class CryptoUtility
     /// <summary>
     /// Generate random bytes using cryptographically secure RNG.
     /// </summary>
+    /// <param name="length">Number of random bytes to generate.</param>
+    /// <returns>Byte array containing cryptographically secure random bytes.</returns>
+    /// <exception cref="ArgumentException">Thrown if length is less than or equal to 0.</exception>
     public static byte[] GenerateRandomBytes(int length)
     {
         if (length <= 0)
