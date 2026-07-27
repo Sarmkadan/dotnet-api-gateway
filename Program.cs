@@ -9,6 +9,7 @@ using DotNetApiGateway.Middleware;
 using DotNetApiGateway.Utilities;
 using HttpMethod = System.Net.Http.HttpMethod;
 using Microsoft.Extensions.DependencyInjection;
+using DotNetApiGateway.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,9 @@ app.UseAuthorization();
 // Core Gateway Middleware - Order is important!
 app.UseRoutingMiddleware(); // 1. Resolve GatewayRoute and store in HttpContext.Items
 app.UseRateLimitingMiddleware(); // 2. Apply rate limiting based on resolved route
+
+// Centralized exception-to-status-code mapping
+app.UseMiddleware<ExceptionMappingMiddleware>(); // <-- added
 
 // Health check endpoint
 app.MapGet("/health", () => new
@@ -188,15 +192,14 @@ app.MapFallback(async (
             Content = requestContent
         };
 
-
-                // Sanitize and copy headers from incoming request to outgoing request
-                // This removes hop-by-hop headers, sensitive auth headers, and sets proper forwarding headers
-                HeaderSanitizationUtility.SanitizeForForwarding(
-                    context.Request.Headers,
-                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                    context.Request.Scheme,
-                    requestMessage,
-                    removeHostHeader: true);
+        // Sanitize and copy headers from incoming request to outgoing request
+        // This removes hop-by-hop headers, sensitive auth headers, and sets proper forwarding headers
+        HeaderSanitizationUtility.SanitizeForForwarding(
+            context.Request.Headers,
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            context.Request.Scheme,
+            requestMessage,
+            removeHostHeader: true);
 
         // Apply request-phase transformation rules before forwarding
         if (route.TransformationRules.Count > 0)
@@ -216,39 +219,28 @@ app.MapFallback(async (
         if (route.TransformationRules.Count > 0)
             requestTransformationService.ApplyResponseRules(responseMessage, route.TransformationRules);
 
+        // Sanitize and copy headers from upstream response to client response
+        // This removes hop-by-hop and sensitive headers before forwarding to client
+        HeaderSanitizationUtility.SanitizeResponseHeaders(context.Response.Headers);
 
-                // Sanitize and copy headers from upstream response to client response
-                // This removes hop-by-hop and sensitive headers before forwarding to client
-                HeaderSanitizationUtility.SanitizeResponseHeaders(context.Response.Headers);
-
-                context.Response.StatusCode = (int)responseMessage.StatusCode;
-                foreach (var header in responseMessage.Headers)
-                {
-                    context.Response.Headers[header.Key] = header.Value.ToArray();
-                }
-                foreach (var header in responseMessage.Content.Headers)
-                {
-                    context.Response.Headers[header.Key] = header.Value.ToArray();
-                }
+        context.Response.StatusCode = (int)responseMessage.StatusCode;
+        foreach (var header in responseMessage.Headers)
+        {
+            context.Response.Headers[header.Key] = header.Value.ToArray();
+        }
+        foreach (var header in responseMessage.Content.Headers)
+        {
+            context.Response.Headers[header.Key] = header.Value.ToArray();
+        }
 
         // Stream the response body directly to the client without buffering in memory
         await responseMessage.Content.CopyToAsync(context.Response.Body);
         return Results.Empty; // Indicate that the response has been handled
     }
-    catch (DotNetApiGateway.Exceptions.RouteNotFoundException ex)
-    {
-        logger.LogWarning(ex, "Route not found during forwarding for route {RouteId}", route.Id);
-        context.Response.StatusCode = 404;
-        return Results.Json(new { error = ex.Message, errorCode = ex.ErrorCode });
-    }
-    catch (DotNetApiGateway.Exceptions.GatewayException ex)
-    {
-        logger.LogError(ex, "Gateway exception during forwarding for route {RouteId}", route.Id);
-        context.Response.StatusCode = ex.StatusCode;
-        return Results.Json(new { error = ex.Message, errorCode = ex.ErrorCode });
-    }
     catch (Exception ex)
     {
+        // Let the centralized ExceptionMappingMiddleware handle known exceptions.
+        // For unexpected errors, we still return a generic 500 response here.
         logger.LogError(ex, "Unexpected error during request forwarding for route {RouteId}", route.Id);
         context.Response.StatusCode = 500;
         return Results.Json(new { error = $"Request forwarding failed: {ex.Message}" });
