@@ -152,6 +152,62 @@ public sealed class RateLimitMetrics
     }
 
     /// <summary>
+    /// Calculate the throttle rate for a client.
+    /// </summary>
+    public double ThrottleRate(string clientId)
+    {
+        _lock.EnterReadLock();
+        try
+        {
+            if (_clientStats.TryGetValue(clientId, out var stats))
+            {
+                return stats.TotalRequests == 0 ? 0 : (stats.LimitedRequests * 100.0) / stats.TotalRequests;
+            }
+            return 0;
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
+
+    /// <summary>
+    /// Get top N clients by throttle rate.
+    /// </summary>
+    public List<ClientRateLimitStats> TopOffenders(int n)
+    {
+        _lock.EnterReadLock();
+        try
+        {
+            return _clientStats.Values
+                .OrderByDescending(s => s.ViolationRate)
+                .Take(n)
+                .ToList();
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
+
+    /// <summary>
+    /// Convert rate limit metrics to a summary string.
+    /// </summary>
+    public string ToSummary()
+    {
+        _lock.EnterReadLock();
+        try
+        {
+            var overallMetrics = GetOverallMetrics();
+            return $"Total Clients: {overallMetrics.TotalClients}, Total Requests: {overallMetrics.TotalRequests}, Total Limited Requests: {overallMetrics.TotalLimitedRequests}, Average Requests Per Client: {overallMetrics.AverageRequestsPerClient}";
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
+
+    /// <summary>
     /// Clear all statistics.
     /// </summary>
     public void Clear()
