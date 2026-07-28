@@ -7,6 +7,7 @@
 namespace DotNetApiGateway.Utilities;
 
 using System.Text;
+using DotNetApiGateway.Models;
 
 /// <summary>
 /// Extension methods for common types used throughout the gateway.
@@ -197,5 +198,29 @@ public static class ExtensionMethods
             return 0;
 
         return System.Text.Encoding.UTF8.GetByteCount(value) + 48; // Account for string object overhead
+    }
+
+    /// <summary>
+    /// Check if gateway route matches the given path.
+    /// </summary>
+    public static bool MatchesPath(this GatewayRoute route, string path)
+    {
+        return route.MatchesPath(path);
+    }
+
+    /// <summary>
+    /// Convert gateway route to a display string.
+    /// </summary>
+    public static string ToDisplayString(this GatewayRoute route)
+    {
+        return $"Id: {route.Id}, Name: {route.Name}, PathPattern: {route.PathPattern}, IsActive: {route.IsActive}";
+    }
+
+    /// <summary>
+    /// Check if gateway route is active.
+    /// </summary>
+    public static bool IsActive(this GatewayRoute route)
+    {
+        return route.IsActive;
     }
 }
