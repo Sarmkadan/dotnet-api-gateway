@@ -11,7 +11,7 @@ namespace DotNetApiGateway.Models;
 /// When multiple identical requests arrive simultaneously, coalescing ensures
 /// only one upstream call is made and the result is shared with all waiters.
 /// </summary>
-public sealed class RequestCoalescingPolicy
+public sealed class RequestCoalescingPolicy : IEquatable<RequestCoalescingPolicy>
 {
     /// <summary>Gets or sets the unique policy identifier.</summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
@@ -89,4 +89,28 @@ public sealed class RequestCoalescingPolicy
 
         return key;
     }
+
+    public bool Equals(RequestCoalescingPolicy? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Id == other.Id &&
+               Enabled == other.Enabled &&
+               TimeoutMs == other.TimeoutMs &&
+               MaxQueuedRequests == other.MaxQueuedRequests &&
+               CoalescibleMethods.SequenceEqual(other.CoalescibleMethods) &&
+               IncludeQueryString == other.IncludeQueryString;
+    }
+
+    public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is RequestCoalescingPolicy other && Equals(other);
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Id, Enabled, TimeoutMs, MaxQueuedRequests, string.Join(",", CoalescibleMethods), IncludeQueryString);
+    }
+
+    public static bool operator ==(RequestCoalescingPolicy? left, RequestCoalescingPolicy? right) => EqualityComparer<RequestCoalescingPolicy>.Default.Equals(left, right);
+
+    public static bool operator !=(RequestCoalescingPolicy? left, RequestCoalescingPolicy? right) => !(left == right);
 }
