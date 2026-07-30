@@ -4,12 +4,16 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace DotNetApiGateway.Models;
 
 /// <summary>
 /// Represents a route configuration in the API gateway
 /// </summary>
-public sealed class GatewayRoute
+public sealed class GatewayRoute : IEquatable<GatewayRoute>
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Name { get; set; } = string.Empty;
@@ -84,4 +88,47 @@ public sealed class GatewayRoute
     {
         return AllowedMethods.Any(m => m.Equals(method, StringComparison.OrdinalIgnoreCase));
     }
+
+    // ------------------------------------------------------------------------
+    // Equality members
+    // ------------------------------------------------------------------------
+
+    public bool Equals(GatewayRoute? other)
+    {
+        if (ReferenceEquals(this, other))
+            return true;
+        if (other is null)
+            return false;
+
+        return Id == other.Id &&
+               Name == other.Name &&
+               PathPattern == other.PathPattern &&
+               AllowedMethods.SequenceEqual(other.AllowedMethods) &&
+               Targets.SequenceEqual(other.Targets) &&
+               EqualityComparer<RateLimitPolicy?>.Default.Equals(RateLimitPolicy, other.RateLimitPolicy) &&
+               EqualityComparer<CircuitBreakerPolicy?>.Default.Equals(CircuitBreakerPolicy, other.CircuitBreakerPolicy) &&
+               EqualityComparer<CachePolicy?>.Default.Equals(CachePolicy, other.CachePolicy);
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as GatewayRoute);
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Id);
+        hash.Add(Name);
+        hash.Add(PathPattern);
+        foreach (var method in AllowedMethods)
+            hash.Add(method);
+        foreach (var target in Targets)
+            hash.Add(target);
+        hash.Add(RateLimitPolicy);
+        hash.Add(CircuitBreakerPolicy);
+        hash.Add(CachePolicy);
+        return hash.ToHashCode();
+    }
+
+    public static bool operator ==(GatewayRoute? left, GatewayRoute? right) => EqualityComparer<GatewayRoute>.Default.Equals(left, right);
+
+    public static bool operator !=(GatewayRoute? left, GatewayRoute? right) => !(left == right);
 }
