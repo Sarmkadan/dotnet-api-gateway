@@ -171,6 +171,7 @@ public static class ConversionUtility
 
         try
         {
+            // Use InvariantCulture to avoid culture‑dependent conversions.
             return (T?)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
         }
         catch
