@@ -6,10 +6,19 @@ using System.Text;
 using DotNetApiGateway.Utilities;
 using FluentAssertions;
 
+/// <summary>
+/// Test class for CryptoUtility utilities.
+/// </summary>
 public class CryptoUtilityTests
 {
+    /// <summary>
+    /// Tests for the GenerateSha256Hash method.
+    /// </summary>
     public class GenerateSha256Hash
     {
+        /// <summary>
+        /// Verifies that GenerateSha256Hash returns the correct hash for a valid non-empty string input.
+        /// </summary>
         [Fact]
         public void GenerateSha256Hash_WithValidString_ReturnsCorrectHash()
         {
@@ -24,6 +33,9 @@ public class CryptoUtilityTests
             result.Should().Be(expectedHash, "SHA256 hash should match expected value for given input");
         }
 
+        /// <summary>
+        /// Verifies that GenerateSha256Hash returns an empty string when given an empty string input.
+        /// </summary>
         [Fact]
         public void GenerateSha256Hash_WithEmptyString_ReturnsEmptyString()
         {
@@ -37,6 +49,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("empty string input should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateSha256Hash returns an empty string when given a whitespace-only string input.
+        /// </summary>
         [Fact]
         public void GenerateSha256Hash_WithWhitespaceString_ReturnsEmptyString()
         {
@@ -50,6 +65,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("whitespace-only string input should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateSha256Hash returns an empty string when given a null string input.
+        /// </summary>
         [Fact]
         public void GenerateSha256Hash_WithNullString_ReturnsEmptyString()
         {
@@ -63,6 +81,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("null string input should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateSha256Hash returns the correct hash for a valid byte array input.
+        /// </summary>
         [Fact]
         public void GenerateSha256Hash_WithValidByteArray_ReturnsCorrectHash()
         {
@@ -77,6 +98,9 @@ public class CryptoUtilityTests
             result.Should().Be(expectedHash, "SHA256 hash should match expected value for given byte array");
         }
 
+        /// <summary>
+        /// Verifies that GenerateSha256Hash returns an empty string when given an empty byte array input.
+        /// </summary>
         [Fact]
         public void GenerateSha256Hash_WithEmptyByteArray_ReturnsEmptyString()
         {
@@ -90,6 +114,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("empty byte array input should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateSha256Hash returns an empty string when given a null byte array input.
+        /// </summary>
         [Fact]
         public void GenerateSha256Hash_WithNullByteArray_ReturnsEmptyString()
         {
@@ -103,6 +130,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("null byte array input should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateSha256Hash produces the same hash for the same input across multiple calls (deterministic).
+        /// </summary>
         [Fact]
         public void GenerateSha256Hash_Deterministic_ReturnsSameHashForSameInput()
         {
@@ -120,8 +150,14 @@ public class CryptoUtilityTests
         }
     }
 
+    /// <summary>
+    /// Tests for the GenerateHmacSha256 method.
+    /// </summary>
     public class GenerateHmacSha256
     {
+        /// <summary>
+        /// Verifies that GenerateHmacSha256 returns the correct signature for valid data and secret.
+        /// </summary>
         [Fact]
         public void GenerateHmacSha256_WithValidDataAndSecret_ReturnsCorrectSignature()
         {
@@ -137,6 +173,9 @@ public class CryptoUtilityTests
             result.Should().HaveLength(64);
         }
 
+        /// <summary>
+        /// Verifies that GenerateHmacSha256 returns an empty string when given empty data.
+        /// </summary>
         [Fact]
         public void GenerateHmacSha256_WithEmptyData_ReturnsEmptyString()
         {
@@ -151,6 +190,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("empty data should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateHmacSha256 returns an empty string when given whitespace-only data.
+        /// </summary>
         [Fact]
         public void GenerateHmacSha256_WithWhitespaceData_ReturnsEmptyString()
         {
@@ -165,6 +207,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("whitespace-only data should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateHmacSha256 returns an empty string when given null data.
+        /// </summary>
         [Fact]
         public void GenerateHmacSha256_WithNullData_ReturnsEmptyString()
         {
@@ -179,6 +224,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("null data should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateHmacSha256 returns an empty string when given an empty secret.
+        /// </summary>
         [Fact]
         public void GenerateHmacSha256_WithEmptySecret_ReturnsEmptyString()
         {
@@ -193,6 +241,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("empty secret should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateHmacSha256 returns an empty string when given a null secret.
+        /// </summary>
         [Fact]
         public void GenerateHmacSha256_WithNullSecret_ReturnsEmptyString()
         {
@@ -207,6 +258,9 @@ public class CryptoUtilityTests
             result.Should().BeEmpty("null secret should return empty string");
         }
 
+        /// <summary>
+        /// Verifies that GenerateHmacSha256 returns the correct signature for valid byte array data and secret.
+        /// </summary>
         [Fact]
         public void GenerateHmacSha256_WithValidByteArrayData_ReturnsCorrectSignature()
         {
@@ -222,6 +276,9 @@ public class CryptoUtilityTests
             result.Should().HaveLength(64);
         }
 
+        /// <summary>
+        /// Verifies that GenerateHmacSha256 produces the same signature for the same input across multiple calls (deterministic).
+        /// </summary>
         [Fact]
         public void GenerateHmacSha256_Deterministic_ReturnsSameSignatureForSameInput()
         {
@@ -240,8 +297,14 @@ public class CryptoUtilityTests
         }
     }
 
+    /// <summary>
+    /// Tests for the VerifyHmacSha256 method.
+    /// </summary>
     public class VerifyHmacSha256
     {
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns true when given a correct signature.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithCorrectSignature_ReturnsTrue()
         {
@@ -257,6 +320,9 @@ public class CryptoUtilityTests
             result.Should().BeTrue("correct signature should verify successfully");
         }
 
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns false when given an incorrect signature.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithIncorrectSignature_ReturnsFalse()
         {
@@ -272,6 +338,9 @@ public class CryptoUtilityTests
             result.Should().BeFalse("incorrect signature should fail verification");
         }
 
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns false when given empty data.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithEmptyData_ReturnsFalse()
         {
@@ -287,6 +356,9 @@ public class CryptoUtilityTests
             result.Should().BeFalse("empty data should return false");
         }
 
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns false when given null data.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithNullData_ReturnsFalse()
         {
@@ -302,6 +374,9 @@ public class CryptoUtilityTests
             result.Should().BeFalse("null data should return false");
         }
 
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns false when given an empty signature.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithEmptySignature_ReturnsFalse()
         {
@@ -317,6 +392,9 @@ public class CryptoUtilityTests
             result.Should().BeFalse("empty signature should return false");
         }
 
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns false when given a null signature.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithNullSignature_ReturnsFalse()
         {
@@ -332,6 +410,9 @@ public class CryptoUtilityTests
             result.Should().BeFalse("null signature should return false");
         }
 
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns false when given an empty secret.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithEmptySecret_ReturnsFalse()
         {
@@ -347,6 +428,9 @@ public class CryptoUtilityTests
             result.Should().BeFalse("empty secret should return false");
         }
 
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns false when given a null secret.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithNullSecret_ReturnsFalse()
         {
@@ -362,6 +446,9 @@ public class CryptoUtilityTests
             result.Should().BeFalse("null secret should return false");
         }
 
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns true when given byte array data and correct signature.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithByteArrayDataAndCorrectSignature_ReturnsTrue()
         {
@@ -377,6 +464,9 @@ public class CryptoUtilityTests
             result.Should().BeTrue("correct signature with byte array should verify successfully");
         }
 
+        /// <summary>
+        /// Verifies that VerifyHmacSha256 returns false when given byte array data and incorrect signature.
+        /// </summary>
         [Fact]
         public void VerifyHmacSha256_WithByteArrayDataAndIncorrectSignature_ReturnsFalse()
         {
@@ -393,8 +483,14 @@ public class CryptoUtilityTests
         }
     }
 
+    /// <summary>
+    /// Tests for the ConstantTimeCompare method (via VerifyHmacSha256).
+    /// </summary>
     public class ConstantTimeCompare
     {
+        /// <summary>
+        /// Verifies that ConstantTimeCompare returns true when comparing identical strings.
+        /// </summary>
         [Fact]
         public void ConstantTimeCompare_WithSameStrings_ReturnsTrue()
         {
@@ -410,6 +506,9 @@ public class CryptoUtilityTests
             result.Should().BeTrue("same strings should compare as equal");
         }
 
+        /// <summary>
+        /// Verifies that ConstantTimeCompare returns false when comparing different strings.
+        /// </summary>
         [Fact]
         public void ConstantTimeCompare_WithDifferentStrings_ReturnsFalse()
         {
@@ -427,6 +526,9 @@ public class CryptoUtilityTests
             result.Should().BeFalse("different strings should compare as not equal");
         }
 
+        /// <summary>
+        /// Verifies that ConstantTimeCompare returns false when comparing null and non-null strings.
+        /// </summary>
         [Fact]
         public void ConstantTimeCompare_WithNullAndNonNull_ReturnsFalse()
         {
@@ -441,8 +543,14 @@ public class CryptoUtilityTests
         }
     }
 
+    /// <summary>
+    /// Tests for the GenerateRandomString method.
+    /// </summary>
     public class GenerateRandomString
     {
+        /// <summary>
+        /// Verifies that GenerateRandomString returns a string of the specified length.
+        /// </summary>
         [Fact]
         public void GenerateRandomString_WithValidLength_ReturnsStringOfCorrectLength()
         {
@@ -457,6 +565,9 @@ public class CryptoUtilityTests
             result.Should().MatchRegex("^[A-Za-z0-9]+");
         }
 
+        /// <summary>
+        /// Verifies that GenerateRandomString with default length returns a string of length 32.
+        /// </summary>
         [Fact]
         public void GenerateRandomString_WithDefaultLength_ReturnsStringOfLength32()
         {
@@ -469,6 +580,9 @@ public class CryptoUtilityTests
             result.Should().HaveLength(32);
         }
 
+        /// <summary>
+        /// Verifies that GenerateRandomString with length 1 returns a single character string.
+        /// </summary>
         [Fact]
         public void GenerateRandomString_WithLength1_ReturnsSingleCharacter()
         {
@@ -482,6 +596,9 @@ public class CryptoUtilityTests
             result.Should().HaveLength(1);
         }
 
+        /// <summary>
+        /// Verifies that GenerateRandomString throws ArgumentException when length is zero.
+        /// </summary>
         [Fact]
         public void GenerateRandomString_WithLength0_ThrowsArgumentException()
         {
@@ -495,6 +612,9 @@ public class CryptoUtilityTests
             act.Should().Throw<ArgumentException>("length must be greater than 0");
         }
 
+        /// <summary>
+        /// Verifies that GenerateRandomString throws ArgumentException when length is negative.
+        /// </summary>
         [Fact]
         public void GenerateRandomString_WithNegativeLength_ThrowsArgumentException()
         {
@@ -508,6 +628,9 @@ public class CryptoUtilityTests
             act.Should().Throw<ArgumentException>("length must be greater than 0");
         }
 
+        /// <summary>
+        /// Verifies that GenerateRandomString returns different values on multiple calls.
+        /// </summary>
         [Fact]
         public void GenerateRandomString_ReturnsDifferentValuesOnMultipleCalls()
         {
@@ -524,8 +647,14 @@ public class CryptoUtilityTests
         }
     }
 
+    /// <summary>
+    /// Tests for the GenerateRandomBytes method.
+    /// </summary>
     public class GenerateRandomBytes
     {
+        /// <summary>
+        /// Verifies that GenerateRandomBytes returns a byte array of the specified length.
+        /// </summary>
         [Fact]
         public void GenerateRandomBytes_WithValidLength_ReturnsByteArrayOfCorrectLength()
         {
@@ -539,6 +668,9 @@ public class CryptoUtilityTests
             result.Should().HaveCount(length, "generated byte array should have requested length");
         }
 
+        /// <summary>
+        /// Verifies that GenerateRandomBytes returns a single byte when length is 1.
+        /// </summary>
         [Fact]
         public void GenerateRandomBytes_WithLength1_ReturnsSingleByte()
         {
@@ -552,6 +684,9 @@ public class CryptoUtilityTests
             result.Should().HaveCount(1, "length 1 should produce single byte");
         }
 
+        /// <summary>
+        /// Verifies that GenerateRandomBytes throws ArgumentException when length is zero.
+        /// </summary>
         [Fact]
         public void GenerateRandomBytes_WithLength0_ThrowsArgumentException()
         {
@@ -565,6 +700,9 @@ public class CryptoUtilityTests
             act.Should().Throw<ArgumentException>("length must be greater than 0");
         }
 
+        /// <summary>
+        /// Verifies that GenerateRandomBytes throws ArgumentException when length is negative.
+        /// </summary>
         [Fact]
         public void GenerateRandomBytes_WithNegativeLength_ThrowsArgumentException()
         {
@@ -578,6 +716,9 @@ public class CryptoUtilityTests
             act.Should().Throw<ArgumentException>("length must be greater than 0");
         }
 
+        /// <summary>
+        /// Verifies that GenerateRandomBytes returns different values on multiple calls.
+        /// </summary>
         [Fact]
         public void GenerateRandomBytes_ReturnsDifferentValuesOnMultipleCalls()
         {
