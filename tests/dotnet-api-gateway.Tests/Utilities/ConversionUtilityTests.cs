@@ -6,10 +6,16 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests.Utilities;
 
+/// <summary>
+/// Provides unit tests for the <see cref="ConversionUtility"/> class.
+/// </summary>
 public class ConversionUtilityTests
 {
     #region ToString Tests
 
+    /// <summary>
+    /// Tests that ToString returns the default value when the input object is null.
+    /// </summary>
     [Fact]
     public void ToString_NullObject_ReturnsDefaultValue()
     {
@@ -24,6 +30,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToString returns an empty string when the input object is null and no default value is provided.
+    /// </summary>
     [Fact]
     public void ToString_NullObject_NoDefault_ReturnsEmptyString()
     {
@@ -37,6 +46,9 @@ public class ConversionUtilityTests
         result.Should().Be(string.Empty);
     }
 
+    /// <summary>
+    /// Tests that ToString returns the string representation of the valid object.
+    /// </summary>
     [Fact]
     public void ToString_ValidObject_ReturnsToStringValue()
     {
@@ -51,6 +63,9 @@ public class ConversionUtilityTests
         result.Should().Be("42");
     }
 
+    /// <summary>
+    /// Tests that ToString returns the default value when the object's ToString method returns null.
+    /// </summary>
     [Fact]
     public void ToString_ObjectWithNullToString_ReturnsDefaultValue()
     {
@@ -69,6 +84,9 @@ public class ConversionUtilityTests
 
     #region ToInt Tests
 
+    /// <summary>
+    /// Tests that ToInt returns the default value when the input string is null.
+    /// </summary>
     [Fact]
     public void ToInt_NullString_ReturnsDefaultValue()
     {
@@ -83,6 +101,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToInt returns the default value when the input string is empty.
+    /// </summary>
     [Fact]
     public void ToInt_EmptyString_ReturnsDefaultValue()
     {
@@ -97,6 +118,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToInt returns the default value when the input string contains only whitespace.
+    /// </summary>
     [Fact]
     public void ToInt_WhitespaceString_ReturnsDefaultValue()
     {
@@ -111,6 +135,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToInt returns the parsed value for a valid number string.
+    /// </summary>
     [Fact]
     public void ToInt_ValidNumberString_ReturnsParsedValue()
     {
@@ -125,6 +152,9 @@ public class ConversionUtilityTests
         result.Should().Be(123);
     }
 
+    /// <summary>
+    /// Tests that ToInt returns the default value for an invalid number string.
+    /// </summary>
     [Fact]
     public void ToInt_InvalidNumberString_ReturnsDefaultValue()
     {
@@ -139,6 +169,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToInt returns the parsed value for a valid negative number string.
+    /// </summary>
     [Fact]
     public void ToInt_NegativeNumberString_ReturnsParsedValue()
     {
@@ -153,6 +186,9 @@ public class ConversionUtilityTests
         result.Should().Be(-456);
     }
 
+    /// <summary>
+    /// Tests that ToInt returns the default value when the input string represents a decimal number.
+    /// </summary>
     [Fact]
     public void ToInt_NumberWithDecimal_ReturnsDefaultValue()
     {
@@ -171,6 +207,9 @@ public class ConversionUtilityTests
 
     #region ToLong Tests
 
+    /// <summary>
+    /// Tests that ToLong returns the default value when the input string is null.
+    /// </summary>
     [Fact]
     public void ToLong_NullString_ReturnsDefaultValue()
     {
@@ -185,6 +224,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToLong returns the parsed value for a valid number string.
+    /// </summary>
     [Fact]
     public void ToLong_ValidNumberString_ReturnsParsedValue()
     {
@@ -199,6 +241,9 @@ public class ConversionUtilityTests
         result.Should().Be(123456789012345L);
     }
 
+    /// <summary>
+    /// Tests that ToLong returns the default value for an invalid number string.
+    /// </summary>
     [Fact]
     public void ToLong_InvalidNumberString_ReturnsDefaultValue()
     {
@@ -217,6 +262,9 @@ public class ConversionUtilityTests
 
     #region ToDecimal Tests
 
+    /// <summary>
+    /// Tests that ToDecimal returns the default value when the input string is null.
+    /// </summary>
     [Fact]
     public void ToDecimal_NullString_ReturnsDefaultValue()
     {
@@ -231,6 +279,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToDecimal returns the parsed value for a valid number string.
+    /// </summary>
     [Fact]
     public void ToDecimal_ValidNumberString_ReturnsParsedValue()
     {
@@ -245,6 +296,9 @@ public class ConversionUtilityTests
         result.Should().Be(123.45m);
     }
 
+    /// <summary>
+    /// Tests that ToDecimal returns the default value for an invalid number string.
+    /// </summary>
     [Fact]
     public void ToDecimal_InvalidNumberString_ReturnsDefaultValue()
     {
@@ -263,6 +317,9 @@ public class ConversionUtilityTests
 
     #region ToDouble Tests
 
+    /// <summary>
+    /// Tests that ToDouble returns the default value when the input string is null.
+    /// </summary>
     [Fact]
     public void ToDouble_NullString_ReturnsDefaultValue()
     {
@@ -277,6 +334,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToDouble returns the parsed value for a valid number string.
+    /// </summary>
     [Fact]
     public void ToDouble_ValidNumberString_ReturnsParsedValue()
     {
@@ -291,6 +351,9 @@ public class ConversionUtilityTests
         result.Should().Be(123.45);
     }
 
+    /// <summary>
+    /// Tests that ToDouble returns the default value for an invalid number string.
+    /// </summary>
     [Fact]
     public void ToDouble_InvalidNumberString_ReturnsDefaultValue()
     {
@@ -309,6 +372,9 @@ public class ConversionUtilityTests
 
     #region ToBoolean Tests
 
+    /// <summary>
+    /// Tests that ToBoolean returns the default value when the input string is null.
+    /// </summary>
     [Fact]
     public void ToBoolean_NullString_ReturnsDefaultValue()
     {
@@ -323,6 +389,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToBoolean returns the default value when the input string is empty.
+    /// </summary>
     [Fact]
     public void ToBoolean_EmptyString_ReturnsDefaultValue()
     {
@@ -337,6 +406,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToBoolean returns true for a "true" string.
+    /// </summary>
     [Fact]
     public void ToBoolean_TrueString_ReturnsTrue()
     {
@@ -351,6 +423,9 @@ public class ConversionUtilityTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that ToBoolean returns false for a "false" string.
+    /// </summary>
     [Fact]
     public void ToBoolean_FalseString_ReturnsFalse()
     {
@@ -365,6 +440,9 @@ public class ConversionUtilityTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that ToBoolean returns true for a "yes" string.
+    /// </summary>
     [Fact]
     public void ToBoolean_YesString_ReturnsTrue()
     {
@@ -379,6 +457,9 @@ public class ConversionUtilityTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that ToBoolean returns true for a "1" string.
+    /// </summary>
     [Fact]
     public void ToBoolean_OneString_ReturnsTrue()
     {
@@ -393,6 +474,9 @@ public class ConversionUtilityTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that ToBoolean returns true for an "on" string.
+    /// </summary>
     [Fact]
     public void ToBoolean_OnString_ReturnsTrue()
     {
@@ -407,6 +491,9 @@ public class ConversionUtilityTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that ToBoolean returns the default value for a "no" string.
+    /// </summary>
     [Fact]
     public void ToBoolean_NoString_ReturnsDefaultValue()
     {
@@ -421,6 +508,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToBoolean returns true for various case-insensitive true values.
+    /// </summary>
     [Fact]
     public void ToBoolean_CaseInsensitiveTrueValues_ReturnTrue()
     {
@@ -440,6 +530,9 @@ public class ConversionUtilityTests
 
     #region ToDateTime Tests
 
+    /// <summary>
+    /// Tests that ToDateTime returns the default value when the input string is null.
+    /// </summary>
     [Fact]
     public void ToDateTime_NullString_ReturnsDefaultValue()
     {
@@ -454,6 +547,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToDateTime returns the default value when the input string is empty.
+    /// </summary>
     [Fact]
     public void ToDateTime_EmptyString_ReturnsDefaultValue()
     {
@@ -468,6 +564,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToDateTime returns the parsed value for a valid ISO string.
+    /// </summary>
     [Fact]
     public void ToDateTime_ValidIsoString_ReturnsParsedValue()
     {
@@ -482,6 +581,9 @@ public class ConversionUtilityTests
         result.Should().Be(new DateTime(2023, 1, 15, 10, 30, 0, DateTimeKind.Utc));
     }
 
+    /// <summary>
+    /// Tests that ToDateTime returns the parsed value for a valid RFC string.
+    /// </summary>
     [Fact]
     public void ToDateTime_ValidRfcString_ReturnsParsedValue()
     {
@@ -496,6 +598,9 @@ public class ConversionUtilityTests
         result.Should().Be(new DateTime(2023, 1, 15, 10, 30, 0, DateTimeKind.Utc));
     }
 
+    /// <summary>
+    /// Tests that ToDateTime returns the default value for an invalid string.
+    /// </summary>
     [Fact]
     public void ToDateTime_InvalidString_ReturnsDefaultValue()
     {
@@ -510,6 +615,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToDateTime returns DateTime.MinValue for an invalid string when no default value is provided.
+    /// </summary>
     [Fact]
     public void ToDateTime_NoDefault_ReturnsMinValueOnInvalid()
     {
@@ -527,6 +635,9 @@ public class ConversionUtilityTests
 
     #region ToGuid Tests
 
+    /// <summary>
+    /// Tests that ToGuid returns the default value when the input string is null.
+    /// </summary>
     [Fact]
     public void ToGuid_NullString_ReturnsDefaultValue()
     {
@@ -541,6 +652,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToGuid returns the default value when the input string is empty.
+    /// </summary>
     [Fact]
     public void ToGuid_EmptyString_ReturnsDefaultValue()
     {
@@ -555,6 +669,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToGuid returns the parsed value for a valid Guid string.
+    /// </summary>
     [Fact]
     public void ToGuid_ValidGuidString_ReturnsParsedValue()
     {
@@ -570,6 +687,9 @@ public class ConversionUtilityTests
         result.Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests that ToGuid returns the default value for an invalid Guid string.
+    /// </summary>
     [Fact]
     public void ToGuid_InvalidGuidString_ReturnsDefaultValue()
     {
@@ -584,6 +704,9 @@ public class ConversionUtilityTests
         result.Should().Be(defaultValue);
     }
 
+    /// <summary>
+    /// Tests that ToGuid returns an empty Guid for an invalid Guid string when no default value is provided.
+    /// </summary>
     [Fact]
     public void ToGuid_NoDefault_ReturnsEmptyGuidOnInvalid()
     {
@@ -601,6 +724,9 @@ public class ConversionUtilityTests
 
     #region ToBase64 Tests
 
+    /// <summary>
+    /// Tests that ToBase64 returns an empty string when the input byte array is null.
+    /// </summary>
     [Fact]
     public void ToBase64_NullArray_ReturnsEmptyString()
     {
@@ -614,6 +740,9 @@ public class ConversionUtilityTests
         result.Should().Be(string.Empty);
     }
 
+    /// <summary>
+    /// Tests that ToBase64 returns an empty string when the input byte array is empty.
+    /// </summary>
     [Fact]
     public void ToBase64_EmptyArray_ReturnsEmptyString()
     {
@@ -627,6 +756,9 @@ public class ConversionUtilityTests
         result.Should().Be(string.Empty);
     }
 
+    /// <summary>
+    /// Tests that ToBase64 returns the Base64 string for a valid byte array.
+    /// </summary>
     [Fact]
     public void ToBase64_ValidArray_ReturnsBase64String()
     {
@@ -644,6 +776,9 @@ public class ConversionUtilityTests
 
     #region FromBase64 Tests
 
+    /// <summary>
+    /// Tests that FromBase64 returns null when the input string is null.
+    /// </summary>
     [Fact]
     public void FromBase64_NullString_ReturnsNull()
     {
@@ -657,6 +792,9 @@ public class ConversionUtilityTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that FromBase64 returns null when the input string is empty.
+    /// </summary>
     [Fact]
     public void FromBase64_EmptyString_ReturnsNull()
     {
@@ -670,6 +808,9 @@ public class ConversionUtilityTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that FromBase64 returns null when the input string contains only whitespace.
+    /// </summary>
     [Fact]
     public void FromBase64_WhitespaceString_ReturnsNull()
     {
@@ -683,6 +824,9 @@ public class ConversionUtilityTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that FromBase64 returns the correct byte array for a valid Base64 string.
+    /// </summary>
     [Fact]
     public void FromBase64_ValidBase64String_ReturnsByteArray()
     {
@@ -698,6 +842,9 @@ public class ConversionUtilityTests
         result.Should().BeEquivalentTo(expected);
     }
 
+    /// <summary>
+    /// Tests that FromBase64 returns null for an invalid Base64 string.
+    /// </summary>
     [Fact]
     public void FromBase64_InvalidBase64String_ReturnsNull()
     {
@@ -715,6 +862,9 @@ public class ConversionUtilityTests
 
     #region ConvertTo Tests
 
+    /// <summary>
+    /// Tests that ConvertTo returns null when the input object is null.
+    /// </summary>
     [Fact]
     public void ConvertTo_NullObject_ReturnsNull()
     {
@@ -728,6 +878,9 @@ public class ConversionUtilityTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that ConvertTo returns the same object when the types are the same.
+    /// </summary>
     [Fact]
     public void ConvertTo_SameType_ReturnsSameObject()
     {
@@ -741,6 +894,9 @@ public class ConversionUtilityTests
         result.Should().BeSameAs(value);
     }
 
+    /// <summary>
+    /// Tests that ConvertTo returns the converted object for compatible types.
+    /// </summary>
     [Fact]
     public void ConvertTo_CompatibleType_ReturnsConvertedObject()
     {
@@ -754,6 +910,9 @@ public class ConversionUtilityTests
         result.Should().Be("123");
     }
 
+    /// <summary>
+    /// Tests that ConvertTo returns null for incompatible types.
+    /// </summary>
     [Fact]
     public void ConvertTo_IncompatibleType_ReturnsNull()
     {
@@ -767,6 +926,9 @@ public class ConversionUtilityTests
         result.Should().BeNull();
     }
 
+    /// <summary>
+    /// Tests that ConvertTo returns the converted value for a string from an object.
+    /// </summary>
     [Fact]
     public void ConvertTo_StringFromObject_ReturnsConvertedValue()
     {
@@ -782,9 +944,15 @@ public class ConversionUtilityTests
 
     #endregion
 
-    // Helper class for testing ToString with null return
+    /// <summary>
+    /// Helper class for testing ToString with null return.
+    /// </summary>
     private class ObjectWithNullToString
     {
+        /// <summary>
+        /// Overrides ToString to return null.
+        /// </summary>
+        /// <returns>Null string.</returns>
         public override string? ToString()
         {
             return null!;
