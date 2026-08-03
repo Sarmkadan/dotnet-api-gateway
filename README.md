@@ -1056,6 +1056,49 @@ rateLimitEntry.Tokens = 57.2;
 rateLimitEntry.LastRequest = DateTime.UtcNow;
 ```
 
+## RateLimitStoreFactory
+
+The `RateLimitStoreFactory` class provides a centralized mechanism for creating and managing different types of rate limit stores, such as in-memory or Redis-based stores. It acts as a factory, abstracting the complexity of store instantiation and providing methods to query entries and manage the lifecycle of the created stores.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Models;
+using DotNetApiGateway.Repositories;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+// Typically injected via DI, but can be instantiated directly
+var services = new ServiceCollection();
+services.AddLogging();
+var serviceProvider = services.BuildServiceProvider();
+var logger = serviceProvider.GetRequiredService<ILogger<RedisRateLimitStore>>();
+
+// Create the factory
+var factory = new RateLimitStoreFactory(serviceProvider, logger);
+
+// Create a policy
+var policy = new RateLimitPolicy { Id = "test-policy", Enabled = true };
+
+// Get a store for a policy
+var store = factory.GetStore(policy);
+Console.WriteLine($"Store type: {store.GetType().Name}");
+
+// Get all stores
+var allStores = factory.GetAllStores();
+Console.WriteLine($"Total stores: {allStores.Count()}");
+
+// Get all rate limit entries from all stores
+var entries = await factory.GetAllEntriesAsync();
+Console.WriteLine($"Total entries: {entries.Count()}");
+
+// Dispose of the factory and its stores
+factory.Dispose();
+```
+
 The following example demonstrates how to use these extensions:
 
 ```csharp
