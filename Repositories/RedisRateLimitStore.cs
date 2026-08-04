@@ -34,6 +34,12 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
         _redis.Dispose();
     }
 
+    /// <summary>
+    /// Checks if a request is allowed and increments the counter for the given key and policy.
+    /// </summary>
+    /// <param name="key">The unique key for the rate limit (e.g., IP address, user ID).</param>
+    /// <param name="policy">The rate limit policy to apply.</param>
+    /// <returns>True if the request is allowed, false otherwise.</returns>
     public async Task<bool> IsRequestAllowedAsync(string key, RateLimitPolicy policy)
     {
         if (string.IsNullOrWhiteSpace(key))
