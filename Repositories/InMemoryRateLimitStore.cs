@@ -19,11 +19,21 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
     private readonly ConcurrentDictionary<string, Queue<DateTime>> _slidingWindows = new();
     private readonly ILogger<InMemoryRateLimitStore> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryRateLimitStore"/> class.
+    /// </summary>
+    /// <param name="logger">The logger used for logging rate limit events.</param>
     public InMemoryRateLimitStore(ILogger<InMemoryRateLimitStore> logger)
     {
         _logger = logger;
     }
 
+    /// <summary>
+    /// Checks if a request is allowed and increments the counter for the given key and policy.
+    /// </summary>
+    /// <param name="key">The unique key for the rate limit (e.g., IP address, user ID).</param>
+    /// <param name="policy">The rate limit policy to apply.</param>
+    /// <returns>True if the request is allowed, false otherwise.</returns>
     public Task<bool> IsRequestAllowedAsync(string key, RateLimitPolicy policy)
     {
         var now = DateTime.UtcNow;
