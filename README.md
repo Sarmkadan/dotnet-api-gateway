@@ -312,6 +312,39 @@ byte[] jsonBytes = JsonResponseFormatter.FormatBytes(user);
 Console.WriteLine(System.Text.Encoding.UTF8.GetString(jsonBytes));
 ```
 
+## CsvFormatterTests
+
+The `CsvFormatterTests` class provides comprehensive unit tests for the `CsvFormatter` utility, ensuring robust CSV generation from various data structures. It verifies scenarios such as null collections, empty collections, handling of special characters (commas, quotes, newlines), complex object serialization, and dictionary-based data sources.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Formatters;
+using System.Collections.Generic;
+using System;
+
+// Example data structure
+public class Record
+{
+    public int Id { get; set; }
+    public string? Name { get; set; }
+    public int Age { get; set; }
+}
+
+var data = new List<Record>
+{
+    new Record { Id = 1, Name = "John Doe", Age = 30 },
+    new Record { Id = 2, Name = "Doe, Jane", Age = 25 } // Comma to test escaping
+};
+
+// Format a list of items to a CSV string
+string csvOutput = CsvFormatter.FormatCsv(data);
+Console.WriteLine(csvOutput);
+
+// Format to CSV bytes
+byte[] csvBytes = CsvFormatter.FormatCsvBytes(data);
+```
+
 ## XmlFormatter
 
 The `XmlFormatter` class provides XML serialization and deserialization utilities for the API gateway. It supports converting objects to XML strings or byte arrays, and parsing XML back into objects. The formatter includes XML escaping utilities for safely embedding text in XML documents and handles null values gracefully.
