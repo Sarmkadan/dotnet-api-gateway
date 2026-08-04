@@ -281,7 +281,9 @@ public sealed class RetryPolicy
     {
         return method == HttpMethod.Get ||
                method == HttpMethod.Head ||
-               method == HttpMethod.Options;
+               method == HttpMethod.Options ||
+               method == HttpMethod.Put ||
+               method == HttpMethod.Delete;
     }
 
     /// <summary>
