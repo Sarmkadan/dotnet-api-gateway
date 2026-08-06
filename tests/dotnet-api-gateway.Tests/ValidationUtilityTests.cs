@@ -32,6 +32,7 @@ public sealed class ValidationUtilityTests
     [InlineData("   ", false)]
     public void IsValidEmail_VariousInputs_ReturnsExpected(string email, bool expected)
     {
+        ArgumentException.ThrowIfNullOrEmpty(email);
         ValidationUtility.IsValidEmail(email).Should().Be(expected);
     }
 
@@ -50,6 +51,7 @@ public sealed class ValidationUtilityTests
     [InlineData("", false)]
     public void IsValidUrl_VariousUrls_ReturnsExpected(string url, bool expected)
     {
+        ArgumentException.ThrowIfNullOrEmpty(url);
         ValidationUtility.IsValidUrl(url).Should().Be(expected);
     }
 
@@ -69,6 +71,7 @@ public sealed class ValidationUtilityTests
     [InlineData("", false)]
     public void IsValidIpAddress_VariousIps_ReturnsExpected(string ip, bool expected)
     {
+        ArgumentException.ThrowIfNullOrEmpty(ip);
         ValidationUtility.IsValidIpAddress(ip).Should().Be(expected);
     }
 
@@ -86,6 +89,7 @@ public sealed class ValidationUtilityTests
     [InlineData("", false)]
     public void IsValidUuid_VariousUuids_ReturnsExpected(string uuid, bool expected)
     {
+        ArgumentException.ThrowIfNullOrEmpty(uuid);
         ValidationUtility.IsValidUuid(uuid).Should().Be(expected);
     }
 
@@ -102,6 +106,7 @@ public sealed class ValidationUtilityTests
     [InlineData(" text ", false)]
     public void IsNullOrEmpty_VariousStrings_ReturnsExpected(string value, bool expected)
     {
+        ArgumentException.ThrowIfNullOrEmpty(value);
         ValidationUtility.IsNullOrEmpty(value).Should().Be(expected);
     }
 
@@ -121,6 +126,7 @@ public sealed class ValidationUtilityTests
     [InlineData("", 0, 5, true)]
     public void IsValidLength_VariousLengths_ReturnsExpected(string value, int minLength, int maxLength, bool expected)
     {
+        ArgumentException.ThrowIfNullOrEmpty(value);
         ValidationUtility.IsValidLength(value, minLength, maxLength).Should().Be(expected);
     }
 
@@ -140,6 +146,7 @@ public sealed class ValidationUtilityTests
     [InlineData("   ", false)]
     public void IsAlphanumeric_VariousStrings_ReturnsExpected(string value, bool expected)
     {
+        ArgumentException.ThrowIfNullOrEmpty(value);
         ValidationUtility.IsAlphanumeric(value).Should().Be(expected);
     }
 
@@ -157,6 +164,7 @@ public sealed class ValidationUtilityTests
     [InlineData("", false)]
     public void IsAsciiOnly_VariousStrings_ReturnsExpected(string value, bool expected)
     {
+        ArgumentException.ThrowIfNullOrEmpty(value);
         ValidationUtility.IsAsciiOnly(value).Should().Be(expected);
     }
 
@@ -198,6 +206,7 @@ public sealed class ValidationUtilityTests
     [InlineData("", false)]
     public void IsValidHttpMethod_VariousMethods_ReturnsExpected(string method, bool expected)
     {
+        ArgumentException.ThrowIfNullOrEmpty(method);
         ValidationUtility.IsValidHttpMethod(method).Should().Be(expected);
     }
 
