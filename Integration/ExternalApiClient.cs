@@ -34,6 +34,7 @@ public sealed class ExternalApiClient
     /// </summary>
     public async Task<T?> GetAsync<T>(string endpoint) where T : class
     {
+        ArgumentException.ThrowIfNullOrEmpty(endpoint);
         try
         {
             _logger.LogInformation("GET request to {Endpoint}", endpoint);
@@ -62,6 +63,8 @@ public sealed class ExternalApiClient
         where TRequest : class
         where TResponse : class
     {
+        ArgumentException.ThrowIfNullOrEmpty(endpoint);
+        ArgumentNullException.ThrowIfNull(data);
         try
         {
             _logger.LogInformation("POST request to {Endpoint}", endpoint);
@@ -91,6 +94,8 @@ public sealed class ExternalApiClient
         where TRequest : class
         where TResponse : class
     {
+        ArgumentException.ThrowIfNullOrEmpty(endpoint);
+        ArgumentNullException.ThrowIfNull(data);
         try
         {
             _logger.LogInformation("PUT request to {Endpoint}", endpoint);
@@ -118,6 +123,7 @@ public sealed class ExternalApiClient
     /// </summary>
     public async Task<bool> DeleteAsync(string endpoint)
     {
+        ArgumentException.ThrowIfNullOrEmpty(endpoint);
         try
         {
             _logger.LogInformation("DELETE request to {Endpoint}", endpoint);
@@ -145,6 +151,7 @@ public sealed class ExternalApiClient
     /// </summary>
     public async Task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
         try
         {
             _logger.LogInformation("{Method} request to {Uri}", request.Method, request.RequestUri);
@@ -167,6 +174,8 @@ public sealed class ExternalApiClient
         string? content = null,
         Dictionary<string, string>? headers = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(endpoint);
+        ArgumentNullException.ThrowIfNull(method);
         try
         {
             _logger.LogInformation("{Method} request to {Endpoint}", method, endpoint);
