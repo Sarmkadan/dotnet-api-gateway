@@ -24,6 +24,7 @@ public sealed class HttpClientFactory
 
     public HttpClientFactory(ILogger<HttpClientFactory> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
 
         // Configure shared SocketsHttpHandler with proper connection pooling to prevent socket exhaustion
