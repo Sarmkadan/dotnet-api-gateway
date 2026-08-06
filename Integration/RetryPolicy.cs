@@ -72,10 +72,10 @@ public sealed class RetryPolicy
     /// <exception cref="ArgumentNullException">Thrown when client or request is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when retry budget is exhausted.</exception>
     public async Task<HttpResponseMessage> ExecuteAsync(
-        HttpClient client,
-        HttpRequestMessage request,
-        Func<HttpStatusCode, bool>? shouldRetry = null,
-        CancellationToken cancellationToken = default)
+    HttpClient client,
+    HttpRequestMessage request,
+    Func<HttpStatusCode, bool>? shouldRetry = null,
+    CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(request);
