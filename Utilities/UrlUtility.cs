@@ -18,6 +18,10 @@ public static class UrlUtility
     /// Combine base URL with path, handling trailing slashes correctly.
     /// Ensures no double slashes in the final URL.
     /// </summary>
+    /// <param name="baseUrl">The base URL (e.g., "https://api.example.com").</param>
+    /// <param name="path">The path to append to the base URL.</param>
+    /// <param name="encodePath">Whether to URL-encode the path before combining. Default is <c>false</c>.</param>
+    /// <returns>The combined URL.</returns>
     public static string CombineUrl(string baseUrl, string path, bool encodePath = false)
     {
         if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(path))
@@ -39,6 +43,8 @@ public static class UrlUtility
     /// Parse query string into dictionary of key-value pairs.
     /// Handles URL-encoded values and duplicate keys (keeps first value).
     /// </summary>
+    /// <param name="queryString">The query string to parse (with or without the leading '?').</param>
+    /// <returns>A dictionary of decoded query parameter names and values.</returns>
     public static Dictionary<string, string> ParseQueryString(string queryString)
     {
         var parameters = new Dictionary<string, string>();
@@ -86,6 +92,8 @@ public static class UrlUtility
     /// Build query string from dictionary of parameters.
     /// Properly encodes values for use in URLs.
     /// </summary>
+    /// <param name="parameters">The parameters to encode into the query string.</param>
+    /// <returns>A query string starting with '?', or an empty string if there are no parameters.</returns>
     public static string BuildQueryString(Dictionary<string, string> parameters)
     {
         if (parameters is null || parameters.Count == 0)
@@ -102,6 +110,8 @@ public static class UrlUtility
     /// <summary>
     /// Extract hostname from full URL.
     /// </summary>
+    /// <param name="url">The URL to parse.</param>
+    /// <returns>The hostname if the URL is a valid absolute URL; otherwise, <c>null</c>.</returns>
     public static string? GetHostname(string url)
     {
         if (string.IsNullOrWhiteSpace(url))
@@ -116,6 +126,11 @@ public static class UrlUtility
     /// <summary>
     /// Extract port number from URL, returning default ports for http/https.
     /// </summary>
+    /// <param name="url">The URL to parse.</param>
+    /// <returns>
+    /// The port number from the URL, the default port for the scheme (80 for http, 443 for https)
+    /// when not specified, or 80 if the URL is invalid.
+    /// </returns>
     public static int GetPort(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
@@ -133,6 +148,8 @@ public static class UrlUtility
     /// Check if URL is valid and can be used for forwarding.
     /// Validates both format and scheme.
     /// </summary>
+    /// <param name="url">The URL to validate.</param>
+    /// <returns><c>true</c> if the URL is a valid absolute http or https URL; otherwise, <c>false</c>.</returns>
     public static bool IsValidUrl(string url)
     {
         if (string.IsNullOrWhiteSpace(url))
@@ -148,6 +165,12 @@ public static class UrlUtility
     /// Remove or replace sensitive parameters from query string (e.g., passwords, tokens).
     /// Useful for logging URLs without exposing secrets.
     /// </summary>
+    /// <param name="url">The URL to sanitize.</param>
+    /// <param name="sensitiveParams">
+    /// Optional list of sensitive parameter names to mask.
+    /// Defaults to password, token, api_key, secret, and authorization.
+    /// </param>
+    /// <returns>The URL with sensitive query parameter values replaced by "***".</returns>
     public static string SanitizeUrl(string url, string[]? sensitiveParams = null)
     {
         sensitiveParams ??= new[] { "password", "token", "api_key", "secret", "authorization" };
@@ -173,6 +196,10 @@ public static class UrlUtility
     /// <summary>
     /// Extract path from URL, removing query string and fragment.
     /// </summary>
+    /// <param name="url">The URL to parse.</param>
+    /// <returns>
+    /// The absolute path component of the URL, or the original string if it is not a valid absolute URL.
+    /// </returns>
     public static string GetPath(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
@@ -184,6 +211,9 @@ public static class UrlUtility
     /// <summary>
     /// Check if URL has a specific query parameter.
     /// </summary>
+    /// <param name="url">The URL to inspect.</param>
+    /// <param name="paramName">The query parameter name to look for.</param>
+    /// <returns><c>true</c> if the query parameter exists; otherwise, <c>false</c>.</returns>
     public static bool HasQueryParameter(string url, string paramName)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
