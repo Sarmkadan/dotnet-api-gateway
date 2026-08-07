@@ -18,6 +18,9 @@ public sealed class RequestCoalescingPolicy : IEquatable<RequestCoalescingPolicy
 
     /// <summary>Gets or sets whether request coalescing is active for this policy.</summary>
     public bool Enabled { get; set; } = true;
+        public void ValidateEnabled() {
+            if (!Enabled) throw new ArgumentException("Enabled must be true");
+        }
 
     /// <summary>
     /// Gets or sets the maximum milliseconds a follower request will wait to join
@@ -64,9 +67,12 @@ public sealed class RequestCoalescingPolicy : IEquatable<RequestCoalescingPolicy
     /// is listed in <see cref="CoalescibleMethods"/>.
     /// </summary>
     /// <param name="httpMethod">The HTTP method string, e.g. <c>"GET"</c>.</param>
-    public bool IsCoalescible(string httpMethod) =>
-        Enabled &&
-        CoalescibleMethods.Any(m => m.Equals(httpMethod, StringComparison.OrdinalIgnoreCase));
+    public bool IsCoalescible(string httpMethod)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(httpMethod);
+        return Enabled &&
+               CoalescibleMethods.Any(m => m.Equals(httpMethod, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>
     /// Produces a deterministic string key that uniquely identifies a logical request.
