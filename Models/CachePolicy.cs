@@ -78,6 +78,7 @@ public sealed class CachePolicy : IEquatable<CachePolicy>
 
     public bool IsCacheable(int statusCode, string httpMethod)
     {
+        ArgumentException.ThrowIfNullOrEmpty(httpMethod);
         return Enabled &&
                CacheableStatusCodes.Contains(statusCode.ToString()) &&
                CacheableHttpMethods.Any(m => m.Equals(httpMethod, StringComparison.OrdinalIgnoreCase));
@@ -85,6 +86,10 @@ public sealed class CachePolicy : IEquatable<CachePolicy>
 
     public string GenerateCacheKey(string path, string method, Dictionary<string, string> queryParams)
     {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentException.ThrowIfNullOrEmpty(method);
+        ArgumentNullException.ThrowIfNull(queryParams);
+
         var key = $"{method}:{path}";
 
         if (VaryByQueryString && queryParams.Count > 0)
