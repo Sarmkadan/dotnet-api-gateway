@@ -20,6 +20,9 @@ public sealed class RequestCoalescingPolicy : IEquatable<RequestCoalescingPolicy
     public bool Enabled { get; set; } = true;
         public void ValidateEnabled() {
             if (!Enabled) throw new ArgumentException("Enabled must be true");
+            if (TimeoutMs < 100 || TimeoutMs > 30000) throw new ArgumentException("TimeoutMs must be between 100 and 30000");
+            if (MaxQueuedRequests < 1 || MaxQueuedRequests > 10000) throw new ArgumentException("MaxQueuedRequests must be between 1 and 10000");
+            if (CoalescibleMethods.Length == 0) throw new ArgumentException("At least one CoalescibleMethod is required");
         }
 
     /// <summary>
