@@ -33,6 +33,7 @@ public sealed class AggregatedResponse
     /// <param name="cts">The cancellation token source to use.</param>
     public void SetCancellationToken(CancellationTokenSource cts)
     {
+        ArgumentNullException.ThrowIfNull(cts);
         _cancellationTokenSource = cts;
     }
 
