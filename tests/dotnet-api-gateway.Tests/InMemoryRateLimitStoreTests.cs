@@ -13,6 +13,11 @@ using Moq;
 
 namespace DotNetApiGateway.Tests.Repositories;
 
+/// <summary>
+/// Unit tests for <see cref="InMemoryRateLimitStore"/> covering the TokenBucket,
+/// FixedWindow, and SlidingWindow rate limiting strategies, as well as entry
+/// retrieval and reset operations.
+/// </summary>
 public class InMemoryRateLimitStoreTests
 {
     private readonly Mock<ILogger<InMemoryRateLimitStore>> _loggerMock;
@@ -21,6 +26,11 @@ public class InMemoryRateLimitStoreTests
     private readonly RateLimitPolicy _fixedWindowPolicy;
     private readonly RateLimitPolicy _slidingWindowPolicy;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryRateLimitStoreTests"/> class,
+    /// creating the store under test with a mocked logger and the shared token bucket
+    /// (10 rpm, burst 10), fixed window (5 rpm), and sliding window (3 rpm) policies.
+    /// </summary>
     public InMemoryRateLimitStoreTests()
     {
         _loggerMock = new Mock<ILogger<InMemoryRateLimitStore>>();
@@ -50,6 +60,11 @@ public class InMemoryRateLimitStoreTests
         };
     }
 
+    /// <summary>
+    /// Verifies that the token bucket strategy allows each of the first 10 requests,
+    /// up to the configured burst size.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_TokenBucket_UnderLimit_AllowsRequest()
     {
@@ -64,6 +79,11 @@ public class InMemoryRateLimitStoreTests
         }
     }
 
+    /// <summary>
+    /// Verifies that the token bucket strategy blocks the 11th request once the
+    /// burst size of 10 tokens has been exhausted.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_TokenBucket_OverLimit_BlocksRequest()
     {
@@ -83,6 +103,12 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeFalse("Token bucket should block requests after burst size is exceeded");
     }
 
+    /// <summary>
+    /// Verifies that the token bucket strategy refills tokens over time: after draining
+    /// a bucket with a 60-requests-per-minute policy (1 token per second), waiting
+    /// 1.1 seconds allows one more request.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_TokenBucket_TokensRefillOverTime_AllowsAfterWait()
     {
@@ -109,6 +135,12 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeTrue("Should allow request after token refill");
     }
 
+    /// <summary>
+    /// Verifies that token bucket rate limits are tracked independently per key:
+    /// exhausting one key's bucket does not affect another key, while the exhausted
+    /// key remains blocked.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_TokenBucket_IndependentKeys_DoNotInterfere()
     {
@@ -131,6 +163,11 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeFalse("Same key should be blocked after burst size exceeded");
     }
 
+    /// <summary>
+    /// Verifies that the fixed window strategy allows each of the first 5 requests,
+    /// up to the configured per-minute limit.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_FixedWindow_UnderLimit_AllowsRequest()
     {
@@ -145,6 +182,11 @@ public class InMemoryRateLimitStoreTests
         }
     }
 
+    /// <summary>
+    /// Verifies that the fixed window strategy blocks the 6th request once the
+    /// per-minute limit of 5 requests has been reached.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_FixedWindow_OverLimit_BlocksRequest()
     {
@@ -164,6 +206,11 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeFalse("Fixed window should block requests after limit is exceeded");
     }
 
+    /// <summary>
+    /// Verifies that the fixed window strategy restores the request allowance after
+    /// the current one-minute window elapses (simulated by waiting 61 seconds).
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_FixedWindow_WindowReset_RestoresAllowance()
     {
@@ -184,6 +231,11 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeTrue("Fixed window should restore allowance after reset");
     }
 
+    /// <summary>
+    /// Verifies that a fixed window policy configured with only an hourly limit
+    /// (no per-minute limit) blocks the 6th request after 5 requests have been made.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_FixedWindow_HourWindow_ResetsAfterHour()
     {
@@ -208,6 +260,11 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeFalse("Hour window should block requests after limit exceeded");
     }
 
+    /// <summary>
+    /// Verifies that the sliding window strategy allows each of the first 3 requests,
+    /// up to the configured per-minute limit.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_SlidingWindow_UnderLimit_AllowsRequest()
     {
@@ -222,6 +279,11 @@ public class InMemoryRateLimitStoreTests
         }
     }
 
+    /// <summary>
+    /// Verifies that the sliding window strategy blocks the 4th request once the
+    /// per-minute limit of 3 requests has been reached.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_SlidingWindow_OverLimit_BlocksRequest()
     {
@@ -241,6 +303,12 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeFalse("Sliding window should block requests after limit is exceeded");
     }
 
+    /// <summary>
+    /// Verifies that the sliding window strategy allows a new request once the oldest
+    /// tracked request falls outside the trailing one-minute window (simulated by
+    /// waiting 61 seconds).
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_SlidingWindow_OldRequestsExpire_AllowsAfterWait()
     {
@@ -261,6 +329,12 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeTrue("Sliding window should allow request after oldest request expires");
     }
 
+    /// <summary>
+    /// Verifies that sliding window rate limits are tracked independently per key:
+    /// exhausting one key's window does not affect another key, while the exhausted
+    /// key remains blocked.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task IsRequestAllowedAsync_SlidingWindow_IndependentKeys_DoNotInterfere()
     {
@@ -283,6 +357,12 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeFalse("Same key should be blocked after sliding window limit exceeded");
     }
 
+    /// <summary>
+    /// Verifies that <see cref="InMemoryRateLimitStore.GetEntryAsync"/> returns an entry
+    /// for the token bucket strategy whose key matches, whose count reflects the 5 requests
+    /// made, and which reports non-negative tokens and a positive remaining time.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task GetEntryAsync_TokenBucket_ReturnsCorrectEntry()
     {
@@ -312,6 +392,12 @@ public class InMemoryRateLimitStoreTests
         entry.RemainingTimeSeconds.Should().BeGreaterThan(0);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="InMemoryRateLimitStore.GetEntryAsync"/> returns an entry
+    /// for the fixed window strategy whose key matches, whose count reflects the 3 requests
+    /// made, and whose remaining time falls within the one-minute window.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task GetEntryAsync_FixedWindow_ReturnsCorrectEntry()
     {
@@ -335,6 +421,12 @@ public class InMemoryRateLimitStoreTests
         entry.RemainingTimeSeconds.Should().BeInRange(0, 60);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="InMemoryRateLimitStore.GetEntryAsync"/> returns an entry
+    /// for the sliding window strategy whose key matches, whose count reflects the 2 requests
+    /// made, and which reports a positive remaining time.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task GetEntryAsync_SlidingWindow_ReturnsCorrectEntry()
     {
@@ -358,6 +450,11 @@ public class InMemoryRateLimitStoreTests
         entry.RemainingTimeSeconds.Should().BeGreaterThan(0);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="InMemoryRateLimitStore.GetEntryAsync"/> returns a fresh
+    /// entry with a zero count for a key that has never made a request.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task GetEntryAsync_NonExistentKey_ReturnsNewEntry()
     {
@@ -375,6 +472,11 @@ public class InMemoryRateLimitStoreTests
         entry.RemainingTimeSeconds.Should().BeGreaterThan(0);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="InMemoryRateLimitStore.ResetKeyAsync"/> clears the rate
+    /// limit for a single blocked key so that subsequent requests are allowed again.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task ResetKeyAsync_ClearsRateLimitForSpecificKey()
     {
@@ -399,6 +501,11 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeTrue("Should be allowed after key reset");
     }
 
+    /// <summary>
+    /// Verifies that <see cref="InMemoryRateLimitStore.ResetAllAsync"/> clears the rate
+    /// limits for all keys so that previously blocked keys are allowed again.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task ResetAllAsync_ClearsAllRateLimits()
     {
@@ -428,6 +535,11 @@ public class InMemoryRateLimitStoreTests
         result2.Should().BeTrue("Key2 should be allowed after all reset");
     }
 
+    /// <summary>
+    /// Verifies that <see cref="InMemoryRateLimitStore.GetAllEntriesAsync"/> returns an
+    /// entry for each of the two keys that have made requests.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task GetAllEntriesAsync_ReturnsAllActiveEntries()
     {
@@ -449,6 +561,12 @@ public class InMemoryRateLimitStoreTests
         entryList.Should().Contain(e => e.Key == key2);
     }
 
+    /// <summary>
+    /// Verifies that token bucket refills accumulate over time: after draining the bucket
+    /// and waiting 2.5 seconds with a 60-requests-per-minute policy (1 token per second),
+    /// enough tokens have refilled to allow another request.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task TokenBucket_RefillAccumulatesOverMultipleCalls()
     {
@@ -481,6 +599,12 @@ public class InMemoryRateLimitStoreTests
         result.Should().BeTrue("Should allow request after partial refill");
     }
 
+    /// <summary>
+    /// Verifies that the fixed window count resets when the window boundary is crossed:
+    /// after waiting 61 seconds and making 3 more requests, the entry count reflects
+    /// only the 3 requests made in the new window.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task FixedWindow_WindowBoundary_CorrectlyCalculated()
     {
