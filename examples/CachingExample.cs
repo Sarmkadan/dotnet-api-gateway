@@ -325,6 +325,7 @@ Optimize cache by:
 
         public bool TryGetCached(string key, out object? response)
         {
+            ArgumentException.ThrowIfNullOrEmpty(key);
             lock (cache)
             {
                 if (cache.TryGetValue(key, out var entry))
@@ -343,6 +344,8 @@ Optimize cache by:
 
         public void Cache(string key, object response)
         {
+            ArgumentException.ThrowIfNullOrEmpty(key);
+            ArgumentNullException.ThrowIfNull(response);
             lock (cache)
             {
                 cache[key] = (response, DateTime.UtcNow.AddSeconds(ttlSeconds));
