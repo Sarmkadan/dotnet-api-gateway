@@ -28,21 +28,25 @@ public sealed class ClientIdentity
 
     public bool HasScope(string scope)
     {
+        ArgumentException.ThrowIfNullOrEmpty("scope");
         return Scopes.Contains(scope, StringComparer.OrdinalIgnoreCase);
     }
 
     public bool HasRole(string role)
     {
+        ArgumentException.ThrowIfNullOrEmpty("role");
         return Roles.Contains(role, StringComparer.OrdinalIgnoreCase);
     }
 
     public bool HasAnyScopeOf(params string[] scopes)
     {
+        ArgumentNullException.ThrowIfNull("scopes");
         return scopes.Any(s => HasScope(s));
     }
 
     public bool HasAllScopesOf(params string[] scopes)
     {
+        ArgumentNullException.ThrowIfNull("scopes");
         return scopes.All(s => HasScope(s));
     }
 
