@@ -23,12 +23,18 @@ public sealed class RateLimitingMiddleware
 
     public RateLimitingMiddleware(RequestDelegate next, ILogger<RateLimitingMiddleware> logger)
     {
+        System.ArgumentNullException.ThrowIfNull(next);
+        System.ArgumentNullException.ThrowIfNull(logger);
         _next = next;
         _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context, RoutingService routingService, RateLimitingService rateLimitingService)
     {
+        System.ArgumentNullException.ThrowIfNull(context);
+        System.ArgumentNullException.ThrowIfNull(routingService);
+        System.ArgumentNullException.ThrowIfNull(rateLimitingService);
+
         if (!context.Items.TryGetValue("GatewayRoute", out var routeObj) || routeObj is not GatewayRoute route)
         {
             await _next(context); // No route found, bypass rate limiting
@@ -117,6 +123,7 @@ public static class RateLimitingMiddlewareExtensions
 {
     public static IApplicationBuilder UseRateLimitingMiddleware(this IApplicationBuilder builder)
     {
+        System.ArgumentNullException.ThrowIfNull(builder);
         return builder.UseMiddleware<RateLimitingMiddleware>();
     }
 }
