@@ -23,12 +23,18 @@ public sealed class RoutingMiddleware
 
     public RoutingMiddleware(RequestDelegate next, ILogger<RoutingMiddleware> logger)
     {
+        ArgumentNullException.ThrowIfNull(next);
+        ArgumentNullException.ThrowIfNull(logger);
         _next = next;
         _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context, RoutingService routingService, ApiVersioningService apiVersioningService)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(routingService);
+        ArgumentNullException.ThrowIfNull(apiVersioningService);
+
         var path = context.Request.Path.Value ?? "/";
         var method = context.Request.Method;
 
@@ -90,6 +96,7 @@ public static class RoutingMiddlewareExtensions
 {
     public static IApplicationBuilder UseRoutingMiddleware(this IApplicationBuilder builder)
     {
+        ArgumentNullException.ThrowIfNull(builder);
         return builder.UseMiddleware<RoutingMiddleware>();
     }
 }
