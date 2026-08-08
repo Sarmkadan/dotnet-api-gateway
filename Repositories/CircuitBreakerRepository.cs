@@ -16,6 +16,7 @@ public class CircuitBreakerRepository : IRepository<CircuitBreakerStatus>
 
     public async Task<CircuitBreakerStatus?> GetByIdAsync(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         _lock.EnterReadLock();
         try
         {
@@ -42,6 +43,7 @@ public class CircuitBreakerRepository : IRepository<CircuitBreakerStatus>
 
     public async Task<CircuitBreakerStatus> AddAsync(CircuitBreakerStatus entity)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         _lock.EnterWriteLock();
         try
         {
@@ -56,6 +58,7 @@ public class CircuitBreakerRepository : IRepository<CircuitBreakerStatus>
 
     public async Task<CircuitBreakerStatus> UpdateAsync(CircuitBreakerStatus entity)
     {
+        ArgumentNullException.ThrowIfNull(entity);
         _lock.EnterWriteLock();
         try
         {
@@ -73,6 +76,7 @@ public class CircuitBreakerRepository : IRepository<CircuitBreakerStatus>
 
     public async Task<bool> DeleteAsync(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         _lock.EnterWriteLock();
         try
         {
@@ -86,6 +90,7 @@ public class CircuitBreakerRepository : IRepository<CircuitBreakerStatus>
 
     public async Task<bool> ExistsAsync(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         _lock.EnterReadLock();
         try
         {
@@ -99,6 +104,7 @@ public class CircuitBreakerRepository : IRepository<CircuitBreakerStatus>
 
     public async Task<CircuitBreakerStatus?> GetByServiceNameAsync(string serviceName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
         _lock.EnterReadLock();
         try
         {
