@@ -18,6 +18,7 @@ public sealed class CircuitBreakerService
 
     public CircuitBreakerService(CircuitBreakerRepository repository, ILogger<CircuitBreakerService>? logger = null)
     {
+        ArgumentNullException.ThrowIfNull(repository);
         _repository = repository;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<CircuitBreakerService>.Instance;
     }
@@ -29,6 +30,8 @@ public sealed class CircuitBreakerService
     /// <returns>Current circuit breaker status.</returns>
     public async Task<CircuitBreakerStatus> GetOrCreateStatusAsync(string serviceName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+
         var status = await _repository.GetByServiceNameAsync(serviceName);
 
         if (status is null)
@@ -48,6 +51,8 @@ public sealed class CircuitBreakerService
     /// <returns>True if the circuit is open and requests should be blocked.</returns>
     public async Task<bool> IsCircuitOpenAsync(string serviceName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+
         var status = await GetOrCreateStatusAsync(serviceName);
         return status.State == CircuitBreakerState.Open;
     }
@@ -62,6 +67,9 @@ public sealed class CircuitBreakerService
     /// <exception cref="CircuitBreakerException">Thrown when circuit is open and timeout has not elapsed.</exception>
     public async Task<bool> CanAttemptAsync(string serviceName, CircuitBreakerPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+        ArgumentNullException.ThrowIfNull(policy);
+
         if (!policy.Enabled)
             return true;
 
@@ -110,6 +118,9 @@ public sealed class CircuitBreakerService
     /// <param name="policy">The circuit breaker policy configuration.</param>
     public async Task RecordSuccessAsync(string serviceName, CircuitBreakerPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+        ArgumentNullException.ThrowIfNull(policy);
+
         if (!policy.Enabled)
             return;
 
@@ -153,6 +164,10 @@ public sealed class CircuitBreakerService
     /// <param name="policy">The circuit breaker policy configuration.</param>
     public async Task RecordFailureAsync(string serviceName, string error, CircuitBreakerPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+        ArgumentException.ThrowIfNullOrEmpty(error);
+        ArgumentNullException.ThrowIfNull(policy);
+
         if (!policy.Enabled)
             return;
 
@@ -205,6 +220,8 @@ public sealed class CircuitBreakerService
     /// <returns>Circuit breaker status, or null if not found.</returns>
     public async Task<CircuitBreakerStatus?> GetStatusAsync(string serviceName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+
         return await _repository.GetByServiceNameAsync(serviceName);
     }
 
@@ -224,6 +241,8 @@ public sealed class CircuitBreakerService
     /// <param name="serviceName">The downstream service name.</param>
     public async Task ResetCircuitAsync(string serviceName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(serviceName);
+
         var serviceLock = _serviceLocks.GetOrAdd(serviceName, _ => new SemaphoreSlim(1, 1));
         await serviceLock.WaitAsync();
         try
