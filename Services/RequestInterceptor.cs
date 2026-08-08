@@ -28,8 +28,8 @@ public sealed class RequestInterceptor
     /// </summary>
     public void RegisterTransformer(string routeId, RequestTransformer transformer)
     {
-        if (string.IsNullOrWhiteSpace(routeId) || transformer is null)
-            return;
+        ArgumentException.ThrowIfNullOrEmpty(routeId);
+        ArgumentNullException.ThrowIfNull(transformer);
 
         _lock.EnterWriteLock();
         try
@@ -48,8 +48,7 @@ public sealed class RequestInterceptor
     /// </summary>
     public RequestTransformer? GetTransformer(string routeId)
     {
-        if (string.IsNullOrWhiteSpace(routeId))
-            return null;
+        ArgumentException.ThrowIfNullOrEmpty(routeId);
 
         _lock.EnterReadLock();
         try
@@ -72,8 +71,9 @@ public sealed class RequestInterceptor
         HttpRequestMessage request,
         RequestContext context)
     {
-        if (request is null || context is null)
-            return request;
+        ArgumentException.ThrowIfNullOrEmpty(routeId);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(context);
 
         var transformer = GetTransformer(routeId);
         if (transformer is null)
