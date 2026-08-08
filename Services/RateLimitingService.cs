@@ -40,6 +40,7 @@ public sealed class RateLimitingService : IDisposable
     /// <returns>True if the request is allowed, false otherwise.</returns>
     public async Task<bool> IsAllowedAsync(string key, RateLimitPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
         ArgumentNullException.ThrowIfNull(policy);
 
         if (!policy.Enabled || !policy.IsEnabled())
@@ -77,6 +78,7 @@ public sealed class RateLimitingService : IDisposable
     /// <returns>Rate limit information.</returns>
     public async Task<RateLimitInfo> GetRateLimitInfoAsync(string key, RateLimitPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
         ArgumentNullException.ThrowIfNull(policy);
 
         if (string.IsNullOrWhiteSpace(key) || !policy.Enabled || !policy.IsEnabled())
@@ -170,6 +172,8 @@ public sealed class RateLimitingService : IDisposable
     /// <param name="key">The unique key to reset (e.g., client IP, user ID).</param>
     public async Task ResetKeyLimitsAsync(string key)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+
         if (_rateLimitStoreFactory != null)
         {
             foreach (var store in _rateLimitStoreFactory.GetAllStores())
