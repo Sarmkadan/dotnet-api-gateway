@@ -25,6 +25,8 @@ public sealed class RateLimitingService : IDisposable
 
     public RateLimitingService(IRateLimitStoreFactory rateLimitStoreFactory, ILogger<RateLimitingService> logger)
     {
+        ArgumentNullException.ThrowIfNull(rateLimitStoreFactory);
+        ArgumentNullException.ThrowIfNull(logger);
         _rateLimitStoreFactory = rateLimitStoreFactory;
         _logger = logger;
     }

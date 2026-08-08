@@ -162,7 +162,7 @@ public sealed class CircuitBreakerService
     /// <param name="serviceName">The downstream service name.</param>
     /// <param name="error">Description of the error that occurred.</param>
     /// <param name="policy">The circuit breaker policy configuration.</param>
-    public async Task RecordFailureAsync(string serviceName, string error, CircuitBreakerPolicy policy)
+    public async Task RecordFailureAsync(string? serviceName, string error, CircuitBreakerPolicy policy)
     {
         ArgumentException.ThrowIfNullOrEmpty(serviceName);
         ArgumentException.ThrowIfNullOrEmpty(error);
