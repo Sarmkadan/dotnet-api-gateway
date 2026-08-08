@@ -23,6 +23,9 @@ public sealed class JwtValidationService
 
     public async Task<ClientIdentity> ValidateTokenAsync(string token, AuthenticationPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(token);
+        ArgumentNullException.ThrowIfNull(policy);
+
         if (!policy.Enabled || policy.Type != AuthenticationType.Bearer)
             throw new AuthenticationException("JWT validation is not enabled", "Bearer", "Policy disabled");
 
@@ -55,6 +58,8 @@ public sealed class JwtValidationService
 
     public JwtSecurityToken DecodeToken(string token)
     {
+        ArgumentException.ThrowIfNullOrEmpty(token);
+
         if (!_tokenHandler.CanReadToken(token))
             throw new AuthenticationException("Token cannot be read", "Bearer", "Invalid format");
 
