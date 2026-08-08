@@ -22,6 +22,7 @@ public sealed class MetricsService
 
     public void RecordRequest(string routeId, int statusCode, TimeSpan duration)
     {
+        ArgumentException.ThrowIfNullOrEmpty(routeId);
         _lock.EnterWriteLock();
         try
         {
@@ -70,6 +71,8 @@ public sealed class MetricsService
     /// </summary>
     public Task RecordRequestAsync(string method, string path, int statusCode, int responseTimeMs, DateTime timestamp)
     {
+        ArgumentException.ThrowIfNullOrEmpty(method);
+        ArgumentException.ThrowIfNullOrEmpty(path);
         RecordRequest(path, statusCode, TimeSpan.FromMilliseconds(responseTimeMs));
         return Task.CompletedTask;
     }
@@ -104,6 +107,7 @@ public sealed class MetricsService
 
     public RouteMetrics? GetRouteMetrics(string routeId)
     {
+        ArgumentException.ThrowIfNullOrEmpty(routeId);
         _lock.EnterReadLock();
         try
         {
