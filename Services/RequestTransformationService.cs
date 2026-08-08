@@ -18,6 +18,7 @@ public sealed class RequestTransformationService
 
     public RequestTransformationService(ILogger<RequestTransformationService> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
     }
 
@@ -31,6 +32,8 @@ public sealed class RequestTransformationService
     /// <returns>The transformed request message.</returns>
     public HttpRequestMessage ApplyRequestRules(HttpRequestMessage request, IEnumerable<TransformationRule> rules)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(rules);
         var orderedRules = rules
             .Where(r => r.IsEnabled && r.Phase == TransformationPhase.Request)
             .OrderBy(r => r.Order);
@@ -58,6 +61,8 @@ public sealed class RequestTransformationService
     /// <returns>The transformed response message.</returns>
     public HttpResponseMessage ApplyResponseRules(HttpResponseMessage response, IEnumerable<TransformationRule> rules)
     {
+        ArgumentNullException.ThrowIfNull(response);
+        ArgumentNullException.ThrowIfNull(rules);
         var orderedRules = rules
             .Where(r => r.IsEnabled && r.Phase == TransformationPhase.Response)
             .OrderBy(r => r.Order);
