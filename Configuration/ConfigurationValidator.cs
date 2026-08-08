@@ -27,13 +27,8 @@ public sealed class ConfigurationValidator
     /// </summary>
     public ValidationResult ValidateGatewayConfig(DotnetApiGatewayOptions config)
     {
+        ArgumentNullException.ThrowIfNull(config);
         var result = new ValidationResult();
-
-        if (config is null)
-        {
-            result.AddError("Gateway configuration is null");
-            return result;
-        }
 
         // Additional complex validation can be added here if needed,
         // though most simple validations are handled by DataAnnotations.
@@ -46,22 +41,12 @@ public sealed class ConfigurationValidator
     /// </summary>
     public ValidationResult ValidateRoute(GatewayRoute route)
     {
+        ArgumentNullException.ThrowIfNull(route);
         var result = new ValidationResult();
 
-        if (route is null)
-        {
-            result.AddError("Route is null");
-            return result;
-        }
-
-        if (string.IsNullOrWhiteSpace(route.Id))
-            result.AddError("Route ID is required");
-
-        if (string.IsNullOrWhiteSpace(route.Name))
-            result.AddError("Route name is required");
-
-        if (string.IsNullOrWhiteSpace(route.PathPattern))
-            result.AddError("Route path pattern is required");
+        ArgumentException.ThrowIfNullOrEmpty(route.Id);
+        ArgumentException.ThrowIfNullOrEmpty(route.Name);
+        ArgumentException.ThrowIfNullOrEmpty(route.PathPattern);
 
         if (route.Targets is null || route.Targets.Length == 0)
             result.AddError("Route must have at least one target");
@@ -108,16 +93,10 @@ public sealed class ConfigurationValidator
     /// </summary>
     public ValidationResult ValidateRouteTarget(RouteTarget target)
     {
+        ArgumentNullException.ThrowIfNull(target);
         var result = new ValidationResult();
 
-        if (target is null)
-        {
-            result.AddError("Route target is null");
-            return result;
-        }
-
-        if (string.IsNullOrWhiteSpace(target.Name))
-            result.AddError("Target name is required");
+        ArgumentException.ThrowIfNullOrEmpty(target.Name);
 
         if (!ValidationUtility.IsValidUrl(target.BaseUrl))
             result.AddError($"Target base URL is invalid: {target.BaseUrl}");
@@ -136,13 +115,8 @@ public sealed class ConfigurationValidator
     /// </summary>
     public ValidationResult ValidateRateLimitPolicy(RateLimitPolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(policy);
         var result = new ValidationResult();
-
-        if (policy is null)
-        {
-            result.AddError("Rate limit policy is null");
-            return result;
-        }
 
         if (policy.RequestsPerMinute <= 0 && policy.RequestsPerHour <= 0)
             result.AddError("Rate limit policy must specify either RequestsPerMinute or RequestsPerHour");
@@ -158,13 +132,8 @@ public sealed class ConfigurationValidator
     /// </summary>
     public ValidationResult ValidateCircuitBreakerPolicy(CircuitBreakerPolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(policy);
         var result = new ValidationResult();
-
-        if (policy is null)
-        {
-            result.AddError("Circuit breaker policy is null");
-            return result;
-        }
 
         if (policy.FailureThreshold <= 0)
             result.AddError("Circuit breaker failure threshold must be greater than 0");
@@ -183,13 +152,8 @@ public sealed class ConfigurationValidator
     /// </summary>
     public ValidationResult ValidateCachePolicy(CachePolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(policy);
         var result = new ValidationResult();
-
-        if (policy is null)
-        {
-            result.AddError("Cache policy is null");
-            return result;
-        }
 
         if (policy.DurationSeconds <= 0)
             result.AddError("Cache TTL must be greater than 0");
