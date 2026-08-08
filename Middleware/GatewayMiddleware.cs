@@ -22,6 +22,9 @@ public sealed class GatewayMiddleware
 
     public async Task InvokeAsync(HttpContext context, RoutingService routingService, MetricsService metricsService)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(routingService);
+        ArgumentNullException.ThrowIfNull(metricsService);
         var requestContext = new RequestContext
         {
             RequestId = Guid.NewGuid().ToString(),
