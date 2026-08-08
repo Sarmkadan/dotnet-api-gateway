@@ -27,6 +27,7 @@ public sealed class ApiVersioningService
 
     public ApiVersioningService(ILogger<ApiVersioningService> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
     }
 
@@ -47,6 +48,8 @@ public sealed class ApiVersioningService
         ApiVersioningPolicy policy,
         out string? resolvedVersion)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(policy);
         resolvedVersion = null;
 
         if (!policy.Enabled)
@@ -116,6 +119,8 @@ public sealed class ApiVersioningService
     /// <returns>The path with the version segment removed, or the original path when stripping is disabled.</returns>
     public string StripVersionFromPath(string path, ApiVersioningPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentNullException.ThrowIfNull(policy);
         if (!policy.StripVersionFromPath)
             return path;
 
@@ -141,6 +146,8 @@ public sealed class ApiVersioningService
     /// </summary>
     public static object BuildVersionErrorResponse(ApiVersioningPolicy policy, string? attemptedVersion)
     {
+        ArgumentNullException.ThrowIfNull(policy);
+        ArgumentException.ThrowIfNullOrEmpty(attemptedVersion);
         return new
         {
             error = "Unsupported or missing API version",
