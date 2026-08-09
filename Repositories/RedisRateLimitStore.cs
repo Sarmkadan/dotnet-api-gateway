@@ -23,6 +23,8 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
 
     public RedisRateLimitStore(string connectionString, ILogger<RedisRateLimitStore> logger)
     {
+        ArgumentException.ThrowIfNullOrEmpty(connectionString);
+        ArgumentNullException.ThrowIfNull(logger);
         _redis = ConnectionMultiplexer.Connect(connectionString);
         _db = _redis.GetDatabase();
         _logger = logger;
@@ -42,11 +44,8 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
     /// <returns>True if the request is allowed, false otherwise.</returns>
     public async Task<bool> IsRequestAllowedAsync(string key, RateLimitPolicy policy)
     {
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            _logger.LogError("Rate limit key cannot be null or empty.");
-            return true; // Allow if key is invalid to prevent blocking legitimate requests
-        }
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        ArgumentNullException.ThrowIfNull(policy);
 
         var now = DateTime.UtcNow;
         var redisKey = GetRedisKey(key, policy);
@@ -67,6 +66,8 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
 
     public async Task<RateLimitEntry> GetEntryAsync(string key, RateLimitPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        ArgumentNullException.ThrowIfNull(policy);
         var redisKey = GetRedisKey(key, policy);
         var now = DateTime.UtcNow;
 
@@ -162,6 +163,8 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
 
     private async Task<bool> HandleFixedWindowAsync(RedisKey redisKey, RateLimitPolicy policy, DateTime now)
     {
+        ArgumentException.ThrowIfNullOrEmpty(redisKey);
+        ArgumentNullException.ThrowIfNull(policy);
         var windowLengthSeconds = policy.RequestsPerMinute > 0 ? 60 : 3600; // Use 1 min or 1 hr window
         var windowStart = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute / (windowLengthSeconds / 60) * (windowLengthSeconds / 60), 0, DateTimeKind.Utc);
         var windowEnd = windowStart.AddSeconds(windowLengthSeconds);
@@ -187,6 +190,8 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
 
     private async Task<bool> HandleSlidingWindowAsync(RedisKey redisKey, RateLimitPolicy policy, DateTime now)
     {
+        ArgumentException.ThrowIfNullOrEmpty(redisKey);
+        ArgumentNullException.ThrowIfNull(policy);
         var windowDuration = TimeSpan.FromMinutes(1); // Assuming 1-minute window
         var cleanBefore = now - windowDuration;
 
@@ -231,6 +236,8 @@ public sealed class RedisRateLimitStore : IRateLimitStore, IDisposable
 
     private async Task<bool> HandleTokenBucketAsync(RedisKey redisKey, RateLimitPolicy policy, DateTime now)
     {
+        ArgumentException.ThrowIfNullOrEmpty(redisKey);
+        ArgumentNullException.ThrowIfNull(policy);
         var refillRate = policy.RequestsPerMinute / 60.0;
         var bucketCapacity = policy.BurstSize;
 
