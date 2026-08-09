@@ -24,6 +24,9 @@ public static class UrlUtility
     /// <returns>The combined URL.</returns>
     public static string CombineUrl(string baseUrl, string path, bool encodePath = false)
     {
+        ArgumentException.ThrowIfNullOrEmpty(baseUrl);
+        ArgumentException.ThrowIfNullOrEmpty(path);
+
         if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(path))
             return baseUrl ?? path ?? "/";
 
@@ -47,6 +50,8 @@ public static class UrlUtility
     /// <returns>A dictionary of decoded query parameter names and values.</returns>
     public static Dictionary<string, string> ParseQueryString(string queryString)
     {
+        ArgumentException.ThrowIfNullOrEmpty(queryString);
+
         var parameters = new Dictionary<string, string>();
 
         if (string.IsNullOrWhiteSpace(queryString))
@@ -96,6 +101,8 @@ public static class UrlUtility
     /// <returns>A query string starting with '?', or an empty string if there are no parameters.</returns>
     public static string BuildQueryString(Dictionary<string, string> parameters)
     {
+        ArgumentNullException.ThrowIfNull(parameters);
+
         if (parameters is null || parameters.Count == 0)
             return string.Empty;
 
@@ -114,6 +121,8 @@ public static class UrlUtility
     /// <returns>The hostname if the URL is a valid absolute URL; otherwise, <c>null</c>.</returns>
     public static string? GetHostname(string url)
     {
+        ArgumentException.ThrowIfNullOrEmpty(url);
+
         if (string.IsNullOrWhiteSpace(url))
             return null;
 
@@ -133,6 +142,8 @@ public static class UrlUtility
     /// </returns>
     public static int GetPort(string url)
     {
+        ArgumentException.ThrowIfNullOrEmpty(url);
+
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
             return 80;
 
@@ -147,11 +158,13 @@ public static class UrlUtility
     /// <summary>
     /// Check if URL is valid and can be used for forwarding.
     /// Validates both format and scheme.
-    /// </summary>
+    /// </>
     /// <param name="url">The URL to validate.</param>
     /// <returns><c>true</c> if the URL is a valid absolute http or https URL; otherwise, <c>false</c>.</returns>
     public static bool IsValidUrl(string url)
     {
+        ArgumentException.ThrowIfNullOrEmpty(url);
+
         if (string.IsNullOrWhiteSpace(url))
             return false;
 
@@ -173,10 +186,13 @@ public static class UrlUtility
     /// <returns>The URL with sensitive query parameter values replaced by "***".</returns>
     public static string SanitizeUrl(string url, string[]? sensitiveParams = null)
     {
-        sensitiveParams ??= new[] { "password", "token", "api_key", "secret", "authorization" };
+        ArgumentException.ThrowIfNullOrEmpty(url);
+        // sensitiveParams has a default value null, so we skip adding a guard for it as per instructions
 
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
             return url;
+
+        sensitiveParams ??= new[] { "password", "token", "api_key", "secret", "authorization" };
 
         var parameters = ParseQueryString(uri.Query);
         var sanitized = new Dictionary<string, string>();
@@ -202,6 +218,8 @@ public static class UrlUtility
     /// </returns>
     public static string GetPath(string url)
     {
+        ArgumentException.ThrowIfNullOrEmpty(url);
+
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
             return url;
 
@@ -216,6 +234,9 @@ public static class UrlUtility
     /// <returns><c>true</c> if the query parameter exists; otherwise, <c>false</c>.</returns>
     public static bool HasQueryParameter(string url, string paramName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(url);
+        ArgumentException.ThrowIfNullOrEmpty(paramName);
+
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
             return false;
 
