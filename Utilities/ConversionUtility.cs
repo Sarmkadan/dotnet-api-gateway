@@ -19,6 +19,9 @@ public static class ConversionUtility
     /// </summary>
     public static string ToString(object? obj, string defaultValue = "")
     {
+        ArgumentNullException.ThrowIfNull(obj);
+        ArgumentException.ThrowIfNullOrEmpty(defaultValue);
+
         if (obj is null)
             return defaultValue;
 
