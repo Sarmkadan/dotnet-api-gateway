@@ -29,6 +29,8 @@ public static class JsonResponseFormatter
     /// </summary>
     public static string FormatSuccess<T>(T data, string? message = null) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
+
         var response = new SuccessResponse<T>
         {
             Success = true,
@@ -45,6 +47,8 @@ public static class JsonResponseFormatter
     /// </summary>
     public static string FormatSuccess(string message = "Operation successful")
     {
+        ArgumentException.ThrowIfNullOrEmpty(message);
+
         var response = new SuccessResponse<object>
         {
             Success = true,
@@ -60,6 +64,9 @@ public static class JsonResponseFormatter
     /// </summary>
     public static string FormatError(string errorCode, string message, int statusCode = 400, Dictionary<string, object>? details = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(errorCode);
+        ArgumentException.ThrowIfNullOrEmpty(message);
+
         var response = new ErrorResponse
         {
             Success = false,
@@ -78,6 +85,9 @@ public static class JsonResponseFormatter
     /// </summary>
     public static string FormatValidationError(Dictionary<string, string> fieldErrors, string message = "Validation failed")
     {
+        ArgumentNullException.ThrowIfNull(fieldErrors);
+        ArgumentException.ThrowIfNullOrEmpty(message);
+
         var details = fieldErrors.ToDictionary<KeyValuePair<string, string>, string, object>(
             kvp => kvp.Key,
             kvp => (object)kvp.Value
@@ -91,6 +101,8 @@ public static class JsonResponseFormatter
     /// </summary>
     public static string FormatPaginated<T>(List<T> items, int pageNumber, int pageSize, long totalCount) where T : class
     {
+        ArgumentNullException.ThrowIfNull(items);
+
         var response = new PaginatedResponse<T>
         {
             Success = true,
@@ -113,6 +125,8 @@ public static class JsonResponseFormatter
     /// </summary>
     public static byte[] FormatBytes<T>(T data) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
+
         var json = JsonSerializer.Serialize(data, Options);
         return Encoding.UTF8.GetBytes(json);
     }
