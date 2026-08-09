@@ -22,6 +22,7 @@ public class RequestTransformationController : ControllerBase
 
     public RequestTransformationController(ILogger<RequestTransformationController> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
     }
 
@@ -79,6 +80,7 @@ public class RequestTransformationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult TestBodyTransformation([FromBody] BodyTransformationRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request);
         if (string.IsNullOrWhiteSpace(request?.InputBody))
             return BadRequest(new { error = "Input body required" });
 
@@ -112,6 +114,7 @@ public class RequestTransformationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult TestQueryParamTransformation([FromBody] QueryParamTransformationRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request);
         if (request?.InputParams is null || request.InputParams.Count == 0)
             return BadRequest(new { error = "Input query parameters required" });
 
