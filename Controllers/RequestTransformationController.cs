@@ -34,6 +34,7 @@ public class RequestTransformationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult TestHeaderTransformation([FromBody] HeaderTransformationRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request);
         if (request?.InputHeaders is null || request.InputHeaders.Count == 0)
             return BadRequest(new { error = "Input headers required" });
 
