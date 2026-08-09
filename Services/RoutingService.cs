@@ -27,7 +27,8 @@ public sealed class RoutingService : IDisposable
         LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.RoundRobin,
         ILogger<RoutingService>? logger = null)
     {
-        _routeRepository = routeRepository ?? throw new ArgumentNullException(nameof(routeRepository));
+        ArgumentNullException.ThrowIfNull(routeRepository);
+        _routeRepository = routeRepository;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RoutingService>.Instance;
         _loadBalancingStrategy = loadBalancingStrategy;
 
