@@ -22,6 +22,7 @@ public sealed class CacheService
 
     public bool TryGetCachedResponse(string cacheKey, out CacheEntry? entry)
     {
+        ArgumentException.ThrowIfNullOrEmpty(cacheKey);
         _lock.EnterReadLock();
         try
         {
@@ -55,6 +56,10 @@ public sealed class CacheService
         Dictionary<string, string> headers,
         int durationSeconds)
     {
+        ArgumentException.ThrowIfNullOrEmpty(cacheKey);
+        ArgumentException.ThrowIfNullOrEmpty(responseBody);
+        ArgumentNullException.ThrowIfNull(headers);
+
         var entry = new CacheEntry
         {
             Key = cacheKey,
@@ -78,6 +83,7 @@ public sealed class CacheService
 
     public void InvalidateCache(string cacheKey)
     {
+        ArgumentException.ThrowIfNullOrEmpty(cacheKey);
         _lock.EnterWriteLock();
         try
         {
@@ -91,6 +97,7 @@ public sealed class CacheService
 
     public void InvalidateCacheByPrefix(string prefix)
     {
+        ArgumentException.ThrowIfNullOrEmpty(prefix);
         _lock.EnterWriteLock();
         try
         {
