@@ -37,6 +37,7 @@ public static class ExtensionMethods
     /// </summary>
     public static string Truncate(this string value, int maxLength, string suffix = "...")
     {
+        ArgumentException.ThrowIfNullOrEmpty(suffix);
         if (value is null || value.Length <= maxLength)
             return value;
 
@@ -205,6 +206,8 @@ public static class ExtensionMethods
     /// </summary>
     public static bool MatchesPath(this GatewayRoute route, string path)
     {
+        ArgumentNullException.ThrowIfNull(route);
+        ArgumentException.ThrowIfNullOrEmpty(path);
         return route.MatchesPath(path);
     }
 
@@ -213,6 +216,7 @@ public static class ExtensionMethods
     /// </summary>
     public static string ToDisplayString(this GatewayRoute route)
     {
+        ArgumentNullException.ThrowIfNull(route);
         return $"Id: {route.Id}, Name: {route.Name}, PathPattern: {route.PathPattern}, IsActive: {route.IsActive}";
     }
 
@@ -221,6 +225,7 @@ public static class ExtensionMethods
     /// </summary>
     public static bool IsActive(this GatewayRoute route)
     {
+        ArgumentNullException.ThrowIfNull(route);
         return route.IsActive;
     }
 }
