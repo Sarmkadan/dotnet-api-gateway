@@ -38,6 +38,9 @@ public class GatewayManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateRoute([FromBody] GatewayRoute route)
     {
+        if (route == null)
+            throw new ArgumentNullException(nameof(route));
+
         try
         {
             var createdRoute = await _gatewayManagementService.CreateRouteAsync(route);
@@ -69,6 +72,7 @@ public class GatewayManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetRouteById(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         var (route, metrics) = await _gatewayManagementService.GetRouteByIdWithMetricsAsync(id);
         if (route is null)
             return NotFound(new { error = "Route not found", id });
@@ -84,6 +88,8 @@ public class GatewayManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateRoute(string id, [FromBody] GatewayRoute updatedRoute)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        ArgumentNullException.ThrowIfNull(updatedRoute);
         try
         {
             var updated = await _gatewayManagementService.UpdateRouteAsync(id, updatedRoute);
@@ -103,6 +109,7 @@ public class GatewayManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteRoute(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         var deleted = await _gatewayManagementService.DeleteRouteAsync(id);
         if (!deleted)
             return NotFound(new { error = "Route not found", id });
@@ -117,6 +124,7 @@ public class GatewayManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRouteMetrics(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         var metrics = await _gatewayManagementService.GetRouteMetricsAsync(id);
         return Ok(metrics);
     }
@@ -139,6 +147,7 @@ public class GatewayManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ResetCircuitBreaker(string targetId)
     {
+        ArgumentException.ThrowIfNullOrEmpty(targetId);
         try
         {
             var updatedStatus = await _gatewayManagementService.ResetCircuitBreakerAsync(targetId);
@@ -157,6 +166,7 @@ public class GatewayManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRateLimitStatus(string key)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
         var info = await _gatewayManagementService.GetRateLimitStatusAsync(key);
         return Ok(info);
     }
