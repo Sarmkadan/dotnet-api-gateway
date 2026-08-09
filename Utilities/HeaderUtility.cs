@@ -21,8 +21,8 @@ public static class HeaderUtility
     /// <returns>The header value if found and non-empty; otherwise, <c>null</c>.</returns>
     public static string? GetHeader(IHeaderDictionary headers, string headerName)
     {
-        if (headers is null || string.IsNullOrWhiteSpace(headerName))
-            return null;
+        ArgumentNullException.ThrowIfNull(headers);
+        ArgumentException.ThrowIfNullOrEmpty(headerName);
 
         var header = headers.FirstOrDefault(h => h.Key.Equals(headerName, StringComparison.OrdinalIgnoreCase));
         var value = header.Value.ToString();
