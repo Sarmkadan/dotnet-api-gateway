@@ -25,6 +25,7 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
     /// <param name="logger">The logger used for logging rate limit events.</param>
     public InMemoryRateLimitStore(ILogger<InMemoryRateLimitStore> logger)
     {
+        ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
     }
 
@@ -36,6 +37,8 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
     /// <returns>True if the request is allowed, false otherwise.</returns>
     public Task<bool> IsRequestAllowedAsync(string key, RateLimitPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        ArgumentNullException.ThrowIfNull(policy);
         var now = DateTime.UtcNow;
         // A token bucket must start full, otherwise the very first request is denied.
         var entry = _storage.GetOrAdd(key, _ => new RateLimitEntry { Key = key, LastRequest = now, Tokens = policy.BurstSize });
@@ -108,6 +111,8 @@ public sealed class InMemoryRateLimitStore : IRateLimitStore
 
     public Task<RateLimitEntry> GetEntryAsync(string key, RateLimitPolicy policy)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        ArgumentNullException.ThrowIfNull(policy);
         _storage.TryGetValue(key, out var entry);
         var now = DateTime.UtcNow;
 
