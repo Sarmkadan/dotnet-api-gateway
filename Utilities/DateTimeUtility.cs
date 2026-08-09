@@ -30,9 +30,10 @@ public static class DateTimeUtility
 
     /// <summary>
     /// Convert DateTime to Unix timestamp (seconds since epoch).
-    /// </summary>
+    /// </>
     public static long ToUnixTimestamp(DateTime dateTime)
     {
+        ArgumentNullException.ThrowIfNull(nameof(dateTime));
         return new DateTimeOffset(dateTime).ToUnixTimeSeconds();
     }
 
@@ -49,6 +50,8 @@ public static class DateTimeUtility
     /// </summary>
     public static string FormatDateTime(DateTime dateTime, string format = "yyyy-MM-dd HH:mm:ss")
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(format));
+        ArgumentNullException.ThrowIfNull(nameof(dateTime));
         return dateTime.ToString(format);
     }
 
@@ -57,6 +60,7 @@ public static class DateTimeUtility
     /// </summary>
     public static string GetRelativeTime(DateTime dateTime)
     {
+        ArgumentNullException.ThrowIfNull(nameof(dateTime));
         var now = DateTime.UtcNow;
         var diff = now - dateTime;
 
@@ -83,6 +87,7 @@ public static class DateTimeUtility
     /// </summary>
     public static bool IsPast(DateTime dateTime)
     {
+        ArgumentNullException.ThrowIfNull(nameof(dateTime));
         return dateTime < DateTime.UtcNow;
     }
 
@@ -91,6 +96,7 @@ public static class DateTimeUtility
     /// </summary>
     public static bool IsFuture(DateTime dateTime)
     {
+        ArgumentNullException.ThrowIfNull(nameof(dateTime));
         return dateTime > DateTime.UtcNow;
     }
 
@@ -99,8 +105,10 @@ public static class DateTimeUtility
     /// </summary>
     public static DateTime GetStartOfDay(DateTime? dateTime = null)
     {
-        var dt = dateTime ?? DateTime.UtcNow;
-        return dt.Date;
+        if (dateTime == null)
+            return DateTime.UtcNow.Date;
+        else
+            return dateTime.Value.Date;
     }
 
     /// <summary>
@@ -108,8 +116,10 @@ public static class DateTimeUtility
     /// </summary>
     public static DateTime GetEndOfDay(DateTime? dateTime = null)
     {
-        var dt = dateTime ?? DateTime.UtcNow;
-        return dt.Date.AddDays(1).AddSeconds(-1);
+        if (dateTime == null)
+            return DateTime.UtcNow.Date.AddDays(1).AddSeconds(-1);
+        else
+            return dateTime.Value.Date.AddDays(1).AddSeconds(-1);
     }
 
     /// <summary>
@@ -117,12 +127,13 @@ public static class DateTimeUtility
     /// </summary>
     public static DateTime GetStartOfWeek(DateTime? dateTime = null)
     {
-        var dt = dateTime ?? DateTime.UtcNow;
-        var diff = (int)dt.DayOfWeek - (int)DayOfWeek.Monday;
+        if (dateTime == null)
+            dateTime = DateTime.UtcNow;
+        var diff = (int)dateTime.Value.DayOfWeek - (int)DayOfWeek.Monday;
         if (diff < 0)
             diff += 7;
 
-        return dt.AddDays(-diff).Date;
+        return dateTime.Value.AddDays(-diff).Date;
     }
 
     /// <summary>
@@ -157,6 +168,8 @@ public static class DateTimeUtility
     /// </summary>
     public static bool IsSameDay(DateTime date1, DateTime date2)
     {
+        ArgumentNullException.ThrowIfNull(nameof(date1));
+        ArgumentNullException.ThrowIfNull(nameof(date2));
         return date1.Date == date2.Date;
     }
 
@@ -165,6 +178,8 @@ public static class DateTimeUtility
     /// </summary>
     public static int GetBusinessDaysBetween(DateTime startDate, DateTime endDate)
     {
+        ArgumentNullException.ThrowIfNull(nameof(startDate));
+        ArgumentNullException.ThrowIfNull(nameof(endDate));
         int businessDays = 0;
         var current = startDate;
 
