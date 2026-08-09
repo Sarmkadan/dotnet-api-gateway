@@ -25,6 +25,7 @@ public static class ValidationUtility
     /// </summary>
     public static bool IsValidEmail(string email)
     {
+        ArgumentException.ThrowIfNullOrEmpty(email);
         return !string.IsNullOrWhiteSpace(email) && EmailRegex.IsMatch(email);
     }
 
