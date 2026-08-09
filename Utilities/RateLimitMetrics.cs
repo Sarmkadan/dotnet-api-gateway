@@ -20,6 +20,7 @@ public sealed class RateLimitMetrics
     /// </summary>
     public void RecordRequest(string clientId, bool limited = false)
     {
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
         if (string.IsNullOrWhiteSpace(clientId))
             return;
 
@@ -63,6 +64,7 @@ public sealed class RateLimitMetrics
     /// </summary>
     public ClientRateLimitStats? GetClientStats(string clientId)
     {
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
         _lock.EnterReadLock();
         try
         {
@@ -156,6 +158,7 @@ public sealed class RateLimitMetrics
     /// </summary>
     public double ThrottleRate(string clientId)
     {
+        ArgumentException.ThrowIfNullOrEmpty(clientId);
         _lock.EnterReadLock();
         try
         {
