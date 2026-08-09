@@ -93,6 +93,7 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateWebhookSubscription([FromBody] CreateWebhookSubscriptionRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request);
         if (request is null || string.IsNullOrWhiteSpace(request.CallbackUrl))
             return FormatError(new { error = "Callback URL required" });
 
@@ -139,6 +140,7 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult RotateWebhookSecret(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         if (!_subscriptions.TryGetValue(id, out var subscription))
             return NotFound(new { error = "Subscription not found", id });
 
@@ -165,6 +167,7 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetWebhookSecret(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         if (!_subscriptions.TryGetValue(id, out var subscription))
             return NotFound(new { error = "Subscription not found", id });
 
@@ -189,6 +192,7 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetWebhookSubscription(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
         if (!_subscriptions.TryGetValue(id, out var subscription))
             return NotFound(new { error = "Subscription not found", id });
 
@@ -204,6 +208,8 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateWebhookSubscription(string id, [FromBody] UpdateWebhookSubscriptionRequest request)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        ArgumentNullException.ThrowIfNull(request);
         if (!_subscriptions.TryGetValue(id, out var subscription))
             return NotFound(new { error = "Subscription not found", id });
 
