@@ -24,7 +24,7 @@ public static class CryptoUtility
     /// <exception cref="ArgumentNullException">Thrown if input is null.</exception>
     public static string GenerateSha256Hash(string input)
     {
-        ArgumentNullException.ThrowIfNull(input);
+        ArgumentException.ThrowIfNullOrEmpty(input);
 
         if (string.IsNullOrWhiteSpace(input))
             return string.Empty;
@@ -62,8 +62,8 @@ public static class CryptoUtility
     /// <exception cref="ArgumentNullException">Thrown if data or secret is null.</exception>
     public static string GenerateHmacSha256(string data, string secret)
     {
-        ArgumentNullException.ThrowIfNull(data);
-        ArgumentNullException.ThrowIfNull(secret);
+        ArgumentException.ThrowIfNullOrEmpty(data);
+        ArgumentException.ThrowIfNullOrEmpty(secret);
 
         if (string.IsNullOrWhiteSpace(data) || string.IsNullOrWhiteSpace(secret))
             return string.Empty;
@@ -107,9 +107,9 @@ public static class CryptoUtility
     /// <exception cref="ArgumentNullException">Thrown if data, signature, or secret is null.</exception>
     public static bool VerifyHmacSha256(string data, string signature, string secret)
     {
-        ArgumentNullException.ThrowIfNull(data);
-        ArgumentNullException.ThrowIfNull(signature);
-        ArgumentNullException.ThrowIfNull(secret);
+        ArgumentException.ThrowIfNullOrEmpty(data);
+        ArgumentException.ThrowIfNullOrEmpty(signature);
+        ArgumentException.ThrowIfNullOrEmpty(secret);
 
         if (string.IsNullOrWhiteSpace(data) || string.IsNullOrWhiteSpace(signature))
             return false;
@@ -132,8 +132,8 @@ public static class CryptoUtility
     public static bool VerifyHmacSha256(byte[] data, string signature, string secret)
     {
         ArgumentNullException.ThrowIfNull(data);
-        ArgumentNullException.ThrowIfNull(signature);
-        ArgumentNullException.ThrowIfNull(secret);
+        ArgumentException.ThrowIfNullOrEmpty(signature);
+        ArgumentException.ThrowIfNullOrEmpty(secret);
 
         if (data.Length == 0 || string.IsNullOrWhiteSpace(signature))
             return false;
