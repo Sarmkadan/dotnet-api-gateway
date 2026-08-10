@@ -25,4 +25,10 @@ public class CircuitBreakerException : GatewayException
         ServiceName = serviceName;
         RetryAfterSeconds = retryAfterSeconds;
     }
+
+    /// <summary>
+    /// Returns a concise, informative string representation of the exception.
+    /// </summary>
+    public override string ToString()
+        => $"CircuitBreakerException {{ ServiceName = {ServiceName}, RetryAfterSeconds = {RetryAfterSeconds} }}";
 }
