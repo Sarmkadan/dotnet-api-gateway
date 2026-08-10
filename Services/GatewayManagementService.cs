@@ -103,7 +103,8 @@ public sealed class GatewayManagementService
     /// </summary>
     public async Task<GatewayRoute> CreateRouteAsync(GatewayRoute route)
     {
-        if (route is null || string.IsNullOrWhiteSpace(route.Id))
+        ArgumentNullException.ThrowIfNull(route);
+        if (string.IsNullOrWhiteSpace(route.Id))
         {
             _logger.LogWarning("Invalid route creation attempt");
             throw new ArgumentException("Route ID and configuration required");
