@@ -23,4 +23,6 @@ public class AuthenticationException : GatewayException
         TokenType = tokenType;
         Reason = reason;
     }
+
+    public override string ToString() => $"AuthenticationException {{ TokenType = {TokenType}, Reason = {Reason} }}";
 }
