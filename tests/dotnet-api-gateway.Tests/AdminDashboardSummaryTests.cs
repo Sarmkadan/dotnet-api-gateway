@@ -42,6 +42,8 @@ public sealed class AdminDashboardSummaryTests
     /// </summary>
     public DateTime Timestamp { get; set; }
 
+    public override string ToString() => $"AdminDashboardSummaryTests {{ Gateway = {Gateway}, Requests = {Requests}, Routes = {Routes}, CircuitBreakers = {CircuitBreakers}, StatusCodeDistribution = {{ {string.Join(", ", StatusCodeDistribution.Select(kv => $"{kv.Key}: {kv.Value}"))} }}, Timestamp = {Timestamp} }}";
+
     /// <summary>
     /// Represents gateway metadata.
     /// </summary>
