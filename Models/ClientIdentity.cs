@@ -64,4 +64,11 @@ public sealed class ClientIdentity
 
         return default;
     }
+
+    public override string ToString()
+    {
+        var scopes = Scopes != null && Scopes.Length > 0 ? string.Join(", ", Scopes) : string.Empty;
+        var roles = Roles != null && Roles.Length > 0 ? string.Join(", ", Roles) : string.Empty;
+        return $"ClientIdentity {{ Id = {Id}, Subject = {Subject}, Name = {Name}, Email = {Email}, Scopes = [{scopes}], Roles = [{roles}] }}";
+    }
 }
