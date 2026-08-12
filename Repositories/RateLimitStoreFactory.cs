@@ -38,10 +38,13 @@ public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
     /// <returns>The rate limit store.</returns>
     public IRateLimitStore GetStore(RateLimitPolicy policy)
     {
+        _redisLogger.LogInformation("GetStore called for policy {PolicyId} with storage type {StorageType} and enabled {Enabled}", policy.Id, policy.StorageType, policy.Enabled);
+
         if (!policy.Enabled)
         {
             // If rate limiting is disabled, return a no-op store or just allow
             // For now, we'll return the in-memory store, which will handle policy.Enabled = false
+            _redisLogger.LogInformation("Rate limiting is disabled for policy {PolicyId}, returning InMemory store", policy.Id);
             return _serviceProvider.GetService<InMemoryRateLimitStore>();
         }
 
@@ -53,9 +56,12 @@ public sealed class RateLimitStoreFactory : IRateLimitStoreFactory, IDisposable
                 return _serviceProvider.GetService<InMemoryRateLimitStore>();
             }
 
-            return _redisStores.GetOrAdd(policy.RedisConnectionString, cs => _serviceProvider.GetService<RedisRateLimitStore>() ?? new RedisRateLimitStore(cs, _redisLogger));
+            var store = _redisStores.GetOrAdd(policy.RedisConnectionString, cs => _serviceProvider.GetService<RedisRateLimitStore>() ?? new RedisRateLimitStore(cs, _redisLogger));
+            _redisLogger.LogInformation("Returning Redis store for policy {PolicyId}", policy.Id);
+            return store;
         }
 
+        _redisLogger.LogInformation("Returning InMemory store for policy {PolicyId}", policy.Id);
         return _serviceProvider.GetService<InMemoryRateLimitStore>();
     }
 
