@@ -257,6 +257,9 @@ public sealed class RateLimitingService : IDisposable
         // Dispose the factory
         (_rateLimitStoreFactory as IDisposable)?.Dispose();
     }
+
+    // Added ToString override for concise representation
+    public override string ToString() => $"RateLimitingService {{ Limit = 0, Remaining = 0, Reset = 0 }}";
 }
 
 /// <summary>
