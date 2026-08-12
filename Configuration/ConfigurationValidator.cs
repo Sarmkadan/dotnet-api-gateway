@@ -28,11 +28,15 @@ public sealed class ConfigurationValidator
     public ValidationResult ValidateGatewayConfig(DotnetApiGatewayOptions config)
     {
         ArgumentNullException.ThrowIfNull(config);
+        _logger.LogInformation("ValidateGatewayConfig called with {Config}", config);
         var result = new ValidationResult();
 
         // Additional complex validation can be added here if needed,
         // though most simple validations are handled by DataAnnotations.
 
+        _logger.LogInformation("ValidateGatewayConfig completed. IsValid: {IsValid}", result.IsValid);
+        _logger.LogInformation("ValidateRoute completed for {RouteId}. IsValid: {IsValid}", route.Id, result.IsValid);
+        _logger.LogInformation("ValidateRouteTarget completed for {TargetName}. IsValid: {IsValid}", target.Name, result.IsValid);
         return result;
     }
 
@@ -42,6 +46,7 @@ public sealed class ConfigurationValidator
     public ValidationResult ValidateRoute(GatewayRoute route)
     {
         ArgumentNullException.ThrowIfNull(route);
+        _logger.LogInformation("ValidateRoute called with {RouteId}", route.Id);
         var result = new ValidationResult();
 
         ArgumentException.ThrowIfNullOrEmpty(route.Id);
@@ -85,6 +90,8 @@ public sealed class ConfigurationValidator
                 result.Errors.AddRange(policyResult.Errors);
         }
 
+        _logger.LogInformation("ValidateRoute completed for {RouteId}. IsValid: {IsValid}", route.Id, result.IsValid);
+        _logger.LogInformation("ValidateRouteTarget completed for {TargetName}. IsValid: {IsValid}", target.Name, result.IsValid);
         return result;
     }
 
@@ -107,6 +114,8 @@ public sealed class ConfigurationValidator
         if (target.Weight < 0 || target.Weight > 100)
             result.AddError("Target weight must be between 0 and 100");
 
+        _logger.LogInformation("ValidateRoute completed for {RouteId}. IsValid: {IsValid}", route.Id, result.IsValid);
+        _logger.LogInformation("ValidateRouteTarget completed for {TargetName}. IsValid: {IsValid}", target.Name, result.IsValid);
         return result;
     }
 
@@ -124,6 +133,8 @@ public sealed class ConfigurationValidator
         if (policy.BurstSize < 1)
             result.AddError("Burst size must be at least 1");
 
+        _logger.LogInformation("ValidateRoute completed for {RouteId}. IsValid: {IsValid}", route.Id, result.IsValid);
+        _logger.LogInformation("ValidateRouteTarget completed for {TargetName}. IsValid: {IsValid}", target.Name, result.IsValid);
         return result;
     }
 
@@ -144,6 +155,8 @@ public sealed class ConfigurationValidator
         if (policy.SuccessThreshold < 1)
             result.AddError("Circuit breaker success threshold must be at least 1");
 
+        _logger.LogInformation("ValidateRoute completed for {RouteId}. IsValid: {IsValid}", route.Id, result.IsValid);
+        _logger.LogInformation("ValidateRouteTarget completed for {TargetName}. IsValid: {IsValid}", target.Name, result.IsValid);
         return result;
     }
 
@@ -158,6 +171,8 @@ public sealed class ConfigurationValidator
         if (policy.DurationSeconds <= 0)
             result.AddError("Cache TTL must be greater than 0");
 
+        _logger.LogInformation("ValidateRoute completed for {RouteId}. IsValid: {IsValid}", route.Id, result.IsValid);
+        _logger.LogInformation("ValidateRouteTarget completed for {TargetName}. IsValid: {IsValid}", target.Name, result.IsValid);
         return result;
     }
 }
