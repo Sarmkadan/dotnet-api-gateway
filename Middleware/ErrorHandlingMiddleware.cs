@@ -30,14 +30,37 @@ public sealed class ErrorHandlingMiddleware
     /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
+        _logger.LogInformation(
+            "InvokeAsync processing request {Method} {Path} with trace identifier {TraceIdentifier}",
+            context.Request.Method,
+            context.Request.Path,
+            context.TraceIdentifier);
+
         try
         {
-            _logger.LogInformation("InvokeAsync processing request", context);
             await _next(context);
+
+            _logger.LogInformation(
+                "InvokeAsync completed request {Method} {Path} with status code {StatusCode} and trace identifier {TraceIdentifier}",
+                context.Request.Method,
+                context.Request.Path,
+                context.Response.StatusCode,
+                context.TraceIdentifier);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in request pipeline");
+            _logger.LogError(
+                ex,
+                "Unhandled exception in request pipeline while processing {Method} {Path} with trace identifier {TraceIdentifier}",
+                context.Request.Method,
+                context.Request.Path,
+                context.TraceIdentifier);
+
+            _logger.LogWarning(
+                "Falling back to standardized error response for exception type {ExceptionType} with trace identifier {TraceIdentifier}",
+                ex.GetType().Name,
+                context.TraceIdentifier);
+
             await HandleExceptionAsync(context, ex);
         }
     }
