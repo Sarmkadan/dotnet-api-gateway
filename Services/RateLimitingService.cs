@@ -42,6 +42,8 @@ public sealed class RateLimitingService : IDisposable
     {
         ArgumentException.ThrowIfNullOrEmpty(key);
         ArgumentNullException.ThrowIfNull(policy);
+        
+        _logger.LogInformation("IsAllowedAsync called for key {Key} with policy {PolicyId}", key, policy.Id);
 
         if (!policy.Enabled || !policy.IsEnabled())
         {
@@ -80,6 +82,8 @@ public sealed class RateLimitingService : IDisposable
     {
         ArgumentException.ThrowIfNullOrEmpty(key);
         ArgumentNullException.ThrowIfNull(policy);
+
+        _logger.LogInformation("GetRateLimitInfoAsync called for key {Key} with policy {PolicyId}", key, policy.Id);
 
         if (string.IsNullOrWhiteSpace(key) || !policy.Enabled || !policy.IsEnabled())
         {
@@ -173,6 +177,8 @@ public sealed class RateLimitingService : IDisposable
     public async Task ResetKeyLimitsAsync(string key)
     {
         ArgumentException.ThrowIfNullOrEmpty(key);
+        
+        _logger.LogInformation("ResetKeyLimitsAsync called for key {Key}", key);
 
         if (_rateLimitStoreFactory != null)
         {
@@ -192,6 +198,8 @@ public sealed class RateLimitingService : IDisposable
     /// </summary>
     public async Task ResetAllLimitsAsync()
     {
+        _logger.LogInformation("ResetAllLimitsAsync called.");
+
         if (_rateLimitStoreFactory != null)
         {
             foreach (var store in _rateLimitStoreFactory.GetAllStores())
