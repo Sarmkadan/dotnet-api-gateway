@@ -8,6 +8,7 @@ namespace DotNetApiGateway.Middleware;
 
 using DotNetApiGateway.Exceptions;
 using System.Net;
+using System.Linq;
 
 /// <summary>
 /// Global error handling middleware that catches all exceptions and returns standardized error responses.
@@ -151,4 +152,6 @@ public sealed class ErrorResponse
     public string Message { get; set; } = "An error occurred";
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public Dictionary<string, object>? Details { get; set; }
+
+    public override string ToString() => $"ErrorResponse {{ ErrorCode = {ErrorCode}, Message = {Message}, Timestamp = {Timestamp}, Details = {(Details != null ? $"{{{string.Join(", ", Details.Select(kv => $"{kv.Key}: {kv.Value}"))}}}" : "null")} }}";
 }
