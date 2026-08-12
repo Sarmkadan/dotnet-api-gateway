@@ -50,11 +50,13 @@ public sealed class ApiVersioningService
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(policy);
+        _logger.LogInformation("Attempting to resolve version for path {Path}", context.Request.Path);
         resolvedVersion = null;
 
         if (!policy.Enabled)
         {
             resolvedVersion = policy.DefaultVersion;
+            _logger.LogInformation("Versioning disabled for {Path}; using default version {Version}", context.Request.Path, resolvedVersion);
             return true;
         }
 
@@ -92,6 +94,7 @@ public sealed class ApiVersioningService
             else
             {
                 // Version is optional and no default — pass through without a version
+                _logger.LogInformation("No version found for {Path} and no default configured; passing through.", context.Request.Path);
                 return true;
             }
         }
@@ -101,12 +104,14 @@ public sealed class ApiVersioningService
             !policy.SupportedVersions.Contains(resolvedVersion, StringComparer.OrdinalIgnoreCase))
         {
             _logger.LogWarning(
-                "Version {Version} is not in the supported versions list [{Supported}]",
+                "Version {Version} for {Path} is not in the supported versions list [{Supported}]",
                 resolvedVersion,
+                context.Request.Path,
                 string.Join(", ", policy.SupportedVersions));
             return false;
         }
 
+        _logger.LogInformation("Successfully resolved version {Version} for {Path}", resolvedVersion, context.Request.Path);
         return true;
     }
 
@@ -121,12 +126,16 @@ public sealed class ApiVersioningService
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
         ArgumentNullException.ThrowIfNull(policy);
+        _logger.LogInformation("Stripping version from path {Path}", path);
         if (!policy.StripVersionFromPath)
             return path;
 
         var match = VersionSegmentRegex.Match(path);
         if (!match.Success)
+        {
+            _logger.LogDebug("No version segment found to strip in path {Path}", path);
             return path;
+        }
 
         // Remove the matched version segment, normalising double slashes
         var stripped = VersionSegmentRegex.Replace(path, m =>
@@ -138,7 +147,9 @@ public sealed class ApiVersioningService
         }, count: 1);
 
         // Ensure the path is not empty
-        return string.IsNullOrEmpty(stripped) ? "/" : stripped;
+        var result = string.IsNullOrEmpty(stripped) ? "/" : stripped;
+        _logger.LogInformation("Path stripped from {Path} to {Result}", path, result);
+        return result;
     }
 
     /// <summary>
