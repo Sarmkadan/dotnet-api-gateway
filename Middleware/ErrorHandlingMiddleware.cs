@@ -32,6 +32,7 @@ public sealed class ErrorHandlingMiddleware
     {
         try
         {
+            _logger.LogInformation("InvokeAsync processing request", context);
             await _next(context);
         }
         catch (Exception ex)
