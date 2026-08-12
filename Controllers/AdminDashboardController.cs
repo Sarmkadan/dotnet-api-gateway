@@ -68,6 +68,7 @@ public sealed class AdminDashboardController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDashboard()
     {
+        _logger.LogInformation("Admin dashboard requested");
         var metrics = _metricsService.GetMetrics();
         var routes = (await _routeRepository.GetAllAsync()).ToList();
         var circuitBreakers = (await _circuitBreakerService.GetAllStatusesAsync()).ToList();
@@ -83,6 +84,7 @@ public sealed class AdminDashboardController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSummary()
     {
+        _logger.LogInformation("Admin dashboard summary requested");
         var metrics = _metricsService.GetMetrics();
         var routes = await _routeRepository.GetAllAsync();
         var circuitBreakers = (await _circuitBreakerService.GetAllStatusesAsync()).ToList();
