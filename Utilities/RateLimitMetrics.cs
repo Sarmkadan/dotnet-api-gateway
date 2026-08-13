@@ -252,6 +252,32 @@ public sealed class RateLimitMetrics
             _lock.ExitWriteLock();
         }
     }
+
+    /// <summary>
+    /// Returns a concise string representation of the current metrics.
+    /// Includes aggregated client information and overall statistics.
+    /// </summary>
+    public override string ToString()
+    {
+        _lock.EnterReadLock();
+        try
+        {
+            var overall = GetOverallMetrics();
+
+            // Determine the earliest and latest request times across all clients.
+            var firstRequest = _clientStats.Values.OrderBy(s => s.FirstRequestTime).FirstOrDefault()?.FirstRequestTime ?? DateTime.MinValue;
+            var lastRequest  = _clientStats.Values.OrderByDescending(s => s.LastRequestTime).FirstOrDefault()?.LastRequestTime ?? DateTime.MinValue;
+
+            // Since this class aggregates many clients, we use a placeholder for ClientId.
+            const string clientIdPlaceholder = "All";
+
+            return $"RateLimitMetrics {{ ClientId = {clientIdPlaceholder}, TotalRequests = {overall.TotalRequests}, LimitedRequests = {overall.TotalLimitedRequests}, FirstRequestTime = {firstRequest:u}, LastRequestTime = {lastRequest:u}, TotalClients = {overall.TotalClients} }}";
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
 }
 
 /// <summary>
