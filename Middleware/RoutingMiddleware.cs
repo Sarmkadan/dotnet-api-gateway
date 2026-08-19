@@ -1,9 +1,3 @@
-#nullable enable
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
-
 using DotNetApiGateway.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -31,58 +25,62 @@ public sealed class RoutingMiddleware
 
     public async Task InvokeAsync(HttpContext context, RoutingService routingService, ApiVersioningService apiVersioningService)
     {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(routingService);
-        ArgumentNullException.ThrowIfNull(apiVersioningService);
-
-        var path = context.Request.Path.Value ?? "/";
-        var method = context.Request.Method;
-
+        _logger.LogInformation("InvokeAsync started for {Method} {Path}", context.Request.Method, context.Request.Path.Value);
         try
         {
-            var route = await routingService.FindRouteAsync(path, method);
+            var path = context.Request.Path.Value ?? "/";
+            var method = context.Request.Method;
 
-            if (route is not null)
+            try
             {
-                // Validate API versioning policy when configured
-                if (route.VersioningPolicy?.Enabled == true)
+                var route = await routingService.FindRouteAsync(path, method);
+
+                if (route is not null)
                 {
-                    if (!apiVersioningService.TryResolveVersion(context, route.VersioningPolicy, out var version))
+                    // Validate API versioning policy when configured
+                    if (route.VersioningPolicy?.Enabled == true)
                     {
-                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                        await context.Response.WriteAsJsonAsync(
-                            ApiVersioningService.BuildVersionErrorResponse(route.VersioningPolicy, null));
-                        return;
+                        if (!apiVersioningService.TryResolveVersion(context, route.VersioningPolicy, out var version))
+                        {
+                            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                            await context.Response.WriteAsJsonAsync(
+                                ApiVersioningService.BuildVersionErrorResponse(route.VersioningPolicy, null));
+                            return;
+                        }
+
+                        context.Items["ApiVersion"] = version;
+
+                        // Strip version segment from path so backends don't see it
+                        if (route.VersioningPolicy.StripVersionFromPath && version is not null)
+                        {
+                            var strippedPath = apiVersioningService.StripVersionFromPath(path, route.VersioningPolicy);
+                            context.Items["StrippedPath"] = strippedPath;
+                            _logger.LogDebug("Version {Version} resolved; path stripped to {StrippedPath}", version, strippedPath);
+                        }
                     }
 
-                    context.Items["ApiVersion"] = version;
-
-                    // Strip version segment from path so backends don't see it
-                    if (route.VersioningPolicy.StripVersionFromPath && version is not null)
-                    {
-                        var strippedPath = apiVersioningService.StripVersionFromPath(path, route.VersioningPolicy);
-                        context.Items["StrippedPath"] = strippedPath;
-                        _logger.LogDebug("Version {Version} resolved; path stripped to {StrippedPath}", version, strippedPath);
-                    }
+                    context.Items["GatewayRoute"] = route;
+                    _logger.LogDebug("Route '{RouteId}' found for {Method} {Path}", route.Id, method, path);
                 }
-
-                context.Items["GatewayRoute"] = route;
-                _logger.LogDebug("Route '{RouteId}' found for {Method} {Path}", route.Id, method, path);
+                else
+                {
+                    _logger.LogDebug("No route found for {Method} {Path}", method, path);
+                }
             }
-            else
+            catch (RouteNotFoundException ex)
             {
-                _logger.LogDebug("No route found for {Method} {Path}", method, path);
+                _logger.LogWarning(ex, "Route not found exception for {Method} {Path}", method, path);
+                context.Items["RouteNotFoundException"] = ex; // Store exception for later handling
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during route resolution for {Method} {Path}", method, path);
+                context.Items["RouteResolutionError"] = ex; // Store error for later handling
             }
         }
-        catch (RouteNotFoundException ex)
+        finally
         {
-            _logger.LogWarning(ex, "Route not found exception for {Method} {Path}", method, path);
-            context.Items["RouteNotFoundException"] = ex; // Store exception for later handling
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during route resolution for {Method} {Path}", method, path);
-            context.Items["RouteResolutionError"] = ex; // Store error for later handling
+            _logger.LogInformation("InvokeAsync finished for {Method} {Path}", context.Request.Method, context.Request.Path.Value);
         }
 
         await _next(context); // Pass control to the next middleware
