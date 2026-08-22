@@ -44,6 +44,7 @@ public class GatewayManagementController : ControllerBase
         try
         {
             var createdRoute = await _gatewayManagementService.CreateRouteAsync(route);
+            _logger.LogInformation("Route {ItemId} created", createdRoute.Id);
             return CreatedAtAction(nameof(GetRouteById), new { id = createdRoute.Id }, createdRoute);
         }
         catch (ArgumentException ex)
@@ -61,6 +62,7 @@ public class GatewayManagementController : ControllerBase
     public async Task<IActionResult> GetAllRoutes()
     {
         var routesWithMetrics = await _gatewayManagementService.GetAllRoutesWithMetricsAsync();
+            _logger.LogInformation("Retrieved all routes");
         return Ok(routesWithMetrics);
     }
 
@@ -74,6 +76,8 @@ public class GatewayManagementController : ControllerBase
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
         var (route, metrics) = await _gatewayManagementService.GetRouteByIdWithMetricsAsync(id);
+            if (route is not null)
+                _logger.LogInformation("Route {ItemId} retrieved", id);
         if (route is null)
             return NotFound(new { error = "Route not found", id });
 
