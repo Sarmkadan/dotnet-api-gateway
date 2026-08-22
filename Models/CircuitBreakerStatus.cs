@@ -6,11 +6,15 @@
 
 namespace DotNetApiGateway.Models;
 
+using Microsoft.Extensions.Logging;
+
 /// <summary>
 /// Tracks the current state and statistics of a circuit breaker
 /// </summary>
 public sealed class CircuitBreakerStatus
 {
+    private readonly ILogger<CircuitBreakerStatus> _logger;
+
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string ServiceName { get; set; } = string.Empty;
     public CircuitBreakerState State { get; set; } = CircuitBreakerState.Closed;
@@ -23,6 +27,12 @@ public sealed class CircuitBreakerStatus
     public int TotalSuccesses { get; set; } = 0;
     public long TotalRequests { get; set; } = 0;
     public string? LastError { get; set; }
+
+    public CircuitBreakerStatus(ILogger<CircuitBreakerStatus>? logger = null)
+    {
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<CircuitBreakerStatus>.Instance;
+        _logger.LogInformation("Initializing CircuitBreakerStatus for service: {ServiceName}", ServiceName);
+    }
 
     public void RecordSuccess()
     {
