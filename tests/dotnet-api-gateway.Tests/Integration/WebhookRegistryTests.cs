@@ -29,7 +29,6 @@ public sealed class WebhookRegistryTests
             Options.Create(new WebhookSecurityOptions()),
             new Mock<ILogger<WebhookCallbackUrlValidator>>().Object);
         _registry = new WebhookRegistry(_mockLogger.Object, urlValidator);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
     }
 
     /// <summary>
@@ -39,20 +38,14 @@ public sealed class WebhookRegistryTests
     public void Register_ValidSubscription_AddsToRegistry()
     {
         _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    {
-        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    {
-        _mockLogger.Object.LogInformation("Entering {TestMethod        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    }", nameof(Register_ValidSubscription_AddsToRegistry));
-    {
+
         // Arrange
         var subscription = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example.com/webhook",
             EventTypes = ["user.created", "user.updated"],
             CurrentSecret = "secret123"
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
 
         // Act
         _registry.Register(subscription);
@@ -70,7 +63,8 @@ public sealed class WebhookRegistryTests
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
     }
 
     /// <summary>
@@ -79,6 +73,8 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void Register_NullSubscription_ThrowsArgumentNullException()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(Register_NullSubscription_ThrowsArgumentNullException));
+
         // Arrange
         global::DotNetApiGateway.Integration.WebhookSubscription? subscription = null;
 
@@ -87,7 +83,8 @@ public sealed class WebhookRegistryTests
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_NullSubscription_ThrowsArgumentNullException));
     }
 
     /// <summary>
@@ -96,25 +93,24 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void Register_MultipleSubscriptions_AllAdded()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(Register_MultipleSubscriptions_AllAdded));
+
         // Arrange
         var subscription1 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example1.com/webhook",
             EventTypes = ["user.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription2 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example2.com/webhook",
             EventTypes = ["user.updated"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription3 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example3.com/webhook",
             EventTypes = ["*"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
 
         // Act
         _registry.Register(subscription1);
@@ -124,7 +120,8 @@ public sealed class WebhookRegistryTests
         // Assert
         var allSubscriptions = _registry.GetAllSubscriptions();
         allSubscriptions.Should().HaveCount(3);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_MultipleSubscriptions_AllAdded));
     }
 
     /// <summary>
@@ -133,19 +130,19 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void Register_DuplicateSubscription_Allowed()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(Register_DuplicateSubscription_Allowed));
+
         // Arrange
         var subscription1 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example.com/webhook",
             EventTypes = ["user.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription2 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example.com/webhook",
             EventTypes = ["user.updated"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
 
         // Act
         _registry.Register(subscription1);
@@ -155,7 +152,8 @@ public sealed class WebhookRegistryTests
         var allSubscriptions = _registry.GetAllSubscriptions();
         allSubscriptions.Should().HaveCount(2);
         allSubscriptions[0].Id.Should().NotBe(allSubscriptions[1].Id);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_DuplicateSubscription_Allowed));
     }
 
     /// <summary>
@@ -164,13 +162,14 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void Unregister_ExistingSubscription_RemovesFromRegistry()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(Unregister_ExistingSubscription_RemovesFromRegistry));
+
         // Arrange
         var subscription = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example.com/webhook",
             EventTypes = ["user.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         _registry.Register(subscription);
 
         // Act
@@ -187,7 +186,8 @@ public sealed class WebhookRegistryTests
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Unregister_ExistingSubscription_RemovesFromRegistry));
     }
 
     /// <summary>
@@ -199,13 +199,14 @@ public sealed class WebhookRegistryTests
     [InlineData("   ")]
     public void Unregister_InvalidSubscriptionId_DoesNothing(string? subscriptionId)
     {
+        _mockLogger.Object.LogWarning("Entering {TestMethod} with SubscriptionId={SubscriptionId}", nameof(Unregister_InvalidSubscriptionId_DoesNothing), subscriptionId);
+
         // Arrange
         var subscription = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example.com/webhook",
             EventTypes = ["user.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         _registry.Register(subscription);
 
         // Act
@@ -214,7 +215,8 @@ public sealed class WebhookRegistryTests
         // Assert
         var allSubscriptions = _registry.GetAllSubscriptions();
         allSubscriptions.Should().HaveCount(1);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogWarning("Exiting {TestMethod} with SubscriptionId={SubscriptionId}", nameof(Unregister_InvalidSubscriptionId_DoesNothing), subscriptionId);
     }
 
     /// <summary>
@@ -223,13 +225,14 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void Unregister_NonExistentSubscription_DoesNothing()
     {
+        _mockLogger.Object.LogWarning("Entering {TestMethod} with SubscriptionId={SubscriptionId}", nameof(Unregister_NonExistentSubscription_DoesNothing), "non-existent-id");
+
         // Arrange
         var subscription = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example.com/webhook",
             EventTypes = ["user.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         _registry.Register(subscription);
 
         // Act
@@ -238,7 +241,8 @@ public sealed class WebhookRegistryTests
         // Assert
         var allSubscriptions = _registry.GetAllSubscriptions();
         allSubscriptions.Should().HaveCount(1);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogWarning("Exiting {TestMethod} with SubscriptionId={SubscriptionId}", nameof(Unregister_NonExistentSubscription_DoesNothing), "non-existent-id");
     }
 
     /// <summary>
@@ -247,31 +251,29 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void GetSubscriptionsForEvent_SpecificEventType_ReturnsMatchingSubscriptions()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(GetSubscriptionsForEvent_SpecificEventType_ReturnsMatchingSubscriptions));
+
         // Arrange
         var subscription1 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example1.com/webhook",
             EventTypes = ["user.created", "user.updated"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription2 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example2.com/webhook",
             EventTypes = ["user.deleted"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription3 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example3.com/webhook",
             EventTypes = ["*"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription4 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example4.com/webhook",
             EventTypes = ["order.created", "order.updated"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
 
         _registry.Register(subscription1);
         _registry.Register(subscription2);
@@ -287,7 +289,8 @@ public sealed class WebhookRegistryTests
         result.Should().Contain(subscription3);
         result.Should().NotContain(subscription2); // Doesn't match event type
         result.Should().NotContain(subscription4); // Doesn't match event type
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(GetSubscriptionsForEvent_SpecificEventType_ReturnsMatchingSubscriptions));
     }
 
     /// <summary>
@@ -296,25 +299,24 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void GetSubscriptionsForEvent_WildcardEventType_ReturnsAllActiveSubscriptions()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(GetSubscriptionsForEvent_WildcardEventType_ReturnsAllActiveSubscriptions));
+
         // Arrange
         var subscription1 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example1.com/webhook",
             EventTypes = ["user.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription2 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example2.com/webhook",
             EventTypes = ["order.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription3 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example3.com/webhook",
             EventTypes = ["*"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
 
         _registry.Register(subscription1);
         _registry.Register(subscription2);
@@ -325,7 +327,8 @@ public sealed class WebhookRegistryTests
 
         // Assert
         result.Should().HaveCount(2); // subscription1 and subscription3 (wildcard), subscription2 doesn't match
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(GetSubscriptionsForEvent_WildcardEventType_ReturnsAllActiveSubscriptions));
     }
 
     /// <summary>
@@ -337,13 +340,14 @@ public sealed class WebhookRegistryTests
     [InlineData("   ")]
     public void GetSubscriptionsForEvent_InvalidEventType_ReturnsEmptyList(string? eventType)
     {
+        _mockLogger.Object.LogWarning("Entering {TestMethod} with EventType={EventType}", nameof(GetSubscriptionsForEvent_InvalidEventType_ReturnsEmptyList), eventType);
+
         // Arrange
         var subscription = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example.com/webhook",
             EventTypes = ["user.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         _registry.Register(subscription);
 
         // Act
@@ -351,7 +355,8 @@ public sealed class WebhookRegistryTests
 
         // Assert
         result.Should().BeEmpty();
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogWarning("Exiting {TestMethod} with EventType={EventType}", nameof(GetSubscriptionsForEvent_InvalidEventType_ReturnsEmptyList), eventType);
     }
 
     /// <summary>
@@ -360,12 +365,15 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void GetSubscriptionsForEvent_NoSubscriptions_ReturnsEmptyList()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(GetSubscriptionsForEvent_NoSubscriptions_ReturnsEmptyList));
+
         // Act
         var result = _registry.GetSubscriptionsForEvent("user.created");
 
         // Assert
         result.Should().BeEmpty();
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(GetSubscriptionsForEvent_NoSubscriptions_ReturnsEmptyList));
     }
 
     /// <summary>
@@ -374,19 +382,19 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void GetAllSubscriptions_ReturnsAllSubscriptions()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(GetAllSubscriptions_ReturnsAllSubscriptions));
+
         // Arrange
         var subscription1 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example1.com/webhook",
             EventTypes = ["user.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription2 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example2.com/webhook",
             EventTypes = ["order.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
 
         _registry.Register(subscription1);
         _registry.Register(subscription2);
@@ -398,7 +406,8 @@ public sealed class WebhookRegistryTests
         result.Should().HaveCount(2);
         result.Should().Contain(subscription1);
         result.Should().Contain(subscription2);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(GetAllSubscriptions_ReturnsAllSubscriptions));
     }
 
     /// <summary>
@@ -407,12 +416,15 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void GetAllSubscriptions_NoSubscriptions_ReturnsEmptyList()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(GetAllSubscriptions_NoSubscriptions_ReturnsEmptyList));
+
         // Act
         var result = _registry.GetAllSubscriptions();
 
         // Assert
         result.Should().BeEmpty();
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(GetAllSubscriptions_NoSubscriptions_ReturnsEmptyList));
     }
 
     /// <summary>
@@ -421,19 +433,19 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void MultipleOperations_MaintainsCorrectState()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(MultipleOperations_MaintainsCorrectState));
+
         // Arrange
         var subscription1 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example1.com/webhook",
             EventTypes = ["user.created"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
         var subscription2 = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
             CallbackUrl = "https://example2.com/webhook",
             EventTypes = ["user.updated"]
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
 
         // Act & Assert - Chain multiple operations
         _registry.Register(subscription1);
@@ -452,7 +464,8 @@ public sealed class WebhookRegistryTests
         var forEvent = _registry.GetSubscriptionsForEvent("user.updated");
         forEvent.Should().HaveCount(1);
         forEvent[0].Id.Should().Be(subscription2.Id);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(MultipleOperations_MaintainsCorrectState));
     }
 
     /// <summary>
@@ -461,14 +474,15 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void WebhookSubscription_PropertiesPreserved()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(WebhookSubscription_PropertiesPreserved));
+
         // Arrange
         var retryPolicy = new global::DotNetApiGateway.Integration.WebhookRetryPolicy
         {
             MaxRetries = 5,
             InitialDelayMs = 2000,
             MaxDelayMs = 120000
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
 
         var subscription = new global::DotNetApiGateway.Integration.WebhookSubscription
         {
@@ -477,8 +491,7 @@ public sealed class WebhookRegistryTests
             CurrentSecret = "my-secret-key",
             Active = false,
             RetryPolicy = retryPolicy
-                _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    };
+        };
 
         // Act
         _registry.Register(subscription);
@@ -494,7 +507,8 @@ public sealed class WebhookRegistryTests
         retrieved.RetryPolicy.InitialDelayMs.Should().Be(2000);
         retrieved.RetryPolicy.MaxDelayMs.Should().Be(120000);
         retrieved.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(WebhookSubscription_PropertiesPreserved));
     }
 
     /// <summary>
@@ -503,6 +517,8 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void WebhookSubscription_UniqueIdsGenerated()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(WebhookSubscription_UniqueIdsGenerated));
+
         // Arrange & Act
         var subscription1 = new global::DotNetApiGateway.Integration.WebhookSubscription();
         var subscription2 = new global::DotNetApiGateway.Integration.WebhookSubscription();
@@ -515,7 +531,9 @@ public sealed class WebhookRegistryTests
 
         Guid.Parse(subscription1.Id).Should().NotBe(Guid.Empty);
         Guid.Parse(subscription2.Id).Should().NotBe(Guid.Empty);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+        Guid.Parse(subscription3.Id).Should().NotBe(Guid.Empty);
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(WebhookSubscription_UniqueIdsGenerated));
     }
 
     /// <summary>
@@ -524,6 +542,8 @@ public sealed class WebhookRegistryTests
     [Fact]
     public void WebhookRetryPolicy_DefaultValues()
     {
+        _mockLogger.Object.LogInformation("Entering {TestMethod}", nameof(WebhookRetryPolicy_DefaultValues));
+
         // Arrange
         var subscription = new global::DotNetApiGateway.Integration.WebhookSubscription();
 
@@ -535,7 +555,7 @@ public sealed class WebhookRegistryTests
         retrieved.RetryPolicy.MaxRetries.Should().Be(3);
         retrieved.RetryPolicy.InitialDelayMs.Should().Be(1000);
         retrieved.RetryPolicy.MaxDelayMs.Should().Be(60000);
-            _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
+
+        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(WebhookRetryPolicy_DefaultValues));
     }
-        _mockLogger.Object.LogInformation("Exiting {TestMethod}", nameof(Register_ValidSubscription_AddsToRegistry));
-    }
+}
