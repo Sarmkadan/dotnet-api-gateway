@@ -13,11 +13,49 @@ namespace DotNetApiGateway.Tests.Integration;
 public class RetryPolicyTests
 {
     private readonly Mock<ILogger<RetryPolicy>> _mockLogger;
+    private readonly ILogger<RetryPolicyTests> _logger;
     private readonly RetryPolicy _retryPolicy;
 
     public RetryPolicyTests()
+        {
+            _mockLogger = new Mock<ILogger<RetryPolicy>>();
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+            });
+            _logger = loggerFactory.CreateLogger<RetryPolicyTests>();
+            _retryPolicy = new RetryPolicy(
+                maxRetries: 3,
+                initialDelayMs: 10,
+                maxDelayMs: 100,
+                backoffMultiplier: 2.0,
+                logger: _mockLogger.Object);
+        }
+
+        private ILogger<RetryPolicyTests> _logger;
+        {
+            _mockLogger = new Mock<ILogger<RetryPolicy>>();
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+            });
+            _logger = loggerFactory.CreateLogger<RetryPolicyTests>();
+            _retryPolicy = new RetryPolicy(
+                maxRetries: 3,
+                initialDelayMs: 10,
+                maxDelayMs: 100,
+                backoffMultiplier: 2.0,
+                logger: _mockLogger.Object);
+        }
+
+        private ILogger<RetryPolicyTests> _logger;
     {
         _mockLogger = new Mock<ILogger<RetryPolicy>>();
+        var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+        });
+        _logger = loggerFactory.CreateLogger<RetryPolicyTests>();
         _retryPolicy = new RetryPolicy(
             maxRetries: 3,
             initialDelayMs: 10,
@@ -46,6 +84,39 @@ public class RetryPolicyTests
 
         // Act
         var response = await _retryPolicy.ExecuteAsync(httpClient, request);
+            _logger.LogInformation("Completed ExecuteAsync_RetriesThenSuccess_ReturnsSuccessfulResponse with status code {StatusCode}", response.StatusCode);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        callCount.Should().Be(3); // Initial attempt + 2 retries
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("InternalServerError") && v.ToString()!.Contains("retrying")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Exactly(2)); // Should log twice for the two retries
+    }
+    {
+        // Arrange
+        var callCount = 0;
+        var handler = new CountingMockHttpMessageHandler(
+            // First two calls return 500, third call returns 200
+            (req) =>
+            {
+                callCount++;
+                if (callCount < 3)
+                    return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+                return new HttpResponseMessage(HttpStatusCode.OK);
+            });
+        var httpClient = new HttpClient(handler);
+
+        var request = new HttpRequestMessage(System.Net.Http.HttpMethod.Get, "http://test.com");
+
+        // Act
+        var response = await _retryPolicy.ExecuteAsync(httpClient, request);
+            _logger.LogInformation("Completed ExecuteAsync_RetriesThenSuccess_ReturnsSuccessfulResponse with status code {StatusCode}", response.StatusCode);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -73,6 +144,57 @@ public class RetryPolicyTests
 
         // Act
         var response = await _retryPolicy.ExecuteAsync(httpClient, request);
+        _logger.LogInformation("Completed ExecuteAsync_Exhaustion_ReturnsLastResponse with status code {StatusCode}", response.StatusCode);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        handler.CallCount.Should().Be(4); // Initial attempt + 3 retries
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("InternalServerError") && v.ToString()!.Contains("retrying")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Exactly(3)); // Should log for each retry attempt (maxRetries = 3)
+    }
+    {
+        // Arrange
+        var handler = new CountingMockHttpMessageHandler(
+            // All calls return 500
+            (req) => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        var httpClient = new HttpClient(handler);
+
+        var request = new HttpRequestMessage(System.Net.Http.HttpMethod.Get, "http://test.com");
+
+        // Act
+        var response = await _retryPolicy.ExecuteAsync(httpClient, request);
+            _logger.LogInformation("Completed ExecuteAsync_RetriesThenSuccess_ReturnsSuccessfulResponse with status code {StatusCode}", response.StatusCode);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        handler.CallCount.Should().Be(4); // Initial attempt + 3 retries
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("InternalServerError") && v.ToString()!.Contains("retrying")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Exactly(3)); // Should log for each retry attempt (maxRetries = 3)
+    }
+    {
+        // Arrange
+        var handler = new CountingMockHttpMessageHandler(
+            // All calls return 500
+            (req) => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        var httpClient = new HttpClient(handler);
+
+        var request = new HttpRequestMessage(System.Net.Http.HttpMethod.Get, "http://test.com");
+
+        // Act
+        var response = await _retryPolicy.ExecuteAsync(httpClient, request);
+            _logger.LogInformation("Completed ExecuteAsync_RetriesThenSuccess_ReturnsSuccessfulResponse with status code {StatusCode}", response.StatusCode);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
@@ -250,6 +372,7 @@ public class RetryPolicyTests
 
         // Act
         var response = await _retryPolicy.ExecuteAsync(httpClient, request);
+            _logger.LogInformation("Completed ExecuteAsync_RetriesThenSuccess_ReturnsSuccessfulResponse with status code {StatusCode}", response.StatusCode);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
