@@ -40,6 +40,7 @@ public sealed class CircuitBreakerServiceBehaviorTests
     [Fact]
     public async Task CanAttempt_ClosedToOpen_AfterFailureThresholdReached()
     {
+        _loggerMock.Object.LogInformation("Starting test {TestName}", nameof(CanAttempt_ClosedToOpen_AfterFailureThresholdReached));
         // Arrange
         var serviceName = "payment-service";
         var policy = new CircuitBreakerPolicy { FailureThreshold = 3, Enabled = true };
@@ -56,6 +57,7 @@ public sealed class CircuitBreakerServiceBehaviorTests
         status.Should().NotBeNull();
         status!.State.Should().Be(CircuitBreakerState.Open);
         status.FailureCount.Should().Be(3);
+        _loggerMock.Object.LogInformation("Finished test {TestName}", nameof(CanAttempt_ClosedToOpen_AfterFailureThresholdReached));
     }
 
     [Fact]
