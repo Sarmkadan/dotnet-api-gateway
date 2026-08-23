@@ -28,4 +28,6 @@ public class RateLimitExceededException : GatewayException
         LimitPerMinute = limitPerMinute;
         RemainingSeconds = remainingSeconds;
     }
+
+    public override string ToString() => $"RateLimitExceededException {{ ClientId = {ClientId}, RemainingSeconds = {RemainingSeconds}, LimitPerMinute = {LimitPerMinute} }}";
 }
