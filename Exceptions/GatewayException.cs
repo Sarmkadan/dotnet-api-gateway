@@ -27,4 +27,6 @@ public class GatewayException : Exception
         ErrorCode = errorCode;
         StatusCode = statusCode;
     }
+
+    public override string ToString() => $"GatewayException {{ ErrorCode = {ErrorCode}, StatusCode = {StatusCode} }}";
 }
