@@ -33,6 +33,9 @@ public sealed class JsonUtilityTests
     /// </summary>
     public string? OptionalField { get; set; }
 
+    /// <inheritdoc />
+    public override string ToString() => $"JsonUtilityTests {{ Name = {Name}, Age = {Age}, OptionalField = {OptionalField} }}";
+
     /// <summary>
     /// Represents a test object used for JSON serialization/deserialization testing.
     /// </summary>
