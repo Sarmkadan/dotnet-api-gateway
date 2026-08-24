@@ -206,8 +206,28 @@ public sealed class EventBus
         {
             _lock.ExitWriteLock();
         }
-        public override string ToString() => $"EventBus {{ RouteId = {RouteId}, RouteName = {RouteName}, TargetId = {TargetId}, OldState = {OldState}, NewState = {NewState}, ClientId = {ClientId} }}";
-}
+    }
+
+    /// <summary>
+    /// Returns a concise, informative representation of the event bus.
+    /// </summary>
+    /// <returns>A string containing the number of subscribed event types and the total handler count.</returns>
+    public override string ToString()
+    {
+        _lock.EnterReadLock();
+        try
+        {
+            var totalHandlers = 0;
+            foreach (var handlers in _subscribers.Values)
+                totalHandlers += handlers.Count;
+
+            return $"EventBus {{ EventTypes = {_subscribers.Count}, Handlers = {totalHandlers} }}";
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
 }
 
 /// <summary>
@@ -284,8 +304,7 @@ public sealed record HandlerFailure(int HandlerIndex, Exception? Exception, stri
 public interface IGatewayEvent
 {
     DateTime Timestamp { get; }
-    string EventType { get;     public override string ToString() => $"EventBus {{ RouteId = {RouteId}, RouteName = {RouteName}, TargetId = {TargetId}, OldState = {OldState}, NewState = {NewState}, ClientId = {ClientId} }}";
-}
+    string EventType { get; }
 }
 
 /// <summary>
@@ -294,8 +313,7 @@ public interface IGatewayEvent
 public abstract class GatewayEvent : IGatewayEvent
 {
     public DateTime Timestamp { get; } = DateTime.UtcNow;
-    public abstract string EventType { get;     public override string ToString() => $"EventBus {{ RouteId = {RouteId}, RouteName = {RouteName}, TargetId = {TargetId}, OldState = {OldState}, NewState = {NewState}, ClientId = {ClientId} }}";
-}
+    public abstract string EventType { get; }
 }
 
 /// <summary>
