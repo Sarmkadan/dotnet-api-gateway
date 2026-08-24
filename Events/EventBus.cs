@@ -206,7 +206,8 @@ public sealed class EventBus
         {
             _lock.ExitWriteLock();
         }
-    }
+        public override string ToString() => $"EventBus {{ RouteId = {RouteId}, RouteName = {RouteName}, TargetId = {TargetId}, OldState = {OldState}, NewState = {NewState}, ClientId = {ClientId} }}";
+}
 }
 
 /// <summary>
@@ -283,7 +284,8 @@ public sealed record HandlerFailure(int HandlerIndex, Exception? Exception, stri
 public interface IGatewayEvent
 {
     DateTime Timestamp { get; }
-    string EventType { get; }
+    string EventType { get;     public override string ToString() => $"EventBus {{ RouteId = {RouteId}, RouteName = {RouteName}, TargetId = {TargetId}, OldState = {OldState}, NewState = {NewState}, ClientId = {ClientId} }}";
+}
 }
 
 /// <summary>
@@ -292,7 +294,8 @@ public interface IGatewayEvent
 public abstract class GatewayEvent : IGatewayEvent
 {
     public DateTime Timestamp { get; } = DateTime.UtcNow;
-    public abstract string EventType { get; }
+    public abstract string EventType { get;     public override string ToString() => $"EventBus {{ RouteId = {RouteId}, RouteName = {RouteName}, TargetId = {TargetId}, OldState = {OldState}, NewState = {NewState}, ClientId = {ClientId} }}";
+}
 }
 
 /// <summary>
