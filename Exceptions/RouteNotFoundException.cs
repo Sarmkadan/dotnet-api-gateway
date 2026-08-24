@@ -1,9 +1,3 @@
-#nullable enable
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
-
 namespace DotNetApiGateway.Exceptions;
 
 /// <summary>
@@ -25,4 +19,6 @@ public class RouteNotFoundException : GatewayException
         RequestPath = requestPath;
         HttpMethod = httpMethod;
     }
+
+    public override string ToString() => $"RouteNotFoundException {{ RequestPath = {RequestPath}, HttpMethod = {HttpMethod} }}";
 }
