@@ -10,12 +10,23 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests.Integration;
 
+/// <summary>
+/// Integration tests for <see cref="RetryPolicy"/> covering HTTP request retries,
+/// retry exhaustion, exponential backoff delays, cancellation handling, custom retry
+/// predicates, and the generic delegate-based execution overloads.
+/// </summary>
 public class RetryPolicyTests
 {
     private readonly Mock<ILogger<RetryPolicy>> _mockLogger;
     private readonly ILogger<RetryPolicyTests> _logger;
     private readonly RetryPolicy _retryPolicy;
 
+    /// <summary>
+    /// Initializes the shared fixtures: a mocked <see cref="ILogger{RetryPolicy}"/> used to verify
+    /// retry log output, a console logger factory for test diagnostics, and a default
+    /// <see cref="RetryPolicy"/> configured with 3 retries, a 10 ms initial delay, a 100 ms
+    /// maximum delay, and a 2.0x backoff multiplier.
+    /// </summary>
     public RetryPolicyTests()
     {
         _mockLogger = new Mock<ILogger<RetryPolicy>>();
@@ -32,6 +43,13 @@ public class RetryPolicyTests
             logger: _mockLogger.Object);
     }
 
+    /// <summary>
+    /// Verifies that a request failing twice with 500 InternalServerError responses succeeds on
+    /// the third attempt: the policy performs the initial attempt plus two retries, returns the
+    /// eventual 200 OK response, and logs a warning containing "InternalServerError" and
+    /// "retrying" once for each of the two failed attempts.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous test run.</returns>
     [Fact]
     public async Task ExecuteAsync_RetriesThenSuccess_ReturnsSuccessfulResponse()
     {
@@ -70,6 +88,13 @@ public class RetryPolicyTests
         _logger.LogInformation("Completed {TestName} with status code {StatusCode} after {TotalAttempts} attempts", "ExecuteAsync_RetriesThenSuccess_ReturnsSuccessfulResponse", response.StatusCode, callCount);
     }
 
+    /// <summary>
+    /// Verifies that when every attempt returns 500 InternalServerError, the policy exhausts all
+    /// retries (initial attempt plus three), returns the final 500 InternalServerError response
+    /// rather than throwing, and logs a warning containing "InternalServerError" and "retrying"
+    /// once for each of the three retries.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous test run.</returns>
     [Fact]
     public async Task ExecuteAsync_Exhaustion_ReturnsLastResponse()
     {
@@ -101,6 +126,13 @@ public class RetryPolicyTests
         _logger.LogWarning("Retry budget exhausted after {TotalAttempts} attempts; returning last response with status code {StatusCode}", handler.CallCount, response.StatusCode);
     }
 
+    /// <summary>
+    /// Verifies that exponential backoff delays are applied between retries: a dedicated policy
+    /// (3 retries, 10 ms initial delay, 100 ms maximum delay, 2.0x multiplier) receives repeated
+    /// 500 InternalServerError responses, and exactly three "retrying in" warnings are logged,
+    /// one for each scheduled retry delay.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous test run.</returns>
     [Fact]
     public async Task ExecuteAsync_BackoffGrowth_DelayIncreasesExponentially()
     {
@@ -136,6 +168,12 @@ public class RetryPolicyTests
         _logger.LogInformation("Completed {TestName}; observed {RetryCount} exponential backoff delays", "ExecuteAsync_BackoffGrowth_DelayIncreasesExponentially", 3);
     }
 
+    /// <summary>
+    /// Verifies that a request cancelled while the handler is still delaying (simulating a
+    /// timeout) surfaces as a <see cref="TaskCanceledException"/>, and that at least one
+    /// "Request timeout" warning is logged by the policy.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous test run.</returns>
     [Fact]
     public async Task ExecuteAsync_Cancellation_ThrowsOperationCanceledException()
     {
@@ -171,6 +209,13 @@ public class RetryPolicyTests
         _logger.LogWarning("Request timed out and was cancelled as expected");
     }
 
+    /// <summary>
+    /// Verifies that a caller-supplied shouldRetry predicate overrides the default
+    /// transient-status logic: treating 400 BadRequest as retryable causes the policy to exhaust
+    /// all three retries (four handler calls in total), return the last BadRequest response, and
+    /// log a warning containing "BadRequest" and "retrying" once per retry.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous test run.</returns>
     [Fact]
     public async Task ExecuteAsync_WithCustomShouldRetryPredicate_UsesCustomLogic()
     {
@@ -210,6 +255,12 @@ public class RetryPolicyTests
         _logger.LogInformation("Completed {TestName} with status code {StatusCode} after {TotalAttempts} attempts", "ExecuteAsync_WithCustomShouldRetryPredicate_UsesCustomLogic", response.StatusCode, handler.CallCount);
     }
 
+    /// <summary>
+    /// Verifies the generic ExecuteAsync&lt;T&gt; overload retries a delegate that throws an
+    /// <see cref="HttpRequestException"/> on its first invocation and returns the delegate's
+    /// "Success" result on the second attempt (initial attempt plus one retry).
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous test run.</returns>
     [Fact]
     public async Task ExecuteAsync_T_OnSuccess_ReturnsResult()
     {
@@ -240,6 +291,12 @@ public class RetryPolicyTests
         _logger.LogInformation("Completed {TestName} with result {Result} after {TotalAttempts} attempts", "ExecuteAsync_T_OnSuccess_ReturnsResult", result, callCount);
     }
 
+    /// <summary>
+    /// Verifies the generic ExecuteAsync&lt;T&gt; overload rethrows the delegate's
+    /// <see cref="HttpRequestException"/> after exhausting all retries (two configured) when
+    /// every invocation throws.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous test run.</returns>
     [Fact]
     public async Task ExecuteAsync_T_OnExhaustion_ThrowsException()
     {
@@ -265,6 +322,12 @@ public class RetryPolicyTests
         _logger.LogWarning("Function execution exhausted all {MaxRetries} retries and threw as expected", 2);
     }
 
+    /// <summary>
+    /// Verifies that an <see cref="HttpRequestException"/> thrown by the message handler on the
+    /// first call is treated as retryable: the policy retries once, the second call returns
+    /// 200 OK, and that successful response is returned to the caller.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous test run.</returns>
     [Fact]
     public async Task ExecuteAsync_HttpRequestException_RetriesAndSucceeds()
     {
@@ -296,26 +359,49 @@ public class RetryPolicyTests
 }
 
 // Helper class to count calls
+/// <summary>
+/// Internal test double for <see cref="HttpMessageHandler"/> that counts every request routed
+/// through <c>SendAsync</c> and delegates to either a synchronous or an asynchronous,
+/// cancellation-aware response factory.
+/// </summary>
 internal class CountingMockHttpMessageHandler : HttpMessageHandler
 {
     private readonly Func<HttpRequestMessage, HttpResponseMessage> _syncHandler;
     private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _asyncHandler;
     private bool _isAsync;
 
+    /// <summary>
+    /// Gets the total number of requests processed by this handler across all attempts.
+    /// </summary>
     public int CallCount { get; private set; } = 0;
 
+    /// <summary>
+    /// Initializes the handler with a synchronous response factory invoked for every request.
+    /// </summary>
+    /// <param name="syncHandler">Function producing the response for each incoming request.</param>
     public CountingMockHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> syncHandler)
     {
         _syncHandler = syncHandler;
         _isAsync = false;
     }
 
+    /// <summary>
+    /// Initializes the handler with an asynchronous, cancellation-aware response factory invoked
+    /// for every request.
+    /// </summary>
+    /// <param name="asyncHandler">Function producing the response task for each incoming request.</param>
     public CountingMockHttpMessageHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> asyncHandler)
     {
         _asyncHandler = asyncHandler;
         _isAsync = true;
     }
 
+    /// <summary>
+    /// Increments <see cref="CallCount"/> and delegates to the configured sync or async factory.
+    /// </summary>
+    /// <param name="request">The incoming request message.</param>
+    /// <param name="cancellationToken">Token used to cancel the in-flight request.</param>
+    /// <returns>The response produced by the configured factory.</returns>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         CallCount++;
@@ -328,15 +414,30 @@ internal class CountingMockHttpMessageHandler : HttpMessageHandler
 }
 
 // Helper class for delaying responses
+/// <summary>
+/// Internal test double for <see cref="HttpMessageHandler"/> that delegates each request to a
+/// caller-supplied asynchronous factory, typically used to simulate long-running or
+/// cancellable requests.
+/// </summary>
 internal class DelayingMockHttpMessageHandler : HttpMessageHandler
 {
     private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _handlerFunc;
 
+    /// <summary>
+    /// Initializes the handler with the asynchronous factory invoked for every request.
+    /// </summary>
+    /// <param name="handlerFunc">Function producing the response task for each incoming request.</param>
     public DelayingMockHttpMessageHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handlerFunc)
     {
         _handlerFunc = handlerFunc;
     }
 
+    /// <summary>
+    /// Delegates the request directly to the configured asynchronous factory without counting calls.
+    /// </summary>
+    /// <param name="request">The incoming request message.</param>
+    /// <param name="cancellationToken">Token used to cancel the in-flight request.</param>
+    /// <returns>The response task produced by the configured factory.</returns>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         return _handlerFunc(request, cancellationToken);
