@@ -26,6 +26,17 @@ public sealed class RequestValidationMiddleware
         _maxRequestBodySize = maxBodySize;
     }
 
+    public override string ToString()
+{
+    bool isValid = _maxRequestBodySize > 0 && _allowedContentTypes != null && _allowedContentTypes.Length > 0;
+    var issues = new List<string>();
+    if (_maxRequestBodySize <= 0)
+        issues.Add("MaxRequestBodySize must be positive");
+    if (_allowedContentTypes == null || _allowedContentTypes.Length == 0)
+        issues.Add("AllowedContentTypes must not be empty");
+    return $"RequestValidationMiddleware {{ IsValid = {isValid}, Issues = {string.Join(", ", issues)} }}";
+}
+
     /// <summary>
     /// Validate request before forwarding to next middleware.
     /// Checks content length, content type, and essential headers.
