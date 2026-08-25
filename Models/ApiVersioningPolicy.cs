@@ -84,4 +84,6 @@ public sealed class ApiVersioningPolicy
     /// Defaults to true.
     /// </summary>
     public bool StripVersionFromPath { get; set; } = true;
+
+    public override string ToString() => $"ApiVersioningPolicy {{ Enabled = {Enabled}, DefaultVersion = {DefaultVersion}, RequireVersion = {RequireVersion}, Strategies = {Strategies}, HeaderName = {HeaderName}, QueryParameterName = {QueryParameterName} }}";
 }
