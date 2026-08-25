@@ -172,6 +172,15 @@ public sealed class MetricsService
             _lock.ExitWriteLock();
         }
     }
+
+    public override string ToString()
+    {
+        var uptime = DateTime.UtcNow - _startTime;
+        var avgResponseTime = _totalRequests > 0 ? _totalResponseTimeMs / _totalRequests : 0;
+        var successRate = _totalRequests > 0 ? (double)_totalSuccessfulRequests / _totalRequests * 100 : 0;
+
+        return $"MetricsService {{ TotalRequests = {_totalRequests}, SuccessfulRequests = {_totalSuccessfulRequests}, FailedRequests = {_totalFailedRequests}, SuccessRate = {successRate:F2}, AverageResponseTimeMs = {avgResponseTime:F2}, Uptime = {uptime} }}";
+    }
 }
 
 public sealed class GatewayMetrics
