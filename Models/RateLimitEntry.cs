@@ -35,4 +35,6 @@ public sealed class RateLimitEntry
     /// The timestamp of the last recorded request or token refill.
     /// </summary>
     public DateTime LastRequest { get; set; } = DateTime.UtcNow;
+
+    public override string ToString() => $"RateLimitEntry {{ Key = {Key}, Count = {Count}, RemainingTimeSeconds = {RemainingTimeSeconds}, Tokens = {Tokens}, LastRequest = {LastRequest} }}";
 }
