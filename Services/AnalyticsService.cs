@@ -294,6 +294,11 @@ public sealed class GatewayHealthReport
     public long SuccessfulRequests { get; set; }
     public long FailedRequests { get; set; }
     public double AverageResponseTimeMs { get; set; }
+
+    public override string ToString()
+    {
+        return $"GatewayHealthReport {{ Timestamp = {Timestamp}, HealthStatus = {HealthStatus}, SuccessRate = {SuccessRate:F2}, ErrorRate = {ErrorRate:F2}, TotalRequests = {TotalRequests}, SuccessfulRequests = {SuccessfulRequests} }}";
+    }
 }
 
 /// <summary>
