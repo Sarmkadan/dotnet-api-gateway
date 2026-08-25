@@ -383,6 +383,35 @@ string unescaped = XmlFormatter.UnescapeXml(escapedText);
 Console.WriteLine(unescaped); // Output: <user>John&Jane</user>
 ```
 
+## XmlFormatterTests
+
+The `XmlFormatterTests` class provides unit tests for the `XmlFormatter` utility, covering serialization of null objects, simple objects, and objects that throw during serialization (via a nested `ThrowingClass`), as well as the escaping/unescaping round trip. It verifies that null input yields an empty root element, that exception details produce error XML with safely escaped messages, and that special characters survive escape/unescape cycles intact.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Tests;
+
+// Instantiate the test class
+var tests = new XmlFormatterTests();
+
+// Set properties used in testing scenarios
+tests.Id = 123;
+tests.Name = "John Doe";
+
+// Serialize a null object and verify an empty root element is returned
+tests.Serialize_NullObject_ReturnsNullElement();
+
+// Serialize a simple object and verify valid XML output
+tests.Serialize_SimpleObject_ReturnsValidXml();
+
+// Serialize an object that throws and verify error XML with an escaped message
+tests.Serialize_Exception_ReturnsErrorXmlWithEscapedMessage();
+
+// Verify escaping followed by unescaping preserves the original text
+tests.EscapeAndUnescape_RoundTripPreservesOriginal();
+```
+
 ## ConfigurationValidator
 
 The `ConfigurationValidator` class validates configuration settings for the API gateway.
