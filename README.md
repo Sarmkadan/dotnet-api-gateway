@@ -2307,6 +2307,60 @@ PaginatedResponse<User>? paginatedDeserialized = paginatedJson.FromJson<User>();
 
 The `RequestCoalescingPolicy` class defines coalescing behavior for duplicate concurrent requests. When multiple identical requests arrive simultaneously, coalescing ensures only one upstream call is made and the result is shared with all waiters. This reduces load on upstream services and improves response times for duplicate requests.
 
+## RequestCoalescingServiceTests
+
+The `RequestCoalescingServiceTests` class provides a comprehensive unit test suite for the `RequestCoalescingService`, verifying that identical concurrent requests are coalesced so the upstream call executes exactly once and its result is shared by all waiting callers. It covers exception propagation to followers (confirming failures are not cached), independent execution when the policy timeout or max queued request limit is exceeded, cancellation handling, argument validation, and lifecycle behavior such as cleanup-timer initialization and cancelling pending requests on disposal.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Tests;
+
+// Instantiate the test suite (its constructor also starts the cleanup timer)
+var tests = new RequestCoalescingServiceTests();
+
+try
+{
+    // Verify the constructor initialized the background cleanup timer
+    tests.Constructor_InitializesCleanupTimer();
+
+    // Identical concurrent requests execute once and share the same result
+    await tests.GetOrCoalesceAsync_TwoConcurrentIdenticalRequests_ExecutesOnceAndSharesResult();
+    await tests.GetOrCoalesceAsync_ThreeConcurrentIdenticalRequests_ExecutesOnceAndSharesResult();
+    await tests.GetOrCoalesceAsync_ConcurrentRequestsWithSameKey_OnlyOneExecution();
+
+    // Requests with different keys form separate coalescing groups
+    await tests.GetOrCoalesceAsync_DifferentKeys_ExecutesSeparately();
+    await tests.GetOrCoalesceAsync_ConcurrentRequestsWithDifferentKeys_MultipleGroupsActive();
+
+    // Failures propagate to every follower and are not cached afterwards
+    await tests.GetOrCoalesceAsync_FailedCall_PropagatesExceptionToAllFollowers();
+    await tests.GetOrCoalesceAsync_FailedCall_NotCachedForSubsequentRequests();
+    await tests.GetOrCoalesceAsync_ExceptionThrown_ExceptionPropagatedToAll();
+
+    // Exceeding the timeout or max queued requests falls back to independent execution
+    await tests.GetOrCoalesceAsync_TimeoutExceeded_ExecutesIndependently();
+    await tests.GetOrCoalesceAsync_MaxQueuedRequestsExceeded_ExecutesIndependently();
+
+    // Disabled policies and non-coalescible methods bypass coalescing
+    await tests.GetOrCoalesceAsync_PolicyDisabled_ExecutesIndependently();
+    await tests.GetOrCoalesceAsync_NonCoalescibleMethod_ExecutesIndependently();
+
+    // Edge cases: cancellation, null results, and argument validation
+    await tests.GetOrCoalesceAsync_CancellationRequested_PropagatesCancellation();
+    await tests.GetOrCoalesceAsync_ReturnsNullResult();
+    await tests.GetOrCoalesceAsync_NullKey_ThrowsArgumentNullException();
+    await tests.GetOrCoalesceAsync_NullFetchFunc_ThrowsArgumentNullException();
+
+    // Disposing cancels all pending coalesced requests
+    await tests.Dispose_CancelsAllPendingRequests();
+}
+finally
+{
+    tests.Dispose();
+}
+```
+
 ## AggregationPolicy
 
 The `AggregationPolicy` class defines how multiple upstream targets are aggregated when a request is processed. It supports different aggregation strategies (parallel, sequential, or conditional) and allows configuration of conditional targets that determine which upstream services receive the request based on conditions. Aggregation policies are useful for implementing canary deployments, blue-green deployments, A/B testing, or routing requests to different backend services based on request characteristics.
