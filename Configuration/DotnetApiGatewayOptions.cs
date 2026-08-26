@@ -60,6 +60,11 @@ public sealed class DotnetApiGatewayOptions : IValidatableObject
             }
         }
     }
+
+    public override string ToString()
+    {
+        return $"DotnetApiGatewayOptions {{ ApplicationName = {ApplicationName}, Version = {Version}, MaxRequestBodySize = {MaxRequestBodySize}, DefaultTimeoutSeconds = {DefaultTimeoutSeconds}, MaxConcurrentRequests = {MaxConcurrentRequests}, EnableCors = {EnableCors} }}";
+    }
 }
 
 public sealed class JwtValidationOptions
