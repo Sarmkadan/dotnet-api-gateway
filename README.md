@@ -2053,6 +2053,79 @@ byte[] randomBytes = CryptoUtility.GenerateRandomBytes(32);
 Console.WriteLine($"Generated {randomBytes.Length} random bytes");
 ```
 
+## CryptoUtilityTests
+
+The `CryptoUtilityTests` class provides unit tests for the `CryptoUtility` utility, covering SHA256 hashing, HMAC-SHA256 signature generation and verification, constant-time comparison, and random string/bytes generation. It verifies correct hash generation for various inputs, proper handling of null/empty/whitespace inputs, deterministic behavior, and secure signature verification.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Tests.Utilities;
+
+// Instantiate the test class
+var tests = new CryptoUtilityTests();
+
+// Verify SHA256 hash generation for valid string input
+tests.GenerateSha256Hash_WithValidString_ReturnsCorrectHash();
+
+// Verify SHA256 hash returns empty string for empty input
+tests.GenerateSha256Hash_WithEmptyString_ReturnsEmptyString();
+
+// Verify SHA256 hash returns empty string for whitespace input
+tests.GenerateSha256Hash_WithWhitespaceString_ReturnsEmptyString();
+
+// Verify SHA256 hash returns empty string for null input
+tests.GenerateSha256Hash_WithNullString_ReturnsEmptyString();
+
+// Verify SHA256 hash generation for valid byte array input
+tests.GenerateSha256Hash_WithValidByteArray_ReturnsCorrectHash();
+
+// Verify SHA256 hash returns empty string for empty byte array
+tests.GenerateSha256Hash_WithEmptyByteArray_ReturnsEmptyString();
+
+// Verify SHA256 hash returns empty string for null byte array
+tests.GenerateSha256Hash_WithNullByteArray_ReturnsEmptyString();
+
+// Verify SHA256 hash is deterministic
+tests.GenerateSha256Hash_Deterministic_ReturnsSameHashForSameInput();
+
+// Verify HMAC-SHA256 signature generation for valid data and secret
+tests.GenerateHmacSha256_WithValidDataAndSecret_ReturnsCorrectSignature();
+
+// Verify HMAC-SHA256 returns empty string for empty data
+tests.GenerateHmacSha256_WithEmptyData_ReturnsEmptyString();
+
+// Verify HMAC-SHA256 returns empty string for whitespace data
+tests.GenerateHmacSha256_WithWhitespaceData_ReturnsEmptyString();
+
+// Verify HMAC-SHA256 returns empty string for null data
+tests.GenerateHmacSha256_WithNullData_ReturnsEmptyString();
+
+// Verify HMAC-SHA256 returns empty string for empty secret
+tests.GenerateHmacSha256_WithEmptySecret_ReturnsEmptyString();
+
+// Verify HMAC-SHA256 returns empty string for null secret
+tests.GenerateHmacSha256_WithNullSecret_ReturnsEmptyString();
+
+// Verify HMAC-SHA256 signature generation for valid byte array data
+tests.GenerateHmacSha256_WithValidByteArrayData_ReturnsCorrectSignature();
+
+// Verify HMAC-SHA256 is deterministic
+tests.GenerateHmacSha256_Deterministic_ReturnsSameSignatureForSameInput();
+
+// Verify HMAC-SHA256 verification with correct signature returns true
+tests.VerifyHmacSha256_WithCorrectSignature_ReturnsTrue();
+
+// Verify HMAC-SHA256 verification with incorrect signature returns false
+tests.VerifyHmacSha256_WithIncorrectSignature_ReturnsFalse();
+
+// Verify HMAC-SHA256 verification with empty data returns false
+tests.VerifyHmacSha256_WithEmptyData_ReturnsFalse();
+
+// Verify HMAC-SHA256 verification with null data returns false
+tests.VerifyHmacSha256_WithNullData_ReturnsFalse();
+```
+
 ## EventBusExtensions
 
 The `EventBusExtensions` class provides extension methods for the `EventBus` that enable monitoring and management of event subscribers. These methods allow you to inspect subscriber counts, check for active subscriptions, and publish multiple events as a batch operation.
