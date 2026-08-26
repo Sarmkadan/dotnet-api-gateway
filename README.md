@@ -5150,3 +5150,48 @@ var queryRequest = new QueryParamTransformationRequest
     ParamsToRemove = new List<string> { "unusedParam" }
 };
 ```
+
+## RetryPolicyTests
+
+The `RetryPolicyTests` class provides comprehensive integration tests for the `RetryPolicy` class, covering HTTP request retries, retry exhaustion, exponential backoff delays, cancellation handling, custom retry predicates, and generic delegate-based execution overloads.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Tests.Integration;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
+
+// Instantiate the test class
+var tests = new RetryPolicyTests();
+
+// Verify retries then success scenario
+await tests.ExecuteAsync_RetriesThenSuccess_ReturnsSuccessfulResponse();
+
+// Verify retry exhaustion scenario
+await tests.ExecuteAsync_Exhaustion_ReturnsLastResponse();
+
+// Verify exponential backoff growth
+await tests.ExecuteAsync_BackoffGrowth_DelayIncreasesExponentially();
+
+// Verify cancellation handling
+await tests.ExecuteAsync_Cancellation_ThrowsOperationCanceledException();
+
+// Verify custom retry predicate usage
+await tests.ExecuteAsync_WithCustomShouldRetryPredicate_UsesCustomLogic();
+
+// Verify generic delegate execution on success
+await tests.ExecuteAsync_T_OnSuccess_ReturnsResult();
+
+// Verify generic delegate execution on exhaustion
+await tests.ExecuteAsync_T_OnExhaustion_ThrowsException();
+
+// Verify HttpRequestException handling
+await tests.ExecuteAsync_HttpRequestException_RetriesAndSucceeds();
+```
