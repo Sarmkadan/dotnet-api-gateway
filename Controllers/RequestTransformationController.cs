@@ -26,6 +26,11 @@ public class RequestTransformationController : ControllerBase
         _logger = logger;
     }
 
+    public override string ToString()
+    {
+        return $"RequestTransformationController {{ Logger = {(_logger != null ? _logger.GetType().Name : "null")} }}";
+    }
+
     /// <summary>
     /// Test request header transformation by applying rules to sample headers.
     /// Validates transformation logic without modifying actual routes.
