@@ -5195,3 +5195,67 @@ await tests.ExecuteAsync_T_OnExhaustion_ThrowsException();
 // Verify HttpRequestException handling
 await tests.ExecuteAsync_HttpRequestException_RetriesAndSucceeds();
 ```
+
+## WebhookRegistryTests
+
+The `WebhookRegistryTests` class provides integration tests for the `WebhookRegistry`, verifying registration, unregistration, and event routing of webhook subscriptions. It covers null and duplicate registrations, invalid and non-existent unregistration, event-type filtering (including wildcard subscriptions), and state preservation across multiple operations. The tests also validate that `WebhookSubscription` properties are preserved and that unique IDs are generated, along with the default values of the `WebhookRetryPolicy`.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Tests.Integration;
+
+// Instantiate the test class
+var tests = new WebhookRegistryTests();
+
+// Verify a valid subscription is added to the registry
+tests.Register_ValidSubscription_AddsToRegistry();
+
+// Verify registering a null subscription throws ArgumentNullException
+tests.Register_NullSubscription_ThrowsArgumentNullException();
+
+// Verify multiple subscriptions are all added
+tests.Register_MultipleSubscriptions_AllAdded();
+
+// Verify duplicate subscriptions are allowed
+tests.Register_DuplicateSubscription_Allowed();
+
+// Verify an existing subscription is removed from the registry
+tests.Unregister_ExistingSubscription_RemovesFromRegistry();
+
+// Verify unregistering with an invalid subscription ID does nothing
+tests.Unregister_InvalidSubscriptionId_DoesNothing();
+
+// Verify unregistering a non-existent subscription does nothing
+tests.Unregister_NonExistentSubscription_DoesNothing();
+
+// Verify event-type filtering returns matching subscriptions
+tests.GetSubscriptionsForEvent_SpecificEventType_ReturnsMatchingSubscriptions();
+
+// Verify wildcard event types return all active subscriptions
+tests.GetSubscriptionsForEvent_WildcardEventType_ReturnsAllActiveSubscriptions();
+
+// Verify an invalid event type returns an empty list
+tests.GetSubscriptionsForEvent_InvalidEventType_ReturnsEmptyList();
+
+// Verify no subscriptions returns an empty list
+tests.GetSubscriptionsForEvent_NoSubscriptions_ReturnsEmptyList();
+
+// Verify all registered subscriptions are returned
+tests.GetAllSubscriptions_ReturnsAllSubscriptions();
+
+// Verify an empty registry returns an empty list
+tests.GetAllSubscriptions_NoSubscriptions_ReturnsEmptyList();
+
+// Verify state is maintained across multiple operations
+tests.MultipleOperations_MaintainsCorrectState();
+
+// Verify WebhookSubscription properties are preserved
+tests.WebhookSubscription_PropertiesPreserved();
+
+// Verify unique IDs are generated for each subscription
+tests.WebhookSubscription_UniqueIdsGenerated();
+
+// Verify default WebhookRetryPolicy values
+tests.WebhookRetryPolicy_DefaultValues();
+```
