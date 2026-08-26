@@ -265,6 +265,11 @@ public sealed class CacheEntry
         }
         return size;
     }
+
+    public override string ToString()
+    {
+        return $"CacheEntry {{ Key = {Key}, StatusCode = {StatusCode}, ResponseBody = {ResponseBody}, Headers = {Headers}, ExpiresAt = {ExpiresAt}, CachedAt = {CachedAt} }}";
+    }
 }
 
 public sealed class CacheStatistics
