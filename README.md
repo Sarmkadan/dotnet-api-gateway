@@ -3326,6 +3326,42 @@ bus.Clear();
 
 Make sure to replace the logger with a real implementation when integrating into the gateway.
 
+## EventBusTests
+
+The `EventBusTests` class provides unit tests for the `EventBus` in-memory pub/sub system, verifying that handlers can be subscribed, invoked on publish, unsubscribed, and counted correctly. It also covers resilience behaviors such as isolating handler exceptions so remaining handlers continue processing, dispatching only to handlers registered for a specific event type, awaiting asynchronous handlers, and clearing all subscribers.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Tests;
+
+// Instantiate the test suite
+var tests = new EventBusTests();
+
+// Verify argument validation for subscription and publication
+tests.Subscribe_WithNullHandler_ThrowsArgumentNullException();
+await tests.PublishAsync_WithNullEvent_ThrowsArgumentNullException();
+
+// Verify handlers are registered, invoked, and removed correctly
+await tests.Subscribe_WithValidHandler_AddsHandlerToSubscribers();
+await tests.PublishAsync_WithSingleHandler_InvokesHandler();
+await tests.PublishAsync_WithMultipleHandlers_InvokesAllHandlers();
+await tests.PublishAsync_WithMultipleEventTypes_OnlyInvokesCorrectHandlers();
+await tests.Unsubscribe_WithRegisteredHandler_RemovesHandler();
+await tests.Unsubscribe_WithNullHandler_DoesNotThrow();
+await tests.Unsubscribe_WithUnregisteredHandler_DoesNotThrow();
+
+// Verify exception isolation and asynchronous handler completion
+await tests.PublishAsync_WithHandlerException_IsolatesExceptionAndContinuesProcessing();
+await tests.PublishAsync_WithAsyncHandlers_AllHandlersComplete();
+
+// Verify subscriber counting and lifecycle cleanup
+tests.GetSubscriberCount_WithNoSubscribers_ReturnsZero();
+tests.GetSubscriberCount_WithMultipleSubscribers_ReturnsCorrectCount();
+await tests.Clear_WithMultipleSubscribers_RemovesAllHandlers();
+await tests.PublishAsync_AfterClear_DoesNotInvokeAnyHandlers();
+```
+
 ## JsonUtilityBenchmarks
 
 The `JsonUtilityBenchmarks` class measures the performance of JSON serialization and deserialization operations using the `JsonUtility` class. It benchmarks the time required to serialize objects to JSON and deserialize JSON back to objects, focusing on typical usage patterns.
