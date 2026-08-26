@@ -1901,6 +1901,49 @@ foreach (var header in customHeaders)
 }
 ```
 
+## HeaderUtilityTests
+
+The `HeaderUtilityTests` class provides unit tests for the `HeaderUtility` utility, covering header retrieval, setting, adding, and removal operations on HTTP header dictionaries. It verifies case-insensitive header lookups and removals, and ensures that edge cases such as null header collections, null, empty, or whitespace header names, and non-existent headers are handled gracefully without throwing exceptions.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Tests;
+
+// Instantiate the test class
+var tests = new HeaderUtilityTests();
+
+// Verify null, empty, and missing header lookups return null
+tests.GetHeader_NullHeaders_ReturnsNull();
+tests.GetHeader_NullHeaderName_ReturnsNull();
+tests.GetHeader_EmptyHeaderName_ReturnsNull();
+tests.GetHeader_WhitespaceHeaderName_ReturnsNull();
+tests.GetHeader_NonExistentHeader_ReturnsNull();
+
+// Verify existing headers are retrieved with case-insensitive matching
+tests.GetHeader_ExistingHeader_ReturnsValue();
+tests.GetHeader_CaseInsensitiveLookup_Lowercase_ReturnsValue();
+tests.GetHeader_CaseInsensitiveLookup_MixedCase_ReturnsValue();
+tests.GetHeader_CaseInsensitiveLookup_Uppercase_ReturnsValue();
+
+// Verify headers can be set and replaced safely
+tests.SetHeader_SetsNewHeader();
+tests.SetHeader_ReplacesExistingHeader();
+tests.SetHeader_NullHeaders_DoesNotThrow();
+tests.SetHeader_NullHeaderName_DoesNotThrow();
+tests.SetHeader_EmptyHeaderName_DoesNotThrow();
+
+// Verify headers can be added while preserving existing entries
+tests.AddHeader_AddsNewHeader();
+tests.AddHeader_PreservesExistingHeaders();
+tests.AddHeader_NullHeaders_DoesNotThrow();
+
+// Verify headers can be removed, including case-insensitive removal
+tests.RemoveHeader_RemovesExistingHeader();
+tests.RemoveHeader_CaseInsensitiveRemoval();
+tests.RemoveHeader_NullHeaders_DoesNotThrow();
+```
+
 ## DateTimeUtility
 
 The `DateTimeUtility` class provides utility methods for date and time operations in the API gateway. It offers functionality for working with Unix timestamps, formatting dates, calculating relative time strings, and determining date boundaries (start/end of day, week, month). The utility handles UTC time conversions and provides helper methods for common date calculations.
