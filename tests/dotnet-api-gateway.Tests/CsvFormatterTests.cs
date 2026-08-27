@@ -8,6 +8,14 @@ namespace DotNetApiGateway.Tests;
 
 public class CsvFormatterTests
 {
+    public int Id { get; set; }
+    public string? Name { get; set; }
+    public int Age { get; set; }
+    public string? Description { get; set; }
+    public int Value { get; set; }
+
+    public override string ToString() => $"CsvFormatterTests {{ Id = {Id}, Name = {Name}, Age = {Age}, Description = {Description}, Value = {Value} }}";
+
     [Fact]
     public void FormatCsv_WithNullCollection_ReturnsEmptyString()
     {
