@@ -4,8 +4,14 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Tests for the XmlFormatter class.
+/// </summary>
 public class XmlFormatterTests
 {
+    /// <summary>
+    /// Verifies that serializing a null object results in an XML string representing a null element.
+    /// </summary>
     [Fact]
     public void Serialize_NullObject_ReturnsNullElement()
     {
@@ -13,6 +19,9 @@ public class XmlFormatterTests
         Assert.Equal("<null />", xml.Trim());
     }
 
+    /// <summary>
+    /// Verifies that serializing a simple object produces XML containing the expected element and property values.
+    /// </summary>
     [Fact]
     public void Serialize_SimpleObject_ReturnsValidXml()
     {
@@ -23,6 +32,9 @@ public class XmlFormatterTests
         Assert.Contains("<Name>Test</Name>", xml);
     }
 
+    /// <summary>
+    /// Verifies that serializing an exception produces XML with an error element and the exception message is properly escaped.
+    /// </summary>
     [Fact]
     public void Serialize_Exception_ReturnsErrorXmlWithEscapedMessage()
     {
@@ -32,6 +44,9 @@ public class XmlFormatterTests
         Assert.DoesNotContain("<", xml.Substring(xml.IndexOf("<message>", StringComparison.Ordinal) + "<message>".Length));
     }
 
+    /// <summary>
+    /// Verifies that escaping and then unescaping a string with special characters preserves the original string.
+    /// </summary>
     [Fact]
     public void EscapeAndUnescape_RoundTripPreservesOriginal()
     {
