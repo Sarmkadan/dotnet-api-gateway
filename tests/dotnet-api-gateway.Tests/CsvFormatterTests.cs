@@ -6,14 +6,36 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Tests for the CsvFormatter class.
+/// </summary>
 public class CsvFormatterTests
 {
+    /// <summary>
+    /// Gets or sets the identifier for the test entity.
+    /// </summary>
     public int Id { get; set; }
+    /// <summary>
+    /// Gets or sets the name for the test entity.
+    /// </summary>
     public string? Name { get; set; }
+    /// <summary>
+    /// Gets or sets the age for the test entity.
+    /// </summary>
     public int Age { get; set; }
+    /// <summary>
+    /// Gets or sets the description for the test entity.
+    /// </summary>
     public string? Description { get; set; }
+    /// <summary>
+    /// Gets or sets the value for the test entity.
+    /// </summary>
     public int Value { get; set; }
 
+    /// <summary>
+    /// Returns a string representation of the CsvFormatterTests object.
+    /// </summary>
+    /// <returns>A string containing the property values of this instance.</returns>
     public override string ToString() => $"CsvFormatterTests {{ Id = {Id}, Name = {Name}, Age = {Age}, Description = {Description}, Value = {Value} }}";
 
     [Fact]
