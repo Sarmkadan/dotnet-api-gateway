@@ -11,12 +11,21 @@ using Xunit;
 
 namespace DotNetApiGateway.Tests;
 
+/// <summary>
+/// Contains unit tests for the RequestCoalescingService class.
+/// Tests cover request coalescing behavior, error handling, timeout scenarios,
+/// cancellation, and resource disposal.
+/// </summary>
 public class RequestCoalescingServiceTests : IDisposable
 {
     private readonly Mock<ILogger<RequestCoalescingService>> _loggerMock;
     private readonly RequestCoalescingService _service;
     private readonly RequestCoalescingPolicy _defaultPolicy;
 
+    /// <summary>
+    /// Initializes a new instance of the RequestCoalescingServiceTests class.
+    /// Sets up mock logger, service instance, and default coalescing policy.
+    /// </summary>
     public RequestCoalescingServiceTests()
     {
         _loggerMock = new Mock<ILogger<RequestCoalescingService>>();
@@ -32,11 +41,18 @@ public class RequestCoalescingServiceTests : IDisposable
         };
     }
 
+    /// <summary>
+    /// Releases resources used by the RequestCoalescingServiceTests.
+    /// Disposes the underlying RequestCoalescingService instance.
+    /// </summary>
     public void Dispose()
     {
         _service.Dispose();
     }
 
+    /// <summary>
+    /// Verifies that the RequestCoalescingService constructor initializes with zero active coalescing groups.
+    /// </summary>
     [Fact]
     public void Constructor_InitializesCleanupTimer()
     {
@@ -48,7 +64,11 @@ public class RequestCoalescingServiceTests : IDisposable
         service.Dispose();
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that two concurrent identical requests execute the fetch function only once and share the same result.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_TwoConcurrentIdenticalRequests_ExecutesOnceAndSharesResult()
     {
         // Arrange
@@ -75,7 +95,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that three concurrent identical requests execute the fetch function only once and share the same result.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_ThreeConcurrentIdenticalRequests_ExecutesOnceAndSharesResult()
     {
         // Arrange
@@ -105,7 +129,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that requests with different keys execute separately and do not coalesce.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_DifferentKeys_ExecutesSeparately()
     {
         // Arrange
@@ -137,7 +165,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that when a fetch function throws an exception, the exception is propagated to all waiting requests.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_FailedCall_PropagatesExceptionToAllFollowers()
     {
         // Arrange
@@ -165,7 +197,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that failed requests are not cached and subsequent requests execute the fetch function again.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_FailedCall_NotCachedForSubsequentRequests()
     {
         // Arrange
@@ -191,7 +227,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that when a request exceeds the timeout period, subsequent identical requests execute independently rather than waiting.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_TimeoutExceeded_ExecutesIndependently()
     {
         // Arrange
@@ -230,7 +270,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that when the maximum queued requests limit is exceeded, additional requests execute independently rather than being queued.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_MaxQueuedRequestsExceeded_ExecutesIndependently()
     {
         // Arrange
@@ -272,7 +316,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that when a cancellation token is triggered, the cancellation is propagated to all waiting requests.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_CancellationRequested_PropagatesCancellation()
     {
         // Arrange
@@ -305,7 +353,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that passing a null key to GetOrCoalesceAsync throws an ArgumentNullException.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_NullKey_ThrowsArgumentNullException()
     {
         // Arrange
@@ -316,7 +368,11 @@ public class RequestCoalescingServiceTests : IDisposable
             _service.GetOrCoalesceAsync(null!, fetchFunc, _defaultPolicy));
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that passing a null fetch function to GetOrCoalesceAsync throws an ArgumentNullException.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_NullFetchFunc_ThrowsArgumentNullException()
     {
         // Arrange
@@ -327,7 +383,11 @@ public class RequestCoalescingServiceTests : IDisposable
             _service.GetOrCoalesceAsync(key, null!, _defaultPolicy));
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that when the coalescing policy is disabled, requests execute independently without coalescing.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_PolicyDisabled_ExecutesIndependently()
     {
         // Arrange
@@ -358,7 +418,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that requests with non-coalescible HTTP methods (like POST) execute independently without coalescing.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_NonCoalescibleMethod_ExecutesIndependently()
     {
         // Arrange
@@ -392,7 +456,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that disposing the RequestCoalescingService cancels all pending requests and causes them to throw ObjectDisposedException.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task Dispose_CancelsAllPendingRequests()
     {
         // Arrange
@@ -410,7 +478,11 @@ public class RequestCoalescingServiceTests : IDisposable
         await Assert.ThrowsAsync<ObjectDisposedException>(() => task2);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that concurrent requests with different keys create multiple active coalescing groups and execute independently.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_ConcurrentRequestsWithDifferentKeys_MultipleGroupsActive()
     {
         // Arrange
@@ -438,7 +510,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that multiple concurrent requests with the same key result in only one execution of the fetch function, with all requests sharing the same result.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_ConcurrentRequestsWithSameKey_OnlyOneExecution()
     {
         // Arrange
@@ -475,7 +551,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that when the fetch function returns null, the result is properly shared among all waiting requests.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_ReturnsNullResult()
     {
         // Arrange
@@ -495,7 +575,11 @@ public class RequestCoalescingServiceTests : IDisposable
         Assert.Equal(0, _service.ActiveCoalescingGroups);
     }
 
-    [Fact]
+    /// <summary>
+/// Tests that when the fetch function throws an exception, the same exception instance is propagated to all waiting requests.
+/// </summary>
+/// <returns>A task that represents the asynchronous test operation.</returns>
+[Fact]
     public async Task GetOrCoalesceAsync_ExceptionThrown_ExceptionPropagatedToAll()
     {
         // Arrange
