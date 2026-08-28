@@ -5332,3 +5332,91 @@ tests.WebhookSubscription_UniqueIdsGenerated();
 // Verify default WebhookRetryPolicy values
 tests.WebhookRetryPolicy_DefaultValues();
 ```
+
+
+## CircuitBreakerController
+
+The  provides endpoints for monitoring and managing circuit breaker states in the API gateway. It allows retrieving circuit breaker statuses for all services or a specific service, filtering by state (open, half-open, closed), and resetting circuit breakers.
+
+Example usage:
+
+
+
+
+## CircuitBreakerController
+
+The `CircuitBreakerController` provides endpoints for monitoring and managing circuit breaker states in the API gateway. It allows retrieving circuit breaker statuses for all services or a specific service, filtering by state (open, half-open, closed), and resetting circuit breakers.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Controllers;
+using DotNetApiGateway.Services;
+using Microsoft.AspNetCore.Mvc.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+// Create a test server with required services
+var hostBuilder = new WebHostBuilder()
+    .ConfigureServices(services =>
+    {
+        services.AddLogging();
+        services.AddSingleton<CircuitBreakerService>();
+        services.AddControllers();
+    });
+
+var server = new TestServer(hostBuilder);
+var client = server.CreateClient();
+
+// Get all circuit breaker statuses
+var allStatusesResponse = await client.GetAsync("/api/CircuitBreaker/statuses");
+allStatusesResponse.EnsureSuccessStatusCode();
+
+var allStatuses = await allStatusesResponse.Content.ReadFromJsonAsync<List<object>>();
+Console.WriteLine($"Total circuit breakers: {allStatuses.Count}");
+
+// Get circuit breaker status for a specific service
+var serviceName = "user-service";
+var statusResponse = await client.GetAsync($"/api/CircuitBreaker/statuses/{serviceName}");
+statusResponse.EnsureSuccessStatusCode();
+
+var status = await statusResponse.Content.ReadFromJsonAsync<object>();
+Console.WriteLine($"Circuit breaker status for {serviceName}: {status}");
+
+// Get all open circuits
+var openCircuitsResponse = await client.GetAsync("/api/CircuitBreaker/statuses/open");
+openCircuitsResponse.EnsureSuccessStatusCode();
+
+var openCircuits = await openCircuitsResponse.Content.ReadFromJsonAsync<List<object>>();
+Console.WriteLine($"Open circuits: {openCircuits.Count}");
+
+// Get all half-open circuits
+var halfOpenCircuitsResponse = await client.GetAsync("/api/CircuitBreaker/statuses/half-open");
+halfOpenCircuitsResponse.EnsureSuccessStatusCode();
+
+var halfOpenCircuits = await halfOpenCircuitsResponse.Content.ReadFromJsonAsync<List<object>>();
+Console.WriteLine($"Half-open circuits: {halfOpenCircuits.Count}");
+
+// Get all closed circuits
+var closedCircuitsResponse = await client.GetAsync("/api/CircuitBreaker/statuses/closed");
+closedCircuitsResponse.EnsureSuccessStatusCode();
+
+var closedCircuits = await closedCircuitsResponse.Content.ReadFromJsonAsync<List<object>>();
+Console.WriteLine($"Closed circuits: {closedCircuits.Count}");
+
+// Reset a specific circuit breaker
+var resetResponse = await client.PostAsync($"/api/CircuitBreaker/statuses/{serviceName}/reset", null);
+resetResponse.EnsureSuccessStatusCode();
+
+var resetResult = await resetResponse.Content.ReadFromJsonAsync<object>();
+Console.WriteLine($"Reset result: {resetResult}");
+
+// Reset all circuit breakers
+var resetAllResponse = await client.PostAsync("/api/CircuitBreaker/statuses/reset-all", null);
+resetAllResponse.EnsureSuccessStatusCode();
+
+var resetAllResult = await resetAllResponse.Content.ReadFromJsonAsync<object>();
+Console.WriteLine($"Reset all result: {resetAllResult}");
+```
