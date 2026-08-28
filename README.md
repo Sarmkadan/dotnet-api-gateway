@@ -2179,6 +2179,37 @@ var eventsToPublish = new object[]
 await eventBus.PublishBatchAsync(eventsToPublish);
 ```
 
+## InMemoryRateLimitStoreTests
+
+The `InMemoryRateLimitStoreTests` class provides comprehensive unit tests for the `InMemoryRateLimitStore` implementation, covering TokenBucket, FixedWindow, and SlidingWindow rate limiting strategies. It verifies request allowance behavior, token refill mechanics, window resets, independent key tracking, entry retrieval, and reset operations.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Tests.Repositories;
+
+// Instantiate the test class
+var tests = new InMemoryRateLimitStoreTests();
+
+// Test token bucket allowing requests under limit
+await tests.IsRequestAllowedAsync_TokenBucket_UnderLimit_AllowsRequest();
+
+// Test token bucket blocking requests over limit
+await tests.IsRequestAllowedAsync_TokenBucket_OverLimit_BlocksRequest();
+
+// Test fixed window restoring allowance after window reset
+await tests.IsRequestAllowedAsync_FixedWindow_WindowReset_RestoresAllowance();
+
+// Test sliding window allowing request after old requests expire
+await tests.IsRequestAllowedAsync_SlidingWindow_OldRequestsExpire_AllowsAfterWait();
+
+// Test resetting rate limit for a specific key
+await tests.ResetKeyAsync_ClearsRateLimitForSpecificKey();
+
+// Test getting all active entries
+await tests.GetAllEntriesAsync_ReturnsAllActiveEntries();
+```
+
 ## ExtensionMethods
 
 The `ExtensionMethods` class provides extension methods for common types used throughout the API gateway. It offers a fluent API for string manipulation, collections, and object operations, including null-safe checks, transformations, and formatting utilities.
