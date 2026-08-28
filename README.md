@@ -4336,6 +4336,41 @@ bool hasParam = UrlUtility.HasQueryParameter("https://api.example.com/data?page=
 // Result: true
 ```
 
+## CircuitBreakerServiceBehaviorTests
+
+The `CircuitBreakerServiceBehaviorTests` class verifies the state transition logic and exception handling of the `CircuitBreakerService`. It tests how the circuit breaker moves between Closed, Open, and HalfOpen states based on failure/success thresholds and timeouts, and ensures proper exception throwing when circuits are open.
+
+Example usage:
+
+```csharp
+using DotNetApiGateway.Services;
+using DotNetApiGateway.Models;
+using Microsoft.Extensions.Logging;
+
+// Setup service with dependencies
+var repository = new CircuitBreakerRepository();
+var loggerMock = Mock.Of<ILogger<CircuitBreakerService>>();
+var service = new CircuitBreakerService(repository, loggerMock);
+
+// Define a policy for testing
+var policy = new CircuitBreakerPolicy
+{
+    FailureThreshold = 3,
+    SuccessThreshold = 2,
+    TimeoutSeconds = 1,
+    Enabled = true
+};
+
+// Test recording failures to trip the circuit
+await service.RecordFailureAsync("test-service", "timeout", policy);
+await service.RecordFailureAsync("test-service", "timeout", policy);
+await service.RecordFailureAsync("test-service", "timeout", policy);
+
+// Verify circuit is open and throws exception
+await service.CanAttemptAsync("test-service", policy)
+    .Should().ThrowAsync<CircuitBreakerException>();
+```
+
 ## TransformationRule
 
 The `TransformationRule` class defines transformation operations that can be applied to HTTP requests and responses during the request processing pipeline. It supports various transformation operations such as adding/setting headers, managing query parameters, rewriting paths, and modifying request/response content. Each rule can be configured with a specific phase (request or response), operation type, target key/value, execution order, and enabled/disabled state.
