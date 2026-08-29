@@ -6,13 +6,14 @@
 
 namespace DotNetApiGateway.Services;
 
+using System.Collections.Concurrent;
+
 /// <summary>
 /// Service for managing response caching with configurable strategies
 /// </summary>
-public sealed class CacheService
+public sealed class CacheService : IDisposable
 {
-    private readonly Dictionary<string, CacheEntry> _cache = [];
-    private readonly ReaderWriterLockSlim _lock = new();
+    private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
     private readonly Timer _cleanupTimer;
 
     public CacheService()
@@ -23,30 +24,23 @@ public sealed class CacheService
     public bool TryGetCachedResponse(string cacheKey, out CacheEntry? entry)
     {
         ArgumentException.ThrowIfNullOrEmpty(cacheKey);
-        _lock.EnterReadLock();
-        try
+        if (_cache.TryGetValue(cacheKey, out var cacheEntry))
         {
-            if (_cache.TryGetValue(cacheKey, out var cacheEntry))
+            if (cacheEntry.IsExpired())
             {
-                if (cacheEntry.IsExpired())
-                {
-                    entry = null;
-                    return false;
-                }
-
-                cacheEntry.HitCount++;
-                cacheEntry.LastAccessAt = DateTime.UtcNow;
-                entry = cacheEntry;
-                return true;
+                _cache.TryRemove(new KeyValuePair<string, CacheEntry>(cacheKey, cacheEntry));
+                entry = null;
+                return false;
             }
 
-            entry = null;
-            return false;
+            cacheEntry.IncrementHitCount();
+            cacheEntry.LastAccessAt = DateTime.UtcNow;
+            entry = cacheEntry;
+            return true;
         }
-        finally
-        {
-            _lock.ExitReadLock();
-        }
+
+        entry = null;
+        return false;
     }
 
     public void SetCachedResponse(
@@ -70,71 +64,39 @@ public sealed class CacheService
             CachedAt = DateTime.UtcNow
         };
 
-        _lock.EnterWriteLock();
-        try
-        {
-            _cache[cacheKey] = entry;
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
+        _cache[cacheKey] = entry;
     }
 
     public void InvalidateCache(string cacheKey)
     {
         ArgumentException.ThrowIfNullOrEmpty(cacheKey);
-        _lock.EnterWriteLock();
-        try
-        {
-            _cache.Remove(cacheKey);
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
+        _cache.TryRemove(cacheKey, out _);
     }
 
     public void InvalidateCacheByPrefix(string prefix)
     {
         ArgumentException.ThrowIfNullOrEmpty(prefix);
-        _lock.EnterWriteLock();
-        try
+        foreach (var key in _cache.Keys)
         {
-            var keysToRemove = _cache.Keys
-                .Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            foreach (var key in keysToRemove)
-                _cache.Remove(key);
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
+            if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                _cache.TryRemove(key, out _);
         }
     }
 
     public CacheStatistics GetStatistics()
     {
-        _lock.EnterReadLock();
-        try
+        var entries = _cache.Values.ToArray();
+        var totalHits = entries.Sum(e => e.HitCount);
+        var stats = new CacheStatistics
         {
-            var totalHits = _cache.Values.Sum(e => e.HitCount);
-            var stats = new CacheStatistics
-            {
-                EntriesCount = _cache.Count,
-                TotalHits = totalHits,
-                TotalSizeBytes = _cache.Values.Sum(e => e.GetSizeBytes()),
-                OldestEntry = _cache.Values.OrderBy(e => e.CachedAt).FirstOrDefault()?.CachedAt,
-                MostAccessedEntry = _cache.Values.OrderByDescending(e => e.HitCount).FirstOrDefault()?.Key
-            };
+            EntriesCount = entries.Length,
+            TotalHits = totalHits,
+            TotalSizeBytes = entries.Sum(e => e.GetSizeBytes()),
+            OldestEntry = entries.OrderBy(e => e.CachedAt).FirstOrDefault()?.CachedAt,
+            MostAccessedEntry = entries.OrderByDescending(e => e.HitCount).FirstOrDefault()?.Key
+        };
 
-            return stats;
-        }
-        finally
-        {
-            _lock.ExitReadLock();
-        }
+        return stats;
     }
 
     /// <summary>
@@ -142,23 +104,15 @@ public sealed class CacheService
     /// </summary>
     public Task<int> RemoveExpiredEntriesAsync()
     {
-        _lock.EnterWriteLock();
-        try
+        var removedCount = 0;
+        foreach (var entry in _cache)
         {
-            var keysToRemove = _cache
-                .Where(kvp => kvp.Value.IsExpired())
-                .Select(kvp => kvp.Key)
-                .ToList();
-
-            foreach (var key in keysToRemove)
-                _cache.Remove(key);
-
-            return Task.FromResult(keysToRemove.Count);
+            if (entry.Value.IsExpired() &&
+                _cache.TryRemove(new KeyValuePair<string, CacheEntry>(entry.Key, entry.Value)))
+                removedCount++;
         }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
+
+        return Task.FromResult(removedCount);
     }
 
     /// <summary>
@@ -202,44 +156,28 @@ public sealed class CacheService
 
     public void ClearAll()
     {
-        _lock.EnterWriteLock();
-        try
-        {
-            _cache.Clear();
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
+        _cache.Clear();
     }
 
     private void CleanupExpiredEntries(object? state)
     {
-        _lock.EnterWriteLock();
-        try
+        foreach (var entry in _cache)
         {
-            var keysToRemove = _cache
-                .Where(kvp => kvp.Value.IsExpired())
-                .Select(kvp => kvp.Key)
-                .ToList();
-
-            foreach (var key in keysToRemove)
-                _cache.Remove(key);
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
+            if (entry.Value.IsExpired())
+                _cache.TryRemove(new KeyValuePair<string, CacheEntry>(entry.Key, entry.Value));
         }
     }
 
     public void Dispose()
     {
-        _cleanupTimer?.Dispose();
+        _cleanupTimer.Dispose();
     }
 }
 
 public sealed class CacheEntry
 {
+    private long _hitCount;
+
     public string Key { get; set; } = string.Empty;
     public int StatusCode { get; set; }
     public string ResponseBody { get; set; } = string.Empty;
@@ -247,7 +185,16 @@ public sealed class CacheEntry
     public DateTime ExpiresAt { get; set; }
     public DateTime CachedAt { get; set; }
     public DateTime LastAccessAt { get; set; }
-    public long HitCount { get; set; } = 0;
+    public long HitCount
+    {
+        get => Interlocked.Read(ref _hitCount);
+        set => Interlocked.Exchange(ref _hitCount, value);
+    }
+
+    internal void IncrementHitCount()
+    {
+        Interlocked.Increment(ref _hitCount);
+    }
 
     public bool IsExpired()
     {
