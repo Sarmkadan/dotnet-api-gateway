@@ -35,20 +35,21 @@ public sealed class RateLimitingMiddleware
         System.ArgumentNullException.ThrowIfNull(routingService);
         System.ArgumentNullException.ThrowIfNull(rateLimitingService);
 
-        _logger.LogInformation("Processing rate limiting for request {Path}", context.Request.Path);
+        _logger.LogDebug("Processing rate limiting for request {Path}", context.Request.Path);
 
         try
         {
             if (!context.Items.TryGetValue("GatewayRoute", out var routeObj) || routeObj is not GatewayRoute route)
             {
-                _logger.LogInformation("Bypassing rate limiting: no route found for {Path}", context.Request.Path);
+                _logger.LogDebug("Bypassing rate limiting: no route found for {Path}", context.Request.Path);
                 await _next(context); // No route found, bypass rate limiting
                 return;
             }
 
             if (route.RateLimitPolicy is null || !route.RateLimitPolicy.Enabled)
             {
-                _logger.LogInformation("Bypassing rate limiting: policy not enabled for route {RouteId}", route.Id);
+                _logger.LogDebug("Bypassing rate limiting: policy not enabled for route {RouteId} and request {Path}",
+                    route.Id, context.Request.Path);
                 await _next(context); // Rate limiting not enabled for this route
                 return;
             }
@@ -58,14 +59,16 @@ public sealed class RateLimitingMiddleware
 
             if (string.IsNullOrWhiteSpace(key))
             {
-                _logger.LogWarning("Could not generate rate limit key for request to {Path}. Bypassing rate limit.", context.Request.Path);
+                _logger.LogWarning("Could not generate rate limit key for route {RouteId} and request {Path}. Bypassing rate limit.",
+                    route.Id, context.Request.Path);
                 await _next(context);
                 return;
             }
 
             if (policy.BypassForAuthenticatedUsers && context.User.Identity?.IsAuthenticated == true)
             {
-                _logger.LogInformation("Bypassing rate limiting: authenticated user {User}", context.User.Identity?.Name ?? "unknown");
+                _logger.LogDebug("Bypassing rate limiting for authenticated client {ClientKey} on route {RouteId} and request {Path}",
+                    key, route.Id, context.Request.Path);
                 await _next(context); // Bypass for authenticated users
                 return;
             }
@@ -88,8 +91,8 @@ public sealed class RateLimitingMiddleware
                 context.Response.Headers[GatewayConstants.RateLimitResetHeader] = info.Reset.ToString();
 
                 await context.Response.WriteAsync("Too Many Requests");
-                _logger.LogWarning("Rate limit exceeded for key {Key} on route {RouteId}. Limit: {Limit}, Remaining: {Remaining}",
-                    key, route.Id, info.Limit, info.Remaining);
+                _logger.LogWarning("Rate limit exceeded for client {ClientKey} on route {RouteId} and request {Path}. Limit: {Limit}, Remaining: {Remaining}",
+                    key, route.Id, context.Request.Path, info.Limit, info.Remaining);
                 return;
             }
 
