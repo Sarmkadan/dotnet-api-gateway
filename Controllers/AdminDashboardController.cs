@@ -28,6 +28,7 @@ public sealed class AdminDashboardController : ControllerBase
     private readonly DotnetApiGatewayOptions _configuration;
     private readonly ILogger<AdminDashboardController> _logger;
     private readonly IRateLimitStoreFactory _rateLimitStoreFactory;
+    private readonly CacheService _cacheService;
 
     public AdminDashboardController(
         MetricsService metricsService,
@@ -36,7 +37,8 @@ public sealed class AdminDashboardController : ControllerBase
         GatewayRouteRepository routeRepository,
         DotnetApiGatewayOptions configuration,
         ILogger<AdminDashboardController> logger,
-        IRateLimitStoreFactory rateLimitStoreFactory)
+        IRateLimitStoreFactory rateLimitStoreFactory,
+        CacheService cacheService)
     {
         _metricsService = metricsService;
         _routingService = routingService;
@@ -45,6 +47,7 @@ public sealed class AdminDashboardController : ControllerBase
         _configuration = configuration;
         _logger = logger;
         _rateLimitStoreFactory = rateLimitStoreFactory;
+        _cacheService = cacheService;
     }
 
     private IActionResult FormatError(object errorObj)
@@ -126,6 +129,22 @@ public sealed class AdminDashboardController : ControllerBase
             statusCodeDistribution = metrics.StatusCodeDistribution,
             timestamp = DateTime.UtcNow
         });
+    }
+
+    [HttpDelete("cache")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult ClearCache()
+    {
+        var invalidatedEntries = _cacheService.Clear();
+        return Ok(new { invalidatedEntries });
+    }
+
+    [HttpDelete("cache/{prefix}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult InvalidateCacheByPrefix(string prefix)
+    {
+        var invalidatedEntries = _cacheService.InvalidateByPrefix(prefix);
+        return Ok(new { invalidatedEntries });
     }
 
     // -------------------------------------------------------------------------
