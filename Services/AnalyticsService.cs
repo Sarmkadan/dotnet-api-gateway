@@ -24,6 +24,10 @@ public sealed class AnalyticsService
         GatewayRouteRepository routeRepository,
         ILogger<AnalyticsService> logger)
     {
+        ArgumentNullException.ThrowIfNull(metricsService);
+        ArgumentNullException.ThrowIfNull(routeRepository);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _metricsService = metricsService;
         _routeRepository = routeRepository;
         _logger = logger;
