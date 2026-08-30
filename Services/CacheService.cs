@@ -14,6 +14,7 @@ using System.Collections.Concurrent;
 public sealed class CacheService : IDisposable
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
+    private readonly ReaderWriterLockSlim _lock = new();
     private readonly Timer _cleanupTimer;
 
     public CacheService()
@@ -75,11 +76,29 @@ public sealed class CacheService : IDisposable
 
     public void InvalidateCacheByPrefix(string prefix)
     {
-        ArgumentException.ThrowIfNullOrEmpty(prefix);
-        foreach (var key in _cache.Keys)
+        InvalidateByPrefix(prefix);
+    }
+
+    public int InvalidateByPrefix(string keyPrefix)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(keyPrefix);
+
+        _lock.EnterWriteLock();
+        try
         {
-            if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                _cache.TryRemove(key, out _);
+            var removedCount = 0;
+            foreach (var key in _cache.Keys)
+            {
+                if (key.StartsWith(keyPrefix, StringComparison.Ordinal) &&
+                    _cache.TryRemove(key, out _))
+                    removedCount++;
+            }
+
+            return removedCount;
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
         }
     }
 
@@ -156,7 +175,22 @@ public sealed class CacheService : IDisposable
 
     public void ClearAll()
     {
-        _cache.Clear();
+        Clear();
+    }
+
+    public int Clear()
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var removedCount = _cache.Count;
+            _cache.Clear();
+            return removedCount;
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
 
     private void CleanupExpiredEntries(object? state)
@@ -171,6 +205,7 @@ public sealed class CacheService : IDisposable
     public void Dispose()
     {
         _cleanupTimer.Dispose();
+        _lock.Dispose();
     }
 }
 
