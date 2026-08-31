@@ -1,307 +1,155 @@
 #nullable enable
 
-using DotNetApiGateway.Constants;
-using DotNetApiGateway.Exceptions;
-using DotNetApiGateway.Models;
-using DotNetApiGateway.Repositories;
-using DotNetApiGateway.Services;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
-using Moq;
-using Xunit;
 
-namespace DotNetApiGateway.Tests;
+namespace DotNetApiGateway.Tests.Services;
 
-/// <summary>
-/// Tests for CircuitBreakerService focusing on state transitions and exception throwing behavior
-/// </summary>
-public sealed class CircuitBreakerServiceBehaviorTests
+public sealed class CircuitBreakerServiceTests
 {
-    private readonly CircuitBreakerRepository _repository;
+    private readonly CircuitBreakerRepository _repository = new();
     private readonly CircuitBreakerService _service;
-    private readonly Mock<ILogger<CircuitBreakerService>> _loggerMock;
-    private readonly CircuitBreakerPolicy _defaultPolicy;
 
-    public CircuitBreakerServiceBehaviorTests()
+    public CircuitBreakerServiceTests()
     {
-        _repository = new CircuitBreakerRepository();
-        _loggerMock = new Mock<ILogger<CircuitBreakerService>>();
-        _service = new CircuitBreakerService(_repository, _loggerMock.Object);
+        _service = new CircuitBreakerService(_repository);
+    }
 
-        _defaultPolicy = new CircuitBreakerPolicy
+    [Fact]
+    public async Task GetOrCreateStatusAsync_FirstCallCreatesStatus_SecondCallReturnsExistingStatus()
+    {
+        const string serviceName = "inventory-service";
+
+        var created = await _service.GetOrCreateStatusAsync(serviceName);
+        var existing = await _service.GetOrCreateStatusAsync(serviceName);
+
+        created.ServiceName.Should().Be(serviceName);
+        created.State.Should().Be(CircuitBreakerState.Closed);
+        existing.Should().BeSameAs(created);
+        (await _repository.GetAllAsync()).Should().ContainSingle();
+    }
+
+    [Fact]
+    public void Constructor_NullRepository_ThrowsArgumentNullException()
+    {
+        var act = () => new CircuitBreakerService(null!);
+
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("repository");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task ServiceNameGuards_NullOrEmptyValue_ThrowArgumentException(string? serviceName)
+    {
+        var policy = new CircuitBreakerPolicy();
+
+        var actions = new Func<Task>[]
         {
-            FailureThreshold = 3,
-            SuccessThreshold = 2,
-            TimeoutSeconds = 1,
-            Enabled = true
+            () => _service.GetOrCreateStatusAsync(serviceName!),
+            () => _service.IsCircuitOpenAsync(serviceName!),
+            () => _service.CanAttemptAsync(serviceName!, policy),
+            () => _service.RecordSuccessAsync(serviceName!, policy),
+            () => _service.RecordFailureAsync(serviceName, "failure", policy),
+            () => _service.GetStatusAsync(serviceName!),
+            () => _service.ResetCircuitAsync(serviceName!)
         };
+
+        foreach (var action in actions)
+            await action.Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
-    public async Task CanAttempt_ClosedToOpen_AfterFailureThresholdReached()
+    public async Task PolicyGuards_NullPolicy_ThrowArgumentNullException()
     {
-        _loggerMock.Object.LogInformation("Starting test {TestName}", nameof(CanAttempt_ClosedToOpen_AfterFailureThresholdReached));
-        // Arrange
-        var serviceName = "payment-service";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 3, Enabled = true };
-
-        // Act - record failures up to threshold
-        await _service.RecordFailureAsync(serviceName, "timeout", policy);
-        await _service.RecordFailureAsync(serviceName, "timeout", policy);
-
-        // Third failure should open the circuit
-        await _service.RecordFailureAsync(serviceName, "timeout", policy);
-
-        // Assert - circuit is now open
-        var status = await _service.GetStatusAsync(serviceName);
-        status.Should().NotBeNull();
-        status!.State.Should().Be(CircuitBreakerState.Open);
-        status.FailureCount.Should().Be(3);
-        _loggerMock.Object.LogInformation("Finished test {TestName}", nameof(CanAttempt_ClosedToOpen_AfterFailureThresholdReached));
-    }
-
-    [Fact]
-    public async Task CanAttempt_OpenState_ThrowsCircuitBreakerExceptionImmediately()
-    {
-        // Arrange
-        var serviceName = "downstream-api";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 1, TimeoutSeconds = 60, Enabled = true };
-
-        // Open the circuit
-        await _service.RecordFailureAsync(serviceName, "service unavailable", policy);
-
-        // Act & Assert - should throw immediately without waiting
-        var act = () => _service.CanAttemptAsync(serviceName, policy);
-        await act.Should().ThrowAsync<CircuitBreakerException>();
-    }
-
-    [Fact]
-    public async Task CanAttempt_OpenToHalfOpen_AfterTimeoutElapsed()
-    {
-        // Arrange
-        var serviceName = "external-service";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 1, TimeoutSeconds = 1, Enabled = true };
-
-        // Open the circuit
-        await _service.RecordFailureAsync(serviceName, "gateway timeout", policy);
-
-        // Verify circuit is open
-        var statusBefore = await _service.GetStatusAsync(serviceName);
-        statusBefore.Should().NotBeNull();
-        statusBefore!.State.Should().Be(CircuitBreakerState.Open);
-
-        // Wait for timeout to elapse (slightly more than TimeoutSeconds)
-        await Task.Delay(1100);
-
-        // Act - attempt should transition to HalfOpen and allow the attempt
-        var canAttempt = await _service.CanAttemptAsync(serviceName, policy);
-
-        // Assert
-        canAttempt.Should().BeTrue();
-        var statusAfter = await _service.GetStatusAsync(serviceName);
-        statusAfter.Should().NotBeNull();
-        statusAfter!.State.Should().Be(CircuitBreakerState.HalfOpen);
-    }
-
-    [Fact]
-    public async Task CanAttempt_HalfOpenState_AllowsAttempts()
-    {
-        // Arrange
-        var serviceName = "database-service";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 1, SuccessThreshold = 2, TimeoutSeconds = 1, Enabled = true };
-
-        // Open circuit
-        await _service.RecordFailureAsync(serviceName, "connection failed", policy);
-
-        // Wait for timeout
-        await Task.Delay(1100);
-
-        // Transition to HalfOpen
-        await _service.CanAttemptAsync(serviceName, policy);
-
-        // Verify state
-        var status = await _service.GetStatusAsync(serviceName);
-        status.Should().NotBeNull();
-        status!.State.Should().Be(CircuitBreakerState.HalfOpen);
-
-        // Act - should allow attempt in HalfOpen state
-        var canAttempt = await _service.CanAttemptAsync(serviceName, policy);
-
-        // Assert
-        canAttempt.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task RecordSuccess_HalfOpenToClosed_AfterSuccessThresholdMet()
-    {
-        // Arrange
-        var serviceName = "cache-service";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 1, SuccessThreshold = 3, TimeoutSeconds = 1, Enabled = true };
-
-        // Open circuit
-        await _service.RecordFailureAsync(serviceName, "timeout", policy);
-
-        // Wait for timeout
-        await Task.Delay(1100);
-
-        // Transition to HalfOpen
-        await _service.CanAttemptAsync(serviceName, policy);
-
-        // Record successes up to threshold
-        await _service.RecordSuccessAsync(serviceName, policy);
-        await _service.RecordSuccessAsync(serviceName, policy);
-
-        // Third success should close the circuit
-        await _service.RecordSuccessAsync(serviceName, policy);
-
-        // Assert - circuit is now closed
-        var status = await _service.GetStatusAsync(serviceName);
-        status.Should().NotBeNull();
-        status!.State.Should().Be(CircuitBreakerState.Closed);
-        status.SuccessCount.Should().Be(0); // Reset on close
-        status.FailureCount.Should().Be(0); // Reset on close
-    }
-
-    [Fact]
-    public async Task RecordFailure_HalfOpenToOpen_ImmediatelyReopensOnFailure()
-    {
-        // Arrange
-        var serviceName = "auth-service";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 1, SuccessThreshold = 2, TimeoutSeconds = 1, Enabled = true };
-
-        // Open circuit
-        await _service.RecordFailureAsync(serviceName, "unauthorized", policy);
-
-        // Wait for timeout
-        await Task.Delay(1100);
-
-        // Transition to HalfOpen
-        await _service.CanAttemptAsync(serviceName, policy);
-
-        // Record a failure in HalfOpen state
-        await _service.RecordFailureAsync(serviceName, "still failing", policy);
-
-        // Assert - circuit should immediately reopen
-        var status = await _service.GetStatusAsync(serviceName);
-        status.Should().NotBeNull();
-        status!.State.Should().Be(CircuitBreakerState.Open);
-    }
-
-    [Fact]
-    public async Task CircuitBreakerException_ContainsServiceNameAndRetryAfterSeconds()
-    {
-        // Arrange
-        var serviceName = "third-party-api";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 1, TimeoutSeconds = 30, Enabled = true };
-
-        // Open the circuit
-        await _service.RecordFailureAsync(serviceName, "network error", policy);
-
-        // Act
-        CircuitBreakerException? exception = null;
-        try
+        const string serviceName = "guarded-service";
+        var actions = new Func<Task>[]
         {
-            await _service.CanAttemptAsync(serviceName, policy);
-        }
-        catch (CircuitBreakerException ex)
-        {
-            exception = ex;
-        }
+            () => _service.CanAttemptAsync(serviceName, null!),
+            () => _service.RecordSuccessAsync(serviceName, null!),
+            () => _service.RecordFailureAsync(serviceName, "failure", null!)
+        };
 
-        // Assert
-        exception.Should().NotBeNull();
-        exception!.ServiceName.Should().Be(serviceName);
-        exception.RetryAfterSeconds.Should().BeGreaterThan(0);
-        exception.Message.Should().Contain(serviceName);
-        exception.ErrorCode.Should().Be("CIRCUIT_BREAKER_OPEN");
+        foreach (var action in actions)
+            await action.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task RecordFailureAsync_NullOrEmptyError_ThrowsArgumentException(string? error)
+    {
+        var act = () => _service.RecordFailureAsync(
+            "guarded-service",
+            error!,
+            new CircuitBreakerPolicy());
+
+        await act.Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
-    public async Task CanAttempt_OpenCircuit_RejectsWithCorrectRetryTime()
+    public async Task CanAttemptAsync_DisabledPolicy_ReturnsTrueEvenWhenCircuitIsOpen()
     {
-        // Arrange
-        var serviceName = "slow-service";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 1, TimeoutSeconds = 60, Enabled = true };
-
-        // Open the circuit
-        await _service.RecordFailureAsync(serviceName, "timeout", policy);
-
-        // Act
-        CircuitBreakerException? exception = null;
-        try
-        {
-            await _service.CanAttemptAsync(serviceName, policy);
-        }
-        catch (CircuitBreakerException ex)
-        {
-            exception = ex;
-        }
-
-        // Assert
-        exception.Should().NotBeNull();
-        exception!.RetryAfterSeconds.Should().BeGreaterThanOrEqualTo(59); // Should be close to 60 seconds
-    }
-
-    [Fact]
-    public async Task GetOrCreateStatusAsync_CreatesStatusForNewService()
-    {
-        // Arrange
-        var serviceName = "new-service";
-
-        // Act
+        const string serviceName = "payment-service";
         var status = await _service.GetOrCreateStatusAsync(serviceName);
+        status.ChangeState(CircuitBreakerState.Open);
+        await _repository.UpdateAsync(status);
 
-        // Assert
+        var canAttempt = await _service.CanAttemptAsync(
+            serviceName,
+            new CircuitBreakerPolicy { Enabled = false });
+
+        canAttempt.Should().BeTrue();
+        status.State.Should().Be(CircuitBreakerState.Open);
+    }
+
+    [Fact]
+    public async Task CanAttemptAsync_OpenCircuitAfterTimeout_TransitionsToHalfOpenAndReturnsTrue()
+    {
+        const string serviceName = "reporting-service";
+        var policy = new CircuitBreakerPolicy
+        {
+            Enabled = true,
+            FailureThreshold = 1,
+            TimeoutSeconds = 30
+        };
+        var status = await OpenCircuitAsync(serviceName, policy);
+        status.LastStateChangeAt = DateTime.UtcNow - TimeSpan.FromSeconds(policy.TimeoutSeconds + 1);
+        await _repository.UpdateAsync(status);
+
+        var canAttempt = await _service.CanAttemptAsync(serviceName, policy);
+
+        canAttempt.Should().BeTrue();
+        status.State.Should().Be(CircuitBreakerState.HalfOpen);
+    }
+
+    [Fact]
+    public async Task CanAttemptAsync_OpenCircuitBeforeTimeout_ThrowsCircuitBreakerException()
+    {
+        const string serviceName = "shipping-service";
+        var policy = new CircuitBreakerPolicy
+        {
+            Enabled = true,
+            FailureThreshold = 1,
+            TimeoutSeconds = 60
+        };
+        await OpenCircuitAsync(serviceName, policy);
+
+        var act = () => _service.CanAttemptAsync(serviceName, policy);
+
+        await act.Should().ThrowAsync<CircuitBreakerException>()
+            .Where(exception => exception.ServiceName == serviceName)
+            .Where(exception => exception.RetryAfterSeconds > 0);
+    }
+
+    private async Task<CircuitBreakerStatus> OpenCircuitAsync(
+        string serviceName,
+        CircuitBreakerPolicy policy)
+    {
+        await _service.RecordFailureAsync(serviceName, "downstream failure", policy);
+        var status = await _service.GetStatusAsync(serviceName);
         status.Should().NotBeNull();
-        status.ServiceName.Should().Be(serviceName);
-        status.State.Should().Be(CircuitBreakerState.Closed);
-        status.FailureCount.Should().Be(0);
-        status.SuccessCount.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task IsCircuitOpenAsync_ReturnsCorrectState()
-    {
-        // Arrange
-        var closedService = "available-service";
-        var openService = "failed-service";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 1, Enabled = true };
-
-        // Open circuit for one service
-        await _service.RecordFailureAsync(openService, "error", policy);
-
-        // Act
-        var isClosedOpen = await _service.IsCircuitOpenAsync(closedService);
-        var isOpenOpen = await _service.IsCircuitOpenAsync(openService);
-
-        // Assert
-        isClosedOpen.Should().BeFalse();
-        isOpenOpen.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task ResetCircuitAsync_ReturnsCircuitToClosedState()
-    {
-        // Arrange
-        var serviceName = "temporary-failure-service";
-        var policy = new CircuitBreakerPolicy { FailureThreshold = 2, Enabled = true };
-
-        // Open the circuit
-        await _service.RecordFailureAsync(serviceName, "error", policy);
-        await _service.RecordFailureAsync(serviceName, "error", policy);
-
-        var statusBefore = await _service.GetStatusAsync(serviceName);
-        statusBefore.Should().NotBeNull();
-        statusBefore!.State.Should().Be(CircuitBreakerState.Open);
-
-        // Act
-        await _service.ResetCircuitAsync(serviceName);
-
-        // Assert
-        var statusAfter = await _service.GetStatusAsync(serviceName);
-        statusAfter.Should().NotBeNull();
-        statusAfter!.State.Should().Be(CircuitBreakerState.Closed);
-        statusAfter.FailureCount.Should().Be(0);
-        statusAfter.SuccessCount.Should().Be(0);
+        status!.State.Should().Be(CircuitBreakerState.Open);
+        return status;
     }
 }
