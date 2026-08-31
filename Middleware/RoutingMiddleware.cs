@@ -1,6 +1,7 @@
 using DotNetApiGateway.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using DotNetApiGateway.Constants;
 using DotNetApiGateway.Exceptions;
 using DotNetApiGateway.Models;
 
@@ -59,7 +60,7 @@ public sealed class RoutingMiddleware
                         }
                     }
 
-                    context.Items["GatewayRoute"] = route;
+                    context.Items[GatewayConstants.GatewayRouteItemKey] = route;
                     _logger.LogDebug("Route '{RouteId}' found for {Method} {Path}", route.Id, method, path);
                 }
                 else
