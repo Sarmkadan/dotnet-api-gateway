@@ -12,6 +12,7 @@ namespace DotNetApiGateway.Constants;
 public static class GatewayConstants
 {
     // Routing constants
+    public const string GatewayRouteItemKey = "GatewayRoute";
     public const string DefaultTimeoutSeconds = "30";
     public const int MaxRequestBodySizeMb = 10;
     public const int DefaultMaxConcurrentRequests = 100;

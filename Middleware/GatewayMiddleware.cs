@@ -4,6 +4,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+using DotNetApiGateway.Constants;
+
 namespace DotNetApiGateway.Middleware;
 
 /// <summary>
@@ -66,7 +68,7 @@ public sealed class GatewayMiddleware
         {
             await _next(context);
 
-            var routeId = context.Items.TryGetValue("GatewayRoute", out var routeObj) && routeObj is GatewayRoute r
+            var routeId = context.Items.TryGetValue(GatewayConstants.GatewayRouteItemKey, out var routeObj) && routeObj is GatewayRoute r
                 ? r.Id
                 : "unknown";
             metricsService.RecordRequest(routeId, context.Response.StatusCode, requestContext.ElapsedTime());

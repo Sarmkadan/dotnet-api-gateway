@@ -39,7 +39,7 @@ public sealed class RateLimitingMiddleware
 
         try
         {
-            if (!context.Items.TryGetValue("GatewayRoute", out var routeObj) || routeObj is not GatewayRoute route)
+            if (!context.Items.TryGetValue(GatewayConstants.GatewayRouteItemKey, out var routeObj) || routeObj is not GatewayRoute route)
             {
                 _logger.LogDebug("Bypassing rate limiting: no route found for {Path}", context.Request.Path);
                 await _next(context); // No route found, bypass rate limiting
@@ -124,7 +124,7 @@ public sealed class RateLimitingMiddleware
         {
             "clientip" => context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             "authenticateduser" => context.User.Identity?.Name ?? "anonymous",
-            "routeid" => ((GatewayRoute)context.Items["GatewayRoute"]!).Id,
+            "routeid" => ((GatewayRoute)context.Items[GatewayConstants.GatewayRouteItemKey]!).Id,
             var s when s.StartsWith("customheader:") => context.Request.Headers[s.Substring(13)].ToString(),
             _ => "global" // Default fallback key
         };
