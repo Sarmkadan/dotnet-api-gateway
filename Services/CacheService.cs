@@ -25,23 +25,40 @@ public sealed class CacheService : IDisposable
     public bool TryGetCachedResponse(string cacheKey, out CacheEntry? entry)
     {
         ArgumentException.ThrowIfNullOrEmpty(cacheKey);
-        if (_cache.TryGetValue(cacheKey, out var cacheEntry))
+
+        _lock.EnterUpgradeableReadLock();
+        try
         {
-            if (cacheEntry.IsExpired())
+            if (_cache.TryGetValue(cacheKey, out var cacheEntry))
             {
-                _cache.TryRemove(new KeyValuePair<string, CacheEntry>(cacheKey, cacheEntry));
-                entry = null;
-                return false;
+                _lock.EnterWriteLock();
+                try
+                {
+                    if (cacheEntry.IsExpired())
+                    {
+                        _cache.TryRemove(new KeyValuePair<string, CacheEntry>(cacheKey, cacheEntry));
+                        entry = null;
+                        return false;
+                    }
+
+                    cacheEntry.IncrementHitCount();
+                    cacheEntry.LastAccessAt = DateTime.UtcNow;
+                    entry = cacheEntry;
+                    return true;
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
             }
 
-            cacheEntry.IncrementHitCount();
-            cacheEntry.LastAccessAt = DateTime.UtcNow;
-            entry = cacheEntry;
-            return true;
+            entry = null;
+            return false;
         }
-
-        entry = null;
-        return false;
+        finally
+        {
+            _lock.ExitUpgradeableReadLock();
+        }
     }
 
     public void SetCachedResponse(
