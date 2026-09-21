@@ -185,6 +185,50 @@ public class WebhookManagementController : ControllerBase
     }
 
     /// <summary>
+    /// Get dead-letter attempts for a specific webhook subscription.
+    /// Returns the list of failed delivery attempts that have been moved to dead-letter queue.
+    /// </summary>
+    [HttpGet("subscriptions/{id}/dead-letter")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetWebhookDeadLetterAttempts(string id)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        if (!_subscriptions.TryGetValue(id, out var subscription))
+            return NotFound(new { error = "Subscription not found", id });
+
+        // Return a copy of the dead-letter attempts to avoid exposing internal list
+        lock (subscription.DeadLetterAttempts)
+        {
+            return Ok(subscription.DeadLetterAttempts.ToList());
+        }
+    }
+
+    /// <summary>
+    /// Re-enable a webhook subscription that was automatically disabled due to consecutive failures.
+    /// </summary>
+    [HttpPost("subscriptions/{id}/enable")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult EnableWebhookSubscription(string id)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        if (!_subscriptions.TryGetValue(id, out var subscription))
+            return NotFound(new { error = "Subscription not found", id });
+
+        if (!subscription.Active)
+        {
+            subscription.Active = true;
+            // Reset failure counters when manually re-enabling
+            subscription.ConsecutiveFailures = 0;
+            subscription.LastFailureTime = null;
+            _logger.LogInformation("Webhook subscription manually re-enabled: {SubscriptionId}", id);
+        }
+
+        return Ok(subscription);
+    }
+
+    /// <summary>
     /// Get a specific webhook subscription by ID with delivery statistics.
     /// </summary>
     [HttpGet("subscriptions/{id}")]
