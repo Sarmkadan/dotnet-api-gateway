@@ -148,14 +148,19 @@ public sealed class WebhookRegistry
 
     /// <summary>
     /// Deliver webhook event to a specific subscription with retry logic.
+    /// Implements dead-letter queue and automatic subscription disabling after consecutive failures.
     /// </summary>
     /// <param name="subscription">The webhook subscription to deliver to.</param>
     /// <param name="webhookEvent">The webhook event to deliver.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private async Task DeliverWebhookAsync(WebhookSubscription subscription, WebhookEvent webhookEvent)
     {
+        bool deliverySucceeded = false;
+        WebhookDeliveryAttempt? lastAttempt = null;
+
         for (int attempt = 0; attempt <= subscription.RetryPolicy.MaxRetries; attempt++)
         {
+            var attemptStart = DateTime.UtcNow;
             try
             {
                 // Re-validate the callback URL immediately before every delivery attempt.
@@ -167,7 +172,16 @@ public sealed class WebhookRegistry
                 {
                     _logger.LogError(
                         "Webhook delivery blocked for {SubscriptionId}: {Reason}", subscription.Id, validation.Error);
-                    return;
+
+                    // Record the blocking attempt
+                    lastAttempt = new WebhookDeliveryAttempt
+                    {
+                        AttemptNumber = attempt + 1,
+                        Timestamp = attemptStart,
+                        Error = validation.Error,
+                        ResponseTimeMs = (long)(DateTime.UtcNow - attemptStart).TotalMilliseconds
+                    };
+                    break; // Don't retry on URL validation failures
                 }
 
                 using var client = new HttpClient();
@@ -186,20 +200,48 @@ public sealed class WebhookRegistry
 
                 var response = await client.PostAsync(subscription.CallbackUrl, content);
 
+                var responseTimeMs = (long)(DateTime.UtcNow - attemptStart).TotalMilliseconds;
+
                 if (response.IsSuccessStatusCode)
                 {
                     _logger.LogInformation("Webhook delivered successfully: {SubscriptionId}", subscription.Id);
-                    return;
-                }
+                    deliverySucceeded = true;
 
-                _logger.LogWarning("Webhook delivery failed with status {StatusCode}: {SubscriptionId}", response.StatusCode, subscription.Id);
+                    // Reset failure count on success
+                    subscription.ConsecutiveFailures = 0;
+                    subscription.LastFailureTime = null;
+                    break;
+                }
+                else
+                {
+                    _logger.LogWarning("Webhook delivery failed with status {StatusCode}: {SubscriptionId}", response.StatusCode, subscription.Id);
+
+                    // Record the failed attempt
+                    lastAttempt = new WebhookDeliveryAttempt
+                    {
+                        AttemptNumber = attempt + 1,
+                        Timestamp = attemptStart,
+                        StatusCode = (int)response.StatusCode,
+                        ResponseTimeMs = responseTimeMs
+                    };
+                }
             }
             catch (Exception ex)
             {
+                var responseTimeMs = (long)(DateTime.UtcNow - attemptStart).TotalMilliseconds;
                 _logger.LogError(ex, "Webhook delivery exception (attempt {Attempt}): {SubscriptionId}", attempt + 1, subscription.Id);
+
+                // Record the exception attempt
+                lastAttempt = new WebhookDeliveryAttempt
+                {
+                    AttemptNumber = attempt + 1,
+                    Timestamp = attemptStart,
+                    Error = ex.Message,
+                    ResponseTimeMs = responseTimeMs
+                };
             }
 
-            // Delay before retry (exponential backoff)
+            // Delay before retry (exponential backoff) - but not after the last attempt
             if (attempt < subscription.RetryPolicy.MaxRetries)
             {
                 var delay = Math.Min(
@@ -210,7 +252,44 @@ public sealed class WebhookRegistry
             }
         }
 
-        _logger.LogError("Webhook delivery failed after {MaxRetries} retries: {SubscriptionId}", subscription.RetryPolicy.MaxRetries, subscription.Id);
+        // If delivery failed after all retries, add to dead-letter and track failures
+        if (!deliverySucceeded && lastAttempt != null)
+        {
+            lock (subscription.DeadLetterAttempts)
+            {
+                subscription.DeadLetterAttempts.Add(lastAttempt);
+
+                // Limit dead-letter queue size to prevent unbounded growth
+                if (subscription.DeadLetterAttempts.Count > 1000)
+                {
+                    subscription.DeadLetterAttempts.RemoveRange(0, subscription.DeadLetterAttempts.Count - 1000);
+                }
+            }
+
+            // Update failure tracking
+            subscription.ConsecutiveFailures++;
+            subscription.LastFailureTime = DateTime.UtcNow;
+
+            _logger.LogError("Webhook delivery failed after {MaxRetries} retries: {SubscriptionId}. Dead-letter count: {DeadLetterCount}",
+                subscription.RetryPolicy.MaxRetries, subscription.Id, subscription.DeadLetterAttempts.Count);
+
+            // Check if we should auto-disable the subscription due to consecutive failures
+            // Disable after 5 consecutive failures within 1 hour window
+            if (subscription.ConsecutiveFailures >= 5 &&
+                subscription.LastFailureTime.HasValue &&
+                DateTime.UtcNow - subscription.LastFailureTime.Value < TimeSpan.FromHours(1))
+            {
+                subscription.Active = false;
+                _logger.LogWarning("Webhook subscription auto-disabled due to {ConsecutiveFailures} consecutive failures: {SubscriptionId}",
+                    subscription.ConsecutiveFailures, subscription.Id);
+            }
+        }
+        else if (deliverySucceeded)
+        {
+            // Reset failure count on success
+            subscription.ConsecutiveFailures = 0;
+            subscription.LastFailureTime = null;
+        }
     }
 
     /// <summary>
@@ -259,6 +338,11 @@ public sealed class WebhookSubscription
     public bool Active { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public WebhookRetryPolicy RetryPolicy { get; set; } = new();
+
+    // New properties for dead-letter and failure tracking
+    public List<WebhookDeliveryAttempt> DeadLetterAttempts { get; } = new();
+    public int ConsecutiveFailures { get; set; }
+    public DateTime? LastFailureTime { get; set; }
 }
 
 /// <summary>
@@ -281,3 +365,4 @@ public sealed class WebhookEvent
     public object? Data { get; set; }
     public long SignedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 }
+

@@ -156,4 +156,36 @@ public static class WebhookManagementControllerExtensions
             return controller.UpdateWebhookSubscription(id, updateRequest);
         }
     }
+
+    /// <summary>
+    /// Gets dead-letter attempts for a specific webhook subscription.
+    /// </summary>
+    /// <param name="controller">The webhook management controller instance.</param>
+    /// <param name="id">The subscription ID to get dead-letter attempts for.</param>
+    /// <returns>List of dead-letter delivery attempts.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="controller"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
+    public static Task<IActionResult> GetWebhookDeadLetterAttempts(this WebhookManagementController controller, string id)
+    {
+        ArgumentNullException.ThrowIfNull(controller);
+        ArgumentNullException.ThrowIfNull(id);
+
+        return Task.FromResult(controller.GetWebhookDeadLetterAttempts(id));
+    }
+
+    /// <summary>
+    /// Re-enables a webhook subscription that was automatically disabled due to consecutive failures.
+    /// </summary>
+    /// <param name="controller">The webhook management controller instance.</param>
+    /// <param name="id">The subscription ID to re-enable.</param>
+    /// <returns>The updated subscription.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="controller"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
+    public static Task<IActionResult> EnableWebhookSubscription(this WebhookManagementController controller, string id)
+    {
+        ArgumentNullException.ThrowIfNull(controller);
+        ArgumentNullException.ThrowIfNull(id);
+
+        return Task.FromResult(controller.EnableWebhookSubscription(id));
+    }
 }
