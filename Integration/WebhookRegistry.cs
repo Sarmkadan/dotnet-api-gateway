@@ -122,6 +122,27 @@ public sealed class WebhookRegistry
     }
 
     /// <summary>
+    /// Get a webhook subscription by its ID.
+    /// </summary>
+    /// <param name="subscriptionId">The ID of the subscription to retrieve.</param>
+    /// <returns>The webhook subscription if found, otherwise null.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="subscriptionId"/> is null.</exception>
+    public WebhookSubscription? GetSubscription(string subscriptionId)
+    {
+        ArgumentNullException.ThrowIfNull(subscriptionId);
+
+        _lock.EnterReadLock();
+        try
+        {
+            return _subscriptions.FirstOrDefault(s => s.Id == subscriptionId);
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
+
+    /// <summary>
     /// Publish event to all subscribed webhooks.
     /// Executes asynchronously without blocking the caller.
     /// </summary>

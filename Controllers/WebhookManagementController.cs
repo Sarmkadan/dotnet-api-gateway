@@ -26,7 +26,6 @@ public class WebhookManagementController : ControllerBase
     private readonly WebhookRegistry _webhookRegistry;
     private readonly WebhookCallbackUrlValidator _urlValidator;
     private readonly ILogger<WebhookManagementController> _logger;
-    private static readonly Dictionary<string, WebhookSubscription> _subscriptions = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WebhookManagementController"/> class.
@@ -129,7 +128,6 @@ public class WebhookManagementController : ControllerBase
             }
         };
 
-        _subscriptions[subscription.Id] = subscription;
         _webhookRegistry.Register(subscription);
         _logger.LogInformation("Webhook subscription created: {SubscriptionId}", subscription.Id);
 
@@ -147,7 +145,8 @@ public class WebhookManagementController : ControllerBase
     public IActionResult RotateWebhookSecret(string id)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
-        if (!_subscriptions.TryGetValue(id, out var subscription))
+        var subscription = _webhookRegistry.GetSubscription(id);
+        if (subscription == null)
             return NotFound(new { error = "Subscription not found", id });
 
         // Store current secret as previous before rotating
@@ -174,7 +173,8 @@ public class WebhookManagementController : ControllerBase
     public IActionResult GetWebhookSecret(string id)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
-        if (!_subscriptions.TryGetValue(id, out var subscription))
+        var subscription = _webhookRegistry.GetSubscription(id);
+        if (subscription == null)
             return NotFound(new { error = "Subscription not found", id });
 
         return Ok(new { secret = subscription.CurrentSecret });
@@ -187,7 +187,7 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult GetAllWebhookSubscriptions()
     {
-        return Ok(_subscriptions.Values.ToList());
+        return Ok(_webhookRegistry.GetAllSubscriptions());
     }
 
     /// <summary>
@@ -200,7 +200,8 @@ public class WebhookManagementController : ControllerBase
     public IActionResult GetWebhookDeadLetterAttempts(string id)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
-        if (!_subscriptions.TryGetValue(id, out var subscription))
+        var subscription = _webhookRegistry.GetSubscription(id);
+        if (subscription == null)
             return NotFound(new { error = "Subscription not found", id });
 
         // Return a copy of the dead-letter attempts to avoid exposing internal list
@@ -219,7 +220,8 @@ public class WebhookManagementController : ControllerBase
     public IActionResult EnableWebhookSubscription(string id)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
-        if (!_subscriptions.TryGetValue(id, out var subscription))
+        var subscription = _webhookRegistry.GetSubscription(id);
+        if (subscription == null)
             return NotFound(new { error = "Subscription not found", id });
 
         if (!subscription.Active)
@@ -243,7 +245,8 @@ public class WebhookManagementController : ControllerBase
     public IActionResult GetWebhookSubscription(string id)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
-        if (!_subscriptions.TryGetValue(id, out var subscription))
+        var subscription = _webhookRegistry.GetSubscription(id);
+        if (subscription == null)
             return NotFound(new { error = "Subscription not found", id });
 
         return Ok(subscription);
@@ -260,7 +263,8 @@ public class WebhookManagementController : ControllerBase
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
         ArgumentNullException.ThrowIfNull(request);
-        if (!_subscriptions.TryGetValue(id, out var subscription))
+        var subscription = _webhookRegistry.GetSubscription(id);
+        if (subscription == null)
             return NotFound(new { error = "Subscription not found", id });
 
         if (!string.IsNullOrWhiteSpace(request.CallbackUrl))
@@ -290,11 +294,13 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult DeleteWebhookSubscription(string id)
     {
-        if (!_subscriptions.TryGetValue(id, out var subscription))
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        var subscription = _webhookRegistry.GetSubscription(id);
+        if (subscription == null)
             return NotFound(new { error = "Subscription not found", id });
 
         subscription.Active = false;
-        _subscriptions.Remove(id);
+        _webhookRegistry.Unregister(id);
         _logger.LogInformation("Webhook subscription deleted: {SubscriptionId}", id);
         return NoContent();
     }
@@ -309,7 +315,8 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<IActionResult> TestWebhookDelivery(string id)
     {
-        if (!_subscriptions.TryGetValue(id, out var subscription))
+        var subscription = _webhookRegistry.GetSubscription(id);
+        if (subscription == null)
             return NotFound(new { error = "Subscription not found", id });
 
         var validation = await _urlValidator.ValidateAsync(subscription.CallbackUrl);
