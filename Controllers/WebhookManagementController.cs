@@ -315,6 +315,8 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<IActionResult> TestWebhookDelivery(string id)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+
         var subscription = _webhookRegistry.GetSubscription(id);
         if (subscription == null)
             return NotFound(new { error = "Subscription not found", id });
@@ -364,8 +366,7 @@ public class WebhookManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> TestFireWebhook([FromBody] TestFireRequest request)
     {
-        if (request is null)
-            return BadRequest(new { error = "Request body required" });
+        ArgumentNullException.ThrowIfNull(request);
 
         if (string.IsNullOrWhiteSpace(request.EventType))
             return BadRequest(new { error = "Event type required" });
