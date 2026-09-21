@@ -44,6 +44,24 @@ public sealed class WebhookSubscription
     public WebhookDeliveryStats DeliveryStats { get; set; } = new();
 
     /// <summary>
+    /// Gets the dead-letter queue of failed delivery attempts for this subscription.
+    /// </summary>
+    [JsonIgnore]
+    public List<WebhookDeliveryAttempt> DeadLetterAttempts { get; } = new();
+
+    /// <summary>
+    /// Gets or sets the number of consecutive delivery failures for this subscription.
+    /// </summary>
+    [JsonPropertyName("consecutiveFailures")]
+    public int ConsecutiveFailures { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp of the last delivery failure for this subscription.
+    /// </summary>
+    [JsonPropertyName("lastFailureTime")]
+    public DateTime? LastFailureTime { get; set; }
+
+    /// <summary>
     /// The ID of the client who owns this subscription (for multi-tenant access control).
     /// </summary>
     [JsonPropertyName("ownerId")]
