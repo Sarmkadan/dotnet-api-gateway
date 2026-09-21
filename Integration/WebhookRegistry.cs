@@ -179,8 +179,12 @@ public sealed class WebhookRegistry
     /// <param name="subscription">The webhook subscription to deliver to.</param>
     /// <param name="webhookEvent">The webhook event to deliver.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="subscription"/> or <paramref name="webhookEvent"/> is null.</exception>
     private async Task DeliverWebhookAsync(WebhookSubscription subscription, WebhookEvent webhookEvent)
     {
+        ArgumentNullException.ThrowIfNull(subscription);
+        ArgumentNullException.ThrowIfNull(webhookEvent);
+
         bool deliverySucceeded = false;
         WebhookDeliveryAttempt? lastAttempt = null;
 
