@@ -345,8 +345,19 @@ public sealed class WebhookSubscription
     public WebhookRetryPolicy RetryPolicy { get; set; } = new();
 
     // New properties for dead-letter and failure tracking
+    /// <summary>
+    /// Gets the dead-letter queue of failed delivery attempts for this subscription.
+    /// </summary>
     public List<WebhookDeliveryAttempt> DeadLetterAttempts { get; } = new();
+
+    /// <summary>
+    /// Gets or sets the number of consecutive delivery failures for this subscription.
+    /// </summary>
     public int ConsecutiveFailures { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp of the last delivery failure for this subscription.
+    /// </summary>
     public DateTime? LastFailureTime { get; set; }
 }
 
