@@ -149,6 +149,11 @@ public sealed class WebhookRegistry
     /// <summary>
     /// Deliver webhook event to a specific subscription with retry logic.
     /// Implements dead-letter queue and automatic subscription disabling after consecutive failures.
+    /// <para>
+    /// Note: Ordering of delivery attempts per subscription is not guaranteed, as multiple events
+    /// may be processed concurrently. If strict ordering is required, external sequencing mechanisms
+    /// should be implemented.
+    /// </para>
     /// </summary>
     /// <param name="subscription">The webhook subscription to deliver to.</param>
     /// <param name="webhookEvent">The webhook event to deliver.</param>
