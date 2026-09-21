@@ -87,6 +87,12 @@ public class WebhookManagementController : ControllerBase
     /// Subscribe to gateway events with webhook callback URL.
     /// Webhook will be called when specified events occur with event payload.
     /// </summary>
+    /// <param name="request">The webhook subscription creation request.</param>
+    /// <returns>A response indicating the result of the subscription creation.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="request"/> is null.</exception>
+    /// <response code="201">Returns the newly created webhook subscription</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="422">If the callback URL is rejected by security validation</response>
     [HttpPost("subscriptions")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
