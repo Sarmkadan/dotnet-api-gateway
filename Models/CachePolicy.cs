@@ -61,6 +61,13 @@ public sealed class CachePolicy : IEquatable<CachePolicy>
     public static bool operator !=(CachePolicy? left, CachePolicy? right) =>
         !Equals(left, right);
 
+    public override string ToString() =>
+        $"CachePolicy {{ Id={Id}, Enabled={Enabled}, DurationSeconds={DurationSeconds}, Strategy={Strategy}, " +
+        $"CacheableStatusCodes=[{string.Join(", ", CacheableStatusCodes)}], " +
+        $"CacheableHttpMethods=[{string.Join(", ", CacheableHttpMethods)}], " +
+        $"VaryByQueryString={VaryByQueryString}, VaryByHeaders={VaryByHeaders}, " +
+        $"VaryHeaders=[{string.Join(", ", VaryHeaders)}], MaxEntriesInCache={MaxEntriesInCache} }}";
+
     public void Validate()
     {
         if (DurationSeconds < 1 || DurationSeconds > 3600)
