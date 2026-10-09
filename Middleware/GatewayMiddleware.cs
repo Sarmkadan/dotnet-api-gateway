@@ -9,19 +9,45 @@ using DotNetApiGateway.Constants;
 namespace DotNetApiGateway.Middleware;
 
 /// <summary>
-/// Middleware for processing requests through the API gateway
+/// Middleware for processing requests through the API gateway.
+/// Builds a <see cref="RequestContext"/> from the incoming request, stores it in
+/// <see cref="HttpContext.Items"/> for downstream middleware, logs the request lifecycle,
+/// and records request metrics once the response has been produced.
 /// </summary>
 public sealed class GatewayMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<GatewayMiddleware> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GatewayMiddleware"/> class.
+    /// </summary>
+    /// <param name="next">The next delegate in the ASP.NET Core request pipeline.</param>
+    /// <param name="logger">Logger used to record request received, completed, and failed events.</param>
     public GatewayMiddleware(RequestDelegate next, ILogger<GatewayMiddleware> logger)
     {
         _next = next;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Processes an incoming HTTP request. Creates a <see cref="RequestContext"/> containing the
+    /// request ID, path, method, client IP, headers, query parameters, and auth token, then invokes
+    /// the rest of the pipeline. After the pipeline completes, the matched route ID (or
+    /// <see cref="GatewayConstants.UnknownValue"/> when no route was matched) and the response status
+    /// are recorded via <paramref name="metricsService"/>.
+    /// </summary>
+    /// <param name="context">The current HTTP context for the request.</param>
+    /// <param name="routingService">Routing service injected per request. Validated for null; not used directly by this method.</param>
+    /// <param name="metricsService">Metrics service used to record the request outcome and duration.</param>
+    /// <returns>A task that completes when the downstream pipeline has finished processing the request.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="context"/>, <paramref name="routingService"/>, or <paramref name="metricsService"/> is null.
+    /// </exception>
+    /// <remarks>
+    /// Exceptions raised by downstream middleware are logged as errors and rethrown unchanged, so that
+    /// exception handling middleware can map them to HTTP responses.
+    /// </remarks>
     public async Task InvokeAsync(HttpContext context, RoutingService routingService, MetricsService metricsService)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -92,10 +118,15 @@ public sealed class GatewayMiddleware
 }
 
 /// <summary>
-/// Extension method for adding gateway middleware to the pipeline
+/// Extension methods for adding <see cref="GatewayMiddleware"/> to the pipeline
 /// </summary>
 public static class GatewayMiddlewareExtensions
 {
+    /// <summary>
+    /// Adds <see cref="GatewayMiddleware"/> to the application's request pipeline.
+    /// </summary>
+    /// <param name="builder">The application builder to configure.</param>
+    /// <returns>The same <see cref="IApplicationBuilder"/> instance, for chaining.</returns>
     public static IApplicationBuilder UseGatewayMiddleware(this IApplicationBuilder builder)
     {
         return builder.UseMiddleware<GatewayMiddleware>();
