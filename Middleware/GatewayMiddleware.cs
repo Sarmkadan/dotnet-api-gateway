@@ -30,9 +30,9 @@ public sealed class GatewayMiddleware
         var requestContext = new RequestContext
         {
             RequestId = Guid.NewGuid().ToString(),
-            Path = context.Request.Path.Value ?? "/",
+            Path = context.Request.Path.Value ?? GatewayConstants.DefaultRequestPath,
             Method = context.Request.Method,
-            ClientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            ClientIp = context.Connection.RemoteIpAddress?.ToString() ?? GatewayConstants.UnknownValue,
             ReceivedAt = DateTime.UtcNow
         };
 
@@ -49,13 +49,13 @@ public sealed class GatewayMiddleware
         }
 
         // Extract auth token
-        if (context.Request.Headers.TryGetValue("Authorization", out var authHeader))
+        if (context.Request.Headers.TryGetValue(GatewayConstants.AuthorizationHeader, out var authHeader))
         {
             requestContext.AuthToken = authHeader.ToString();
         }
 
         // Add request context to items for downstream middleware
-        context.Items["RequestContext"] = requestContext;
+        context.Items[GatewayConstants.RequestContextItemKey] = requestContext;
 
         _logger.LogInformation(
             "Gateway received request: {Method} {Path} from {ClientIp} [RequestId: {RequestId}]",
@@ -70,7 +70,7 @@ public sealed class GatewayMiddleware
 
             var routeId = context.Items.TryGetValue(GatewayConstants.GatewayRouteItemKey, out var routeObj) && routeObj is GatewayRoute r
                 ? r.Id
-                : "unknown";
+                : GatewayConstants.UnknownValue;
             metricsService.RecordRequest(routeId, context.Response.StatusCode, requestContext.ElapsedTime());
 
             _logger.LogInformation(
