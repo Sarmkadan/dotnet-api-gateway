@@ -22,6 +22,9 @@ public sealed class HealthCheckService : IDisposable
 
     public HealthCheckService(HttpClient httpClient, ILogger<HealthCheckService> logger)
     {
+        ArgumentNullException.ThrowIfNull(httpClient);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _httpClient = httpClient;
         _logger = logger;
         _httpClient.Timeout = TimeSpan.FromSeconds(5);
@@ -30,6 +33,8 @@ public sealed class HealthCheckService : IDisposable
 
     public async Task<bool> CheckTargetHealthAsync(RouteTarget target)
     {
+        ArgumentNullException.ThrowIfNull(target);
+
         _trackedTargets[target.Id] = target;
 
         if (string.IsNullOrWhiteSpace(target.HealthCheckPath))
@@ -67,6 +72,8 @@ public sealed class HealthCheckService : IDisposable
 
     public async Task<Dictionary<string, bool>> CheckAllTargetsAsync(IEnumerable<RouteTarget> targets)
     {
+        ArgumentNullException.ThrowIfNull(targets);
+
         var results = new Dictionary<string, bool>();
 
         var tasks = targets.Select(async target =>
