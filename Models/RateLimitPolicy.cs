@@ -51,4 +51,12 @@ public sealed class RateLimitPolicy
     {
         return Enabled && (RequestsPerMinute > 0 || RequestsPerHour > 0);
     }
+
+    // RedisConnectionString is intentionally omitted: it may contain credentials and must not leak into logs.
+    public override string ToString()
+    {
+        return $"RateLimitPolicy {{ Id={Id}, RequestsPerMinute={RequestsPerMinute}, RequestsPerHour={RequestsPerHour}, " +
+               $"Strategy={Strategy}, KeyGenerator={KeyGenerator}, BypassForAuthenticatedUsers={BypassForAuthenticatedUsers}, " +
+               $"BurstSize={BurstSize}, Enabled={Enabled}, StorageType={StorageType} }}";
+    }
 }
