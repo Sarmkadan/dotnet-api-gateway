@@ -38,6 +38,9 @@ public static class ServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        // Routing rules (unique names/prefixes, upstreams, timeouts); failures are aggregated with the data annotation errors
+        services.AddSingleton<IValidateOptions<DotnetApiGatewayOptions>, GatewayRoutesOptionsValidator>();
+
         services.AddOptions<WebhookSecurityOptions>()
             .Bind(configuration.GetSection(WebhookSecurityOptions.SectionName));
 
